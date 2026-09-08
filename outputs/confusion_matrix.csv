@@ -1,0 +1,7 @@
+,Condenser_Fan_Fault,Condenser_Fouling,Evaporator_Fan_Fault,Evaporator_Fouling,Normal,Refrigerant_Undercharge
+Condenser_Fan_Fault,1.0,0.0,0.0,0.0,0.0,0.0
+Condenser_Fouling,0.0,1.0,0.0,0.0,0.0,0.0
+Evaporator_Fan_Fault,0.0,0.0,1.0,0.0,0.0,0.0
+Evaporator_Fouling,0.0,0.0,0.0,0.9955555555555555,0.0,0.0044444444444444444
+Normal,0.0,0.0,0.0,0.0,1.0,0.0
+Refrigerant_Undercharge,0.0,0.0,0.0,0.013333333333333334,0.0,0.9866666666666667

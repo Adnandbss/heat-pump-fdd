@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.idea/
+.vscode/
+.ipynb_checkpoints/
+.pytest_cache/
+.mplconfig/
+outputs/load_analysis/
+.DS_Store
+Thumbs.db
+~$*
+*.log
