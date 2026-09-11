@@ -33,39 +33,6 @@ FEATURE_COLUMNS: List[str] = [
 
 DEFAULT_CAPACITY_NOM = 10000.0
 
-SCENARIOS = {
-    "Normal": {
-        "fault_type": "Normal",
-        "params": {},
-        "description": "Nominal A7/W40 operation",
-    },
-    "Condenser fouling 40%": {
-        "fault_type": "Condenser_Fouling",
-        "params": {"condenser_fouling": 0.40},
-        "description": "Dirty condenser, heat rejection degraded",
-    },
-    "Evaporator fouling 25%": {
-        "fault_type": "Evaporator_Fouling",
-        "params": {"evaporator_fouling": 0.25},
-        "description": "Dirty evaporator, source exchange degraded",
-    },
-    "Refrigerant leak 20%": {
-        "fault_type": "Refrigerant_Undercharge",
-        "params": {"refrigerant_charge": 0.80},
-        "description": "20% undercharge from a leak",
-    },
-    "Condenser fan fault": {
-        "fault_type": "Condenser_Fan_Fault",
-        "params": {"fan_cond_ratio": 0.55},
-        "description": "Condenser airflow reduced",
-    },
-    "Evaporator fan fault": {
-        "fault_type": "Evaporator_Fan_Fault",
-        "params": {"fan_evap_ratio": 0.55},
-        "description": "Evaporator airflow reduced",
-    },
-}
-
 
 def healthy_cycle(
     T_source: float,
@@ -73,6 +40,11 @@ def healthy_cycle(
     speed_ratio: float,
     simulator: Optional[HeatPumpSimulator] = None,
 ) -> CycleResults:
+    """Fault-free cycle from the simulator.
+
+    This is the synthetic study's default reference, not part of the Li & Braun
+    residual definition. A measured study should pass its own baseline instead.
+    """
     sim = simulator or HeatPumpSimulator()
     return sim.simulate_cycle(T_source=T_source, T_sink=T_sink, speed_ratio=speed_ratio)
 
@@ -86,7 +58,13 @@ def cycle_to_features(
     baseline: Optional[CycleResults] = None,
     simulator: Optional[HeatPumpSimulator] = None,
 ) -> Dict[str, float]:
-    """Map a simulated cycle to the model vector, including Li-Braun residuals."""
+    """Map a cycle to the model vector, including Li & Braun residuals ``d_*``.
+
+    Residuals are *faulted minus fault-free at the same condition*. ``baseline``
+    is that fault-free reference. When omitted, ``healthy_cycle()`` simulates
+    one — the synthetic study's default, not a property of the method. Pass a
+    measured baseline to use this contract on real data.
+    """
     if baseline is None:
         baseline = healthy_cycle(T_source, T_sink, speed_ratio, simulator)
     return {

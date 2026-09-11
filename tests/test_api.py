@@ -11,9 +11,12 @@ MODEL_PATH = Path("models/fdd_classifier.joblib")
 @pytest.mark.skipif(not MODEL_PATH.exists(), reason="Train the model with main_analysis.py first")
 def test_normal_point_is_diagnosed():
     from src.inference import FDDEngine
+    from src.studies.synthetic.scenarios import SyntheticScenarios
 
     engine = FDDEngine()
-    payload = engine.simulate_cycle(T_source=7, T_sink=40, speed_ratio=0.7, fault_type="Normal")
+    payload = SyntheticScenarios(engine).simulate_cycle(
+        T_source=7, T_sink=40, speed_ratio=0.7, fault_type="Normal"
+    )
     assert payload["diagnosis"]["label"] in engine.class_names
     assert 0.0 <= payload["diagnosis"]["confidence"] <= 1.0
     assert len(payload["features"]) == 24
@@ -22,14 +25,16 @@ def test_normal_point_is_diagnosed():
 @pytest.mark.skipif(not MODEL_PATH.exists(), reason="Train the model with main_analysis.py first")
 def test_condenser_fouling_is_not_confused_with_fan():
     from src.inference import FDDEngine
+    from src.studies.synthetic.scenarios import SyntheticScenarios
 
     engine = FDDEngine()
-    payload = engine.simulate_cycle(
+    scenarios = SyntheticScenarios(engine)
+    payload = scenarios.simulate_cycle(
         T_source=7, T_sink=40, speed_ratio=0.7, fault_type="Condenser_Fouling"
     )
     assert payload["diagnosis"]["label"] == "Condenser_Fouling"
 
-    leak = engine.simulate_cycle(
+    leak = scenarios.simulate_cycle(
         T_source=7, T_sink=40, speed_ratio=0.7, fault_type="Refrigerant_Undercharge"
     )
     assert leak["diagnosis"]["label"] == "Refrigerant_Undercharge"
@@ -203,11 +208,12 @@ def test_pydantic_contracts_reject_unknown_fault():
 def test_feature_vector_and_diagnosis_schemas():
     from api.schemas import Diagnosis, FeatureVector, SimulateResponse
     from src.inference import FDDEngine
+    from src.studies.synthetic.scenarios import SyntheticScenarios
 
     if not MODEL_PATH.exists():
         pytest.skip("Train the model with main_analysis.py first")
 
-    payload = FDDEngine().simulate_cycle(fault_type="Normal")
+    payload = SyntheticScenarios(FDDEngine()).simulate_cycle(fault_type="Normal")
     parsed = SimulateResponse.model_validate(payload)
     assert parsed.diagnosis.label == "Normal"
     assert FeatureVector.model_validate(payload["features"]).COP > 0

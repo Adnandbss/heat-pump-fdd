@@ -1,12 +1,21 @@
 """Feature contract and simulator mapping."""
 
-from src.features import FEATURE_COLUMNS, cycle_to_features
+from dataclasses import replace
+
+from src.features import FEATURE_COLUMNS, cycle_to_features, healthy_cycle
 from src.data_generator import FaultDataGenerator, FaultType
 from src.simulator import HeatPumpSimulator
 
 
 def test_feature_count():
     assert len(FEATURE_COLUMNS) == 24
+
+
+def test_features_module_has_no_study_taxonomy():
+    import src.features as features
+
+    assert not hasattr(features, "SCENARIOS")
+    assert not hasattr(features, "FAULT_PARAM_MAP")
 
 
 def test_cycle_to_features_keys():
@@ -22,6 +31,28 @@ def test_generator_sample():
     for col in FEATURE_COLUMNS:
         assert col in sample
     assert sample["fault_type"] == "Normal"
+
+
+def test_default_baseline_is_a_simulated_healthy_cycle():
+    sim = HeatPumpSimulator()
+    result = sim.simulate_cycle(T_source=7, T_sink=40, speed_ratio=0.7)
+    implicit = cycle_to_features(result, 7, 40, 0.7, simulator=sim)
+    explicit = cycle_to_features(
+        result, 7, 40, 0.7, baseline=healthy_cycle(7, 40, 0.7, sim), simulator=sim
+    )
+    for key in ("d_COP", "d_W_comp", "d_T_discharge", "d_superheat", "d_subcooling"):
+        assert abs(implicit[key] - explicit[key]) < 1e-9
+
+
+def test_injected_baseline_changes_only_residuals():
+    sim = HeatPumpSimulator()
+    faulted = sim.simulate_cycle(T_source=7, T_sink=40, speed_ratio=0.7, condenser_fouling=0.40)
+    simulated = cycle_to_features(faulted, 7, 40, 0.7, simulator=sim)
+    other = replace(healthy_cycle(7, 40, 0.7, sim), COP=faulted.COP - 1.0)
+    measured = cycle_to_features(faulted, 7, 40, 0.7, baseline=other, simulator=sim)
+    assert measured["COP"] == simulated["COP"]
+    assert measured["d_COP"] == 1.0
+    assert measured["d_COP"] != simulated["d_COP"]
 
 
 def test_fouling_and_fan_signatures_differ():
