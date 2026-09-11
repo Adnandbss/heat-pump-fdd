@@ -14,4 +14,4 @@ COPY dashboard.py main_analysis.py ./
 
 EXPOSE 8000 8501
 
-CMD ["streamlit", "run", "dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8000"]
