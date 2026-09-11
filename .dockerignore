@@ -1,0 +1,28 @@
+.git
+.github
+.venv
+venv
+.idea
+.vscode
+.ipynb_checkpoints
+.pytest_cache
+.mypy_cache
+.mplconfig
+.DS_Store
+.env
+*.log
+__pycache__
+*.py[cod]
+
+# Front has its own image and context (./web).
+web
+
+# Not copied into the API image.
+docs
+tests
+scripts
+data
+LICENSE
+README.md
+pytest.ini
+.streamlit
