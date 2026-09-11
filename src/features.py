@@ -40,6 +40,11 @@ def healthy_cycle(
     speed_ratio: float,
     simulator: Optional[HeatPumpSimulator] = None,
 ) -> CycleResults:
+    """Fault-free cycle from the simulator.
+
+    This is the synthetic study's default reference, not part of the Li & Braun
+    residual definition. A measured study should pass its own baseline instead.
+    """
     sim = simulator or HeatPumpSimulator()
     return sim.simulate_cycle(T_source=T_source, T_sink=T_sink, speed_ratio=speed_ratio)
 
@@ -53,7 +58,13 @@ def cycle_to_features(
     baseline: Optional[CycleResults] = None,
     simulator: Optional[HeatPumpSimulator] = None,
 ) -> Dict[str, float]:
-    """Map a simulated cycle to the model vector, including Li-Braun residuals."""
+    """Map a cycle to the model vector, including Li & Braun residuals ``d_*``.
+
+    Residuals are *faulted minus fault-free at the same condition*. ``baseline``
+    is that fault-free reference. When omitted, ``healthy_cycle()`` simulates
+    one — the synthetic study's default, not a property of the method. Pass a
+    measured baseline to use this contract on real data.
+    """
     if baseline is None:
         baseline = healthy_cycle(T_source, T_sink, speed_ratio, simulator)
     return {
