@@ -331,7 +331,10 @@ def main():
     print_header("7. DÉMONSTRATION DE DIAGNOSTIC")
     
     from src.inference import FDDEngine
+    from src.studies.synthetic.scenarios import SyntheticScenarios
+
     engine = FDDEngine(model_path)
+    scenarios = SyntheticScenarios(engine)
 
     test_cases = [
         {"name": "Conditions normales", "T_source": 7, "T_sink": 40,
@@ -347,7 +350,7 @@ def main():
     print("\n🎯 Test de diagnostic sur cas simulés:\n")
 
     for case in test_cases:
-        payload = engine.simulate_cycle(
+        payload = scenarios.simulate_cycle(
             T_source=case["T_source"],
             T_sink=case["T_sink"],
             speed_ratio=case["speed"],

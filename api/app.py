@@ -60,7 +60,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from src.features import FEATURE_COLUMNS, SCENARIOS
-from src.inference import FAULT_PARAM_MAP, FDDEngine
+from src.inference import FDDEngine
+from src.studies.synthetic.scenarios import FAULT_PARAM_MAP, SyntheticScenarios
 from src.thermo_lab import (
     ambient_heatmap,
     ashrae_table,
@@ -94,6 +95,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 engine = FDDEngine()
+scenarios = SyntheticScenarios(engine)
 
 
 @app.get("/", include_in_schema=False)
@@ -120,7 +122,7 @@ def predict(body: PredictRequest) -> Diagnosis:
 
 @app.post("/simulate", response_model=SimulateResponse)
 def simulate(body: SimulateRequest) -> SimulateResponse:
-    payload = engine.simulate_cycle(
+    payload = scenarios.simulate_cycle(
         T_source=body.T_source,
         T_sink=body.T_sink,
         speed_ratio=body.speed_ratio,
@@ -132,7 +134,7 @@ def simulate(body: SimulateRequest) -> SimulateResponse:
 
 @app.post("/live", response_model=LiveResponse)
 def live(body: LiveRequest) -> LiveResponse:
-    trace = engine.live_trace(
+    trace = scenarios.live_trace(
         T_source=body.T_source,
         T_sink=body.T_sink,
         speed_ratio=body.speed_ratio,
@@ -158,7 +160,7 @@ def _class_counts() -> Dict[str, int]:
 
 @app.get("/api/stats", response_model=StatsResponse)
 def api_stats(fault_type: FaultLabel = Query(FaultLabel.CONDENSER_FOULING)) -> StatsResponse:
-    payload = engine.simulate_cycle(
+    payload = scenarios.simulate_cycle(
         T_source=7.0,
         T_sink=40.0,
         speed_ratio=0.7,
@@ -202,7 +204,7 @@ def api_activity(
     inject_at: int = Query(7, ge=1, le=40),
     n_points: int = Query(14, ge=10, le=60),
 ) -> ActivityResponse:
-    trace = engine.live_trace(
+    trace = scenarios.live_trace(
         T_source=7.0,
         T_sink=40.0,
         speed_ratio=0.7,
@@ -223,7 +225,7 @@ def api_activity(
 def api_challenges() -> ChallengesResponse:
     items = []
     for title, spec in SCENARIOS.items():
-        payload = engine.simulate_cycle(
+        payload = scenarios.simulate_cycle(
             T_source=7.0,
             T_sink=40.0,
             speed_ratio=0.7,

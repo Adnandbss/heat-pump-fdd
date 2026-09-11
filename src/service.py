@@ -18,6 +18,7 @@ class FDDService:
     def __init__(self, api_url: str = DEFAULT_API_URL):
         self.api_url = api_url.rstrip("/")
         self._local_engine = None
+        self._local_scenarios = None
 
     def health(self) -> Optional[dict]:
         try:
@@ -39,6 +40,13 @@ class FDDService:
             self._local_engine = FDDEngine()
         return self._local_engine
 
+    def _scenarios(self):
+        if self._local_scenarios is None:
+            from .studies.synthetic.scenarios import SyntheticScenarios
+
+            self._local_scenarios = SyntheticScenarios(self._engine())
+        return self._local_scenarios
+
     def simulate_cycle(
         self,
         T_source: float = 7.0,
@@ -49,7 +57,7 @@ class FDDService:
         **fault_overrides,
     ) -> Tuple[dict, str]:
         if self.health() is None:
-            result = self._engine().simulate_cycle(
+            result = self._scenarios().simulate_cycle(
                 T_source=T_source,
                 T_sink=T_sink,
                 speed_ratio=speed_ratio,
@@ -94,7 +102,7 @@ class FDDService:
     ) -> Tuple[pd.DataFrame, str]:
         if self.health() is None:
             return (
-                self._engine().live_trace(
+                self._scenarios().live_trace(
                     T_source=T_source,
                     T_sink=T_sink,
                     speed_ratio=speed_ratio,
