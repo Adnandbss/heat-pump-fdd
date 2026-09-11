@@ -24,7 +24,7 @@ import warnings
 
 import joblib
 from sklearn.model_selection import (
-    train_test_split, cross_val_score, GridSearchCV, StratifiedKFold
+    cross_val_score, GridSearchCV, StratifiedKFold
 )
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.ensemble import (
@@ -638,49 +638,4 @@ class FDDPipeline:
         
         df = pd.DataFrame(data)
         return df.sort_values('F1 Score', ascending=False).reset_index(drop=True)
-
-
-if __name__ == "__main__":
-    # Test des modèles
-    print("=== Test des Modèles ML pour FDD ===\n")
-    
-    # Générer des données de test
-    from data_generator import FaultDataGenerator, FaultType
-    
-    generator = FaultDataGenerator(random_seed=42)
-    distribution = {
-        FaultType.NORMAL: 0.40,
-        FaultType.CONDENSER_FOULING: 0.30,
-        FaultType.EVAPORATOR_FOULING: 0.30,
-    }
-    
-    print("Génération du dataset...")
-    df = generator.generate_dataset(
-        n_samples=2000,
-        fault_distribution=distribution
-    )
-    
-    feature_cols = generator.get_feature_columns()
-    label_col = generator.get_label_column()
-    
-    # Split
-    X_train, X_test, y_train, y_test = train_test_split(
-        df[feature_cols], df[label_col],
-        test_size=0.3, random_state=42, stratify=df[label_col]
-    )
-    
-    # Tester le pipeline
-    print("\n--- Pipeline Multi-Modèles ---")
-    pipeline = FDDPipeline(random_state=42)
-    pipeline.add_all_models()
-    
-    results = pipeline.fit_evaluate_all(
-        X_train, y_train, X_test, y_test, feature_cols
-    )
-    
-    print("\n--- Tableau Comparatif ---")
-    print(pipeline.get_comparison_table())
-
-
-
 
