@@ -107,6 +107,71 @@ Two traps when using it:
 - Chapter 5 publishes fitted slopes and plots rather than per-test rows. Raw rows come from
   the cooling-mode spreadsheets or from NIST on request.
 
+## Target structure
+
+The repository currently assumes a single study: the simulator is the only data source, and
+that assumption is wired into the shared layers. Supporting a second study — measured NIST
+data — means separating three concerns that are presently mixed.
+
+```
+src/
+├── physics/          the physical model
+│   ├── simulator.py
+│   ├── thermo_lab.py
+│   └── thermodynamic_viz.py
+│
+├── fdd/              the method, shared by every study
+│   ├── features.py       feature contract + Li & Braun residuals
+│   ├── ml_models.py      trainer
+│   └── inference.py      FDDEngine: load a model, diagnose a vector
+│
+└── studies/
+    ├── synthetic/    heating, A7/W40, own taxonomy
+    │   ├── generator.py
+    │   └── taxonomy.py
+    └── nist/         cooling, air-to-air, NIST taxonomy
+        ├── loader.py
+        └── taxonomy.py
+
+outputs/<study>/      models/<study>/
+```
+
+Layering rule: `studies/` may import `fdd/` and `physics/`; `fdd/` may import `physics/`;
+`physics/` imports nothing from the project. Two current edges violate it.
+
+### Coupling 1 — `FDDEngine` contains the synthetic study
+
+`src/inference.py` instantiates `FaultDataGenerator` (line 51), owns `FAULT_PARAM_MAP`
+(line 21) mapping class names to simulator parameters, and exposes `simulate_cycle()`
+(line 84). Those are synthetic-study concerns living inside the shared engine.
+
+Split it by responsibility:
+
+- **diagnose** — load model and metadata, score a feature vector → stays in `fdd/inference.py`
+- **simulate** — build a faulted cycle for the demo → moves to `studies/synthetic/`
+
+This is the same seam as the API split: `/predict` and `/health` are diagnosis, `/simulate`
+and `/live` are the synthetic study driving the demo.
+
+### Coupling 2 — the default baseline is simulated
+
+`features.py::cycle_to_features` falls back to `healthy_cycle()`, which calls the simulator.
+The `baseline=` parameter already allows an external reference to be injected, so no
+signature changes; what is needed is that the default be understood as the synthetic
+study's choice rather than a property of the method.
+
+### What is already safe
+
+`models/fdd_classifier.joblib` contains **no reference to any project module** — only
+scikit-learn classes (`sklearn.ensemble._gb`, `sklearn.calibration`, …). `joblib.dump` saved
+the estimator, not the `FDDClassifier` wrapper. Moving `ml_models.py` will not break model
+loading. `api/` does not move, so the Dockerfile `CMD` is unaffected.
+
+### What breaks silently
+
+`dashboard.py` and `scripts/generate_ml_graphs.py` import from `src` and **no test covers
+them**. They must be updated with everything else or they fail only when someone runs them.
+
 ## Gotcha: the committed model is a pickle
 
 `models/fdd_classifier.joblib` is a pickled scikit-learn `GradientBoosting` estimator
