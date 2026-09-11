@@ -8,7 +8,6 @@ venv/
 .ipynb_checkpoints/
 .pytest_cache/
 .mplconfig/
-outputs/load_analysis/
 .DS_Store
 Thumbs.db
 ~$*
