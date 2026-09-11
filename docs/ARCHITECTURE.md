@@ -51,6 +51,62 @@ A split along that seam is the natural next refactor.
 | `tests/test_features.py` | 24-column contract, feature keys, fault signatures stay distinguishable |
 | `tests/test_api.py` | `FDDEngine` diagnoses, route contracts, schema rejection (skipped without `models/`) |
 
+## Training data
+
+The training set is **entirely synthetic**. No measured data feeds the model.
+
+`main_analysis.py` runs `FaultDataGenerator.generate_dataset()`, which samples operating
+points uniformly from `T_source ∈ (-10, 20) °C`, `T_sink ∈ (30, 55) °C`,
+`speed_ratio ∈ (0.3, 1.0)`, injects a fault by degrading physical parameters in
+`simulator.py` (heat-exchanger `UA`, airflow ratio, refrigerant charge), then adds Gaussian
+measurement noise. The result is written to `outputs/dataset_fdd.csv` — 5000 rows,
+2000 `Normal` and 3000 faulted across 5 fault classes — and that CSV is what both the
+trainer and the dashboard routes read.
+
+`data/nistir_7350_data_in_appendix_d(NF).csv` is **not read by any code**. It is the
+fault-free baseline table from NISTIR 7350, kept as a physical reference.
+
+`FaultType` declares 8 faults, but the default distribution generates 6. Both
+`REFRIGERANT_OVERCHARGE` and `COMPRESSOR_VALVE_LEAK` have a complete `FaultConfig` and
+injection branch that no shipped dataset exercises.
+
+## Known limits
+
+Because the same simulator produces both the training and the test split, and the split is
+random over a densely sampled continuous domain, reported accuracy measures **how
+separable the fault signatures are inside the physical model** — not detection performance
+on hardware. There is no out-of-domain hold-out and no `GroupKFold` over operating
+conditions. Quote the metric accordingly.
+
+The 24 features are residuals against a healthy cycle (`d_COP`, `d_superheat`,
+`d_subcooling`, `d_T_discharge`, `d_W_comp`). That is the design choice that makes transfer
+to measured data plausible, since residuals cancel part of the unit- and sensor-specific
+bias.
+
+## External validation: published NIST datasets
+
+Validation against measured data has not been done. The relevant experiments are public
+and free — NIST publications are US government work.
+
+| Source | Mode | Faults imposed | Relevance |
+|---|---|---|---|
+| [NIST TN 1648](https://nvlpubs.nist.gov/nistpubs/TechnicalNotes/NIST.TN.1648_2009.pdf) (Payne, Yoon & Domanski, 2009) | **Heating** | 6: indoor/outdoor airflow, compressor & four-way valve leakage, liquid-line restriction, over- and undercharge | Closest match. Chapter 5 tabulates feature slopes and residuals vs fault level in SI units, at indoor 21.1 °C with outdoor −8.3 °C and 8.3 °C — inside this simulator's `T_source` range |
+| [NISTIR 7350](https://www.nist.gov/publications/performance-residential-heat-pump-operating-cooling-mode-single-faults-imposed-nistir) (Kim, Payne, Domanski & Hermes, 2006) | Cooling | 7, adding non-condensable gas | Source of the `data/` baseline; faulted tables live in the same report |
+| [NIST FDD Research Data](https://www.nist.gov/el/energy-and-environment-division-73200/hvacr-equipment-performance-group/fault-detection-and) | Cooling | 14 & 16 SEER test campaign | Direct `.xlsx` downloads, including the full 2019 dataset |
+| [NIST TN 1848](https://nvlpubs.nist.gov/nistpubs/technicalnotes/nist.tn.1848.pdf) | — | Installation-fault sensitivity analysis | Context on fault severity ranges |
+
+TN 1648 defines its residuals as *the fault-imposed value minus the fault-free value at the
+same test condition* — the same quantity as the `d_*` features here, which makes the slopes
+directly comparable to a `fan_cond_ratio` or `refrigerant_charge` sweep of the simulator.
+
+Two traps when using it:
+
+- **In heating mode NIST calls the indoor coil the condenser.** Their *Condenser Air Flow
+  Fault* varies indoor airflow. Mapping it onto `fan_cond_ratio` without checking which
+  coil this simulator treats as the condenser validates the wrong sign.
+- Chapter 5 publishes fitted slopes and plots rather than per-test rows. Raw rows come from
+  the cooling-mode spreadsheets or from NIST on request.
+
 ## Gotcha: the committed model is a pickle
 
 `models/fdd_classifier.joblib` is a pickled scikit-learn `GradientBoosting` estimator
