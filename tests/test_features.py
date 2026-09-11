@@ -9,6 +9,13 @@ def test_feature_count():
     assert len(FEATURE_COLUMNS) == 24
 
 
+def test_features_module_has_no_study_taxonomy():
+    import src.features as features
+
+    assert not hasattr(features, "SCENARIOS")
+    assert not hasattr(features, "FAULT_PARAM_MAP")
+
+
 def test_cycle_to_features_keys():
     sim = HeatPumpSimulator()
     result = sim.simulate_cycle(T_source=7, T_sink=40, speed_ratio=0.7)

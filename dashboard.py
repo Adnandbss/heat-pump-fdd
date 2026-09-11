@@ -350,7 +350,8 @@ def prediction_demo(df):
     st.subheader("Live diagnosis")
     service = load_service()
 
-    from src.features import FEATURE_COLUMNS, SCENARIOS
+    from src.features import FEATURE_COLUMNS
+    from src.studies.synthetic.taxonomy import SCENARIOS
 
     scenario = st.selectbox("Preset scenario", list(SCENARIOS.keys()))
     col_a, col_b, col_c = st.columns(3)

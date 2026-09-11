@@ -5,7 +5,8 @@ from pathlib import Path
 import pytest
 
 from src.features import FEATURE_COLUMNS
-from src.studies.synthetic.scenarios import FAULT_PARAM_MAP, SyntheticScenarios
+from src.studies.synthetic.scenarios import SyntheticScenarios
+from src.studies.synthetic.taxonomy import FAULT_PARAM_MAP
 
 MODEL_PATH = Path("models/fdd_classifier.joblib")
 needs_model = pytest.mark.skipif(
@@ -30,9 +31,12 @@ def test_fault_param_map_covers_the_six_demo_classes():
 
 def test_package_reexports_scenarios():
     from src.studies.synthetic import FAULT_PARAM_MAP as exported_map
+    from src.studies.synthetic import SCENARIOS as exported_scenarios
     from src.studies.synthetic import SyntheticScenarios as Exported
+    from src.studies.synthetic.taxonomy import SCENARIOS
 
     assert exported_map is FAULT_PARAM_MAP
+    assert exported_scenarios is SCENARIOS
     assert Exported is SyntheticScenarios
 
 

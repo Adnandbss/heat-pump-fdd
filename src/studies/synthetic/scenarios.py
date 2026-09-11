@@ -10,15 +10,7 @@ import pandas as pd
 from src.data_generator import FaultDataGenerator, FaultType
 from src.features import cycle_to_features
 from src.simulator import CycleResults, HeatPumpSimulator
-
-FAULT_PARAM_MAP = {
-    "Normal": {},
-    "Condenser_Fouling": {"condenser_fouling": 0.40},
-    "Evaporator_Fouling": {"evaporator_fouling": 0.25},
-    "Refrigerant_Undercharge": {"refrigerant_charge": 0.80},
-    "Condenser_Fan_Fault": {"fan_cond_ratio": 0.55},
-    "Evaporator_Fan_Fault": {"fan_evap_ratio": 0.55},
-}
+from src.studies.synthetic.taxonomy import FAULT_PARAM_MAP
 
 
 class SyntheticScenarios:

@@ -59,9 +59,10 @@ from api.schemas import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-from src.features import FEATURE_COLUMNS, SCENARIOS
+from src.features import FEATURE_COLUMNS
 from src.inference import FDDEngine
-from src.studies.synthetic.scenarios import FAULT_PARAM_MAP, SyntheticScenarios
+from src.studies.synthetic.scenarios import SyntheticScenarios
+from src.studies.synthetic.taxonomy import FAULT_PARAM_MAP, SCENARIOS
 from src.thermo_lab import (
     ambient_heatmap,
     ashrae_table,
