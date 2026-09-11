@@ -5,12 +5,13 @@ services:
       - "8000:8000"
     command: uvicorn api.app:app --host 0.0.0.0 --port 8000
 
-  dashboard:
-    build: .
+  web:
+    build:
+      context: ./web
+      args:
+        # Browser origin, not the Docker DNS name `api`.
+        VITE_API_URL: http://localhost:8000
     ports:
-      - "8501:8501"
-    environment:
-      FDD_API_URL: http://api:8000
+      - "5173:5173"
     depends_on:
       - api
-    command: streamlit run dashboard.py --server.port=8501 --server.address=0.0.0.0

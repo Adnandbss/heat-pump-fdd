@@ -16,48 +16,177 @@ from pathlib import Path
 
 st.set_page_config(
     page_title="Heat Pump FDD",
-    page_icon="🔧",
+    page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 PLOTLY_CONFIG = {"displayModeBar": False, "responsive": True}
+PALETTE = ["#8B5CF6", "#6366F1", "#2DD4BF", "#34F5A6", "#F472B6", "#FB923C"]
+FAULT_COLORS = {
+    "Normal": "#34F5A6",
+    "Condenser_Fouling": "#8B5CF6",
+    "Evaporator_Fouling": "#6366F1",
+    "Refrigerant_Undercharge": "#F472B6",
+    "Condenser_Fan_Fault": "#FB923C",
+    "Evaporator_Fan_Fault": "#2DD4BF",
+}
+
+APP_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+html, body, [class*="css"] { font-family: Inter, sans-serif; }
+
+.stApp {
+    background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(139, 92, 246, 0.18), transparent 50%),
+        radial-gradient(900px 500px at 100% 0%, rgba(99, 102, 241, 0.12), transparent 45%),
+        #0B0B12;
+    color: #F1F1F6;
+}
+header[data-testid="stHeader"] { background: rgba(11, 11, 18, 0.7); backdrop-filter: blur(12px); }
+[data-testid="stToolbar"] { right: 1rem; }
+#MainMenu, footer { visibility: hidden; }
+
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #101018 0%, #0C0C14 100%);
+    border-right: 1px solid rgba(255,255,255,0.06);
+}
+[data-testid="stSidebar"] .stMarkdown, [data-testid="stSidebar"] p {
+    color: #C8C8D8;
+}
+
+.brand {
+    display: flex; align-items: center; gap: 12px;
+    padding: 6px 4px 18px 4px; margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.brand-mark {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: linear-gradient(135deg, #8B5CF6, #6366F1);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: white; font-size: 14px;
+    box-shadow: 0 0 24px rgba(139, 92, 246, 0.45);
+}
+.brand-name { font-size: 1.05rem; font-weight: 700; color: #F8F8FC; line-height: 1.2; }
+.brand-role { font-size: 0.75rem; color: #9A9AB4; }
+
+.hero {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 16px; margin: 0 0 1.4rem 0;
+}
+.hero h1 {
+    font-size: 2rem; font-weight: 700; margin: 0;
+    background: linear-gradient(90deg, #F8F8FC, #C4B5FD);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hero p { margin: 6px 0 0 0; color: #9A9AB4; font-size: 0.95rem; }
+
+.status-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.82rem; color: #D0D0E0;
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; }
+.status-dot.ok { background: #34F5A6; box-shadow: 0 0 10px #34F5A6; }
+.status-dot.off { background: #FB923C; }
+
+.kpi-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 18px 18px 16px 18px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    backdrop-filter: blur(10px);
+    min-height: 108px;
+}
+.kpi-label { font-size: 0.78rem; color: #9A9AB4; letter-spacing: 0.04em; text-transform: uppercase; }
+.kpi-value { font-size: 2rem; font-weight: 700; color: #F8F8FC; margin: 6px 0 4px 0; line-height: 1.1; }
+.kpi-hint { font-size: 0.78rem; color: #34F5A6; }
+
+.diag-card {
+    background: rgba(20,20,28,0.7);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 18px;
+}
+.diag-ok { color: #34F5A6; font-size: 1.35rem; font-weight: 700; }
+.diag-fault { color: #F472B6; font-size: 1.2rem; font-weight: 700; }
+
+.stTabs [data-baseweb="tab-list"] {
+    gap: 8px; background: rgba(255,255,255,0.03);
+    padding: 6px; border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+.stTabs [data-baseweb="tab"] {
+    height: 42px; padding: 0 16px; border-radius: 10px;
+    color: #A0A0B8; background: transparent;
+}
+.stTabs [aria-selected="true"] {
+    background: linear-gradient(90deg, #8B5CF6, #6366F1) !important;
+    color: white !important;
+}
+.stTabs [data-baseweb="tab-highlight"] { display: none; }
+
+div[data-testid="stMetric"] {
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 14px 16px;
+}
+div[data-testid="stMetric"] label { color: #9A9AB4 !important; }
+div[data-testid="stMetric"] [data-testid="stMetricValue"] { color: #F8F8FC !important; }
+
+.stButton > button {
+    background: linear-gradient(90deg, #8B5CF6, #6366F1);
+    color: white; border: 0; border-radius: 10px; font-weight: 600;
+}
+.stButton > button:hover { filter: brightness(1.08); }
+
+hr { border-color: rgba(255,255,255,0.06) !important; }
+</style>
+"""
+
+
+def inject_theme():
+    st.markdown(APP_CSS, unsafe_allow_html=True)
+
+
+def style_fig(fig):
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(20,20,28,0.45)",
+        font=dict(color="#E4E4F0", family="Inter, sans-serif", size=12),
+        title_font=dict(size=15, color="#F8F8FC"),
+        legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color="#C8C8D8")),
+        colorway=PALETTE,
+        margin=dict(l=40, r=24, t=56, b=40),
+    )
+    fig.update_xaxes(
+        gridcolor="rgba(255,255,255,0.06)",
+        zerolinecolor="rgba(255,255,255,0.08)",
+        color="#A0A0B8",
+    )
+    fig.update_yaxes(
+        gridcolor="rgba(255,255,255,0.06)",
+        zerolinecolor="rgba(255,255,255,0.08)",
+        color="#A0A0B8",
+    )
+    return fig
 
 
 def show_chart(fig):
-    """Render a Plotly figure without Streamlit layout warnings."""
-    st.plotly_chart(fig, width="stretch", config=PLOTLY_CONFIG)
+    """Render a Plotly figure in the dark glass theme."""
+    st.plotly_chart(style_fig(fig), width="stretch", config=PLOTLY_CONFIG)
 
-# Style CSS personnalisé
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #1E3A5F;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-    }
-    .fault-normal { color: #28a745; font-weight: bold; }
-    .fault-warning { color: #ffc107; font-weight: bold; }
-    .fault-danger { color: #dc3545; font-weight: bold; }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        padding-left: 20px;
-        padding-right: 20px;
-    }
-</style>
-""", unsafe_allow_html=True)
+
+def kpi_card(label: str, value: str, hint: str = "") -> None:
+    st.markdown(
+        f'<div class="kpi-card"><div class="kpi-label">{label}</div>'
+        f'<div class="kpi-value">{value}</div>'
+        f'<div class="kpi-hint">{hint}</div></div>',
+        unsafe_allow_html=True,
+    )
 
 
 def read_csv_auto(path: str) -> pd.DataFrame:
@@ -91,27 +220,31 @@ def load_data():
 
 
 def create_gauge_chart(value, title, color_scale):
-    """Crée un graphique jauge."""
+    """Semi-circular performance gauge."""
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=value * 100,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': title, 'font': {'size': 16}},
-        number={'suffix': '%', 'font': {'size': 24}},
+        title={'text': title, 'font': {'size': 14, 'color': '#C8C8D8'}},
+        number={'suffix': '%', 'font': {'size': 28, 'color': '#F8F8FC'}},
         gauge={
-            'axis': {'range': [0, 100], 'tickwidth': 1},
-            'bar': {'color': color_scale},
-            'bgcolor': "white",
-            'borderwidth': 2,
-            'bordercolor': "gray",
+            'axis': {'range': [0, 100], 'tickwidth': 0, 'tickcolor': '#3A3A4A'},
+            'bar': {'color': color_scale, 'thickness': 0.28},
+            'bgcolor': 'rgba(255,255,255,0.03)',
+            'borderwidth': 0,
             'steps': [
-                {'range': [0, 60], 'color': '#ffcdd2'},
-                {'range': [60, 80], 'color': '#fff9c4'},
-                {'range': [80, 100], 'color': '#c8e6c9'}
+                {'range': [0, 70], 'color': 'rgba(255,255,255,0.04)'},
+                {'range': [70, 90], 'color': 'rgba(139,92,246,0.18)'},
+                {'range': [90, 100], 'color': 'rgba(52,245,166,0.18)'},
             ],
+            'threshold': {
+                'line': {'color': '#34F5A6', 'width': 2},
+                'thickness': 0.8,
+                'value': 95,
+            },
         }
     ))
-    fig.update_layout(height=250, margin=dict(l=20, r=20, t=40, b=20))
+    fig.update_layout(height=220, margin=dict(l=16, r=16, t=48, b=8))
     return fig
 
 
@@ -128,7 +261,7 @@ def create_feature_distribution(df, feature, fault_col='fault_type'):
         df, x=fault_col, y=feature,
         color=fault_col,
         title=f"Distribution of {feature} by fault type",
-        color_discrete_sequence=px.colors.qualitative.Set2
+        color_discrete_sequence=PALETTE
     )
     fig.update_layout(height=400, showlegend=False)
     return fig
@@ -141,7 +274,7 @@ def create_scatter_matrix(df, features, fault_col='fault_type'):
         dimensions=features[:4],  # Limiter à 4 pour lisibilité
         color=fault_col,
         title="Feature scatter matrix",
-        color_discrete_sequence=px.colors.qualitative.Set2
+        color_discrete_sequence=PALETTE
     )
     fig.update_layout(height=600)
     return fig
@@ -153,7 +286,7 @@ def create_radar_chart(comparison_df):
     
     fig = go.Figure()
     
-    colors = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA']
+    colors = PALETTE
     
     for i, (_, row) in enumerate(comparison_df.iterrows()):
         values = [row.get(m, 0) for m in metrics]
@@ -169,7 +302,14 @@ def create_radar_chart(comparison_df):
         ))
     
     fig.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
+        polar=dict(
+            bgcolor="rgba(20,20,28,0.35)",
+            radialaxis=dict(
+                visible=True, range=[0, 1],
+                gridcolor="rgba(255,255,255,0.08)", color="#A0A0B8",
+            ),
+            angularaxis=dict(gridcolor="rgba(255,255,255,0.08)", color="#A0A0B8"),
+        ),
         showlegend=True,
         title="Multi-metric model comparison",
         height=450
@@ -187,7 +327,7 @@ def plot_real_confusion_matrix(cm_df: pd.DataFrame):
         labels=dict(x="Prediction", y="True label", color="Share"),
         x=labels,
         y=list(cm_df.index),
-        color_continuous_scale="Blues",
+        color_continuous_scale=[[0, "#14141C"], [0.5, "#5B21B6"], [1, "#C4B5FD"]],
         aspect="auto",
         zmin=0,
         zmax=1,
@@ -199,7 +339,7 @@ def plot_real_confusion_matrix(cm_df: pd.DataFrame):
                 y=i,
                 text=f"{values[i, j]:.2f}",
                 showarrow=False,
-                font=dict(color="white" if values[i, j] > 0.5 else "black"),
+                font=dict(color="white" if values[i, j] > 0.5 else "#C8C8D8"),
             )
     fig.update_layout(title="Confusion matrix (held-out test set)", height=520)
     return fig
@@ -240,10 +380,11 @@ def prediction_demo(df):
     st.caption(f"{spec['description']} · inference via **{mode}**")
     left, right = st.columns([1, 2])
     with left:
-        if diagnosis["label"] == "Normal":
-            st.success(f"**{diagnosis['label']}**")
-        else:
-            st.error(f"**{diagnosis['label']}**")
+        css = "diag-ok" if diagnosis["label"] == "Normal" else "diag-fault"
+        st.markdown(
+            f'<div class="diag-card"><div class="{css}">{diagnosis["label"]}</div></div>',
+            unsafe_allow_html=True,
+        )
         st.metric("Confidence", f"{diagnosis['confidence']*100:.1f}%")
         st.metric("COP", f"{cycle['COP']:.2f}")
         st.metric("T_discharge", f"{cycle['T_discharge']:.1f} °C")
@@ -323,13 +464,23 @@ def live_fdd_tab():
         cols=2,
         subplot_titles=("P_cond", "P_evap", "COP", "Confidence"),
     )
-    fig.add_trace(go.Scatter(x=trace["t"], y=trace["P_cond"], name="P_cond"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=trace["t"], y=trace["P_evap"], name="P_evap"), row=1, col=2)
-    fig.add_trace(go.Scatter(x=trace["t"], y=trace["COP"], name="COP"), row=2, col=1)
     fig.add_trace(
-        go.Scatter(x=trace["t"], y=trace["confidence"], name="confidence"), row=2, col=2
+        go.Scatter(x=trace["t"], y=trace["P_cond"], name="P_cond",
+                   line=dict(color="#8B5CF6", width=2.4)), row=1, col=1
     )
-    fig.add_vline(x=inject_at, line_dash="dash", line_color="red")
+    fig.add_trace(
+        go.Scatter(x=trace["t"], y=trace["P_evap"], name="P_evap",
+                   line=dict(color="#2DD4BF", width=2.4)), row=1, col=2
+    )
+    fig.add_trace(
+        go.Scatter(x=trace["t"], y=trace["COP"], name="COP",
+                   line=dict(color="#34F5A6", width=2.4)), row=2, col=1
+    )
+    fig.add_trace(
+        go.Scatter(x=trace["t"], y=trace["confidence"], name="confidence",
+                   line=dict(color="#A78BFA", width=2.4)), row=2, col=2
+    )
+    fig.add_vline(x=inject_at, line_dash="dash", line_color="#F472B6")
     fig.update_layout(
         height=560,
         showlegend=False,
@@ -343,32 +494,53 @@ def live_fdd_tab():
 
 
 def main():
-    """Fonction principale du dashboard."""
-    
-    # Header
-    st.markdown('<h1 class="main-header">Heat Pump FDD</h1>',
-                unsafe_allow_html=True)
-    st.markdown("**Fault Detection & Diagnostics** | CoolProp R410A cycle + Gradient Boosting")
-    
+    inject_theme()
     data = load_data()
-    
-    st.sidebar.image("https://img.icons8.com/color/96/000000/heat-pump.png", width=80)
-    st.sidebar.title("Navigation")
-
     service = load_service()
     api_health = service.health()
+
+    st.sidebar.markdown(
+        '<div class="brand"><div class="brand-mark">HP</div>'
+        '<div><div class="brand-name">HeatPump FDD</div>'
+        '<div class="brand-role">Fault diagnostics</div></div></div>',
+        unsafe_allow_html=True,
+    )
     if api_health:
-        st.sidebar.success(f"API connected · {api_health.get('model', 'FDD')}")
+        st.sidebar.markdown(
+            f'<div class="status-pill"><span class="status-dot ok"></span>'
+            f'API · {api_health.get("model", "FDD")}</div>',
+            unsafe_allow_html=True,
+        )
     else:
-        st.sidebar.info("Local engine (start `uvicorn api.app:app` to use the API)")
-    
-    if "synthetic" in data:
-        df = data["synthetic"]
-        comparison_df = data.get("synth_comparison", pd.DataFrame())
-        st.sidebar.success(f"{len(df)} samples loaded")
-    else:
+        st.sidebar.markdown(
+            '<div class="status-pill"><span class="status-dot off"></span>'
+            "Local engine</div>",
+            unsafe_allow_html=True,
+        )
+
+    if "synthetic" not in data:
         st.error("No dataset found. Run `python main_analysis.py` first.")
         return
+
+    df = data["synthetic"]
+    comparison_df = data.get("synth_comparison", pd.DataFrame())
+    st.sidebar.caption(f"{len(df):,} labelled cycles")
+
+    st.markdown(
+        f"""
+        <div class="hero">
+          <div>
+            <h1>Insights</h1>
+            <p>CoolProp R410A cycle · calibrated Gradient Boosting</p>
+          </div>
+          <div class="status-pill">
+            <span class="status-dot {'ok' if api_health else 'off'}"></span>
+            {'API connected' if api_health else 'Local inference'}
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     
     # Tabs principaux
     tabs = st.tabs([
@@ -386,21 +558,19 @@ def main():
     # =========================
     with tabs[0]:
         st.header("Dataset overview")
-        
+        n_faults = len(df["fault_type"].unique())
+        normal_pct = (df["fault_type"] == "Normal").mean() * 100
+        best_acc = comparison_df["Accuracy"].max() * 100 if len(comparison_df) else 0
+
         col1, col2, col3, col4 = st.columns(4)
-        
         with col1:
-            st.metric("Samples", len(df))
+            kpi_card("Samples", f"{len(df):,}", "CoolProp synthetic set")
         with col2:
-            n_faults = len(df['fault_type'].unique())
-            st.metric("Fault classes", n_faults)
+            kpi_card("Fault classes", str(n_faults), "including Normal")
         with col3:
-            normal_pct = (df['fault_type'] == 'Normal').mean() * 100
-            st.metric("% Normal", f"{normal_pct:.1f}%")
+            kpi_card("% Normal", f"{normal_pct:.1f}%", "healthy operating points")
         with col4:
-            if len(comparison_df) > 0:
-                best_acc = comparison_df['Accuracy'].max() * 100
-                st.metric("Best accuracy", f"{best_acc:.1f}%")
+            kpi_card("Best accuracy", f"{best_acc:.1f}%", "hold-out Gradient Boosting")
         
         st.markdown("---")
         
@@ -413,7 +583,7 @@ def main():
                 values=fault_counts.values,
                 names=fault_counts.index,
                 title="Fault class distribution",
-                color_discrete_sequence=px.colors.qualitative.Set2,
+                color_discrete_sequence=PALETTE,
                 hole=0.4
             )
             fig_pie.update_layout(height=400)
@@ -425,7 +595,7 @@ def main():
                 y=fault_counts.values,
                 title="Samples per class",
                 color=fault_counts.index,
-                color_discrete_sequence=px.colors.qualitative.Set2
+                color_discrete_sequence=PALETTE
             )
             fig_bar.update_layout(height=400, showlegend=False)
             show_chart(fig_bar)
@@ -467,7 +637,7 @@ def main():
         fig_scatter = px.scatter(
             df, x=x_var, y=y_var, color='fault_type',
             title=f"Relation {x_var} vs {y_var}",
-            color_discrete_sequence=px.colors.qualitative.Set2,
+            color_discrete_sequence=PALETTE,
             opacity=0.7
         )
         fig_scatter.update_layout(height=500)
@@ -490,19 +660,19 @@ def main():
             best_model = comparison_df.iloc[0]
             
             with col_g1:
-                fig_acc = create_gauge_chart(best_model['Accuracy'], "Accuracy", "#667eea")
+                fig_acc = create_gauge_chart(best_model['Accuracy'], "Accuracy", "#8B5CF6")
                 show_chart(fig_acc)
             
             with col_g2:
-                fig_prec = create_gauge_chart(best_model['Precision'], "Precision", "#00CC96")
+                fig_prec = create_gauge_chart(best_model['Precision'], "Precision", "#2DD4BF")
                 show_chart(fig_prec)
             
             with col_g3:
-                fig_rec = create_gauge_chart(best_model['Recall'], "Recall", "#EF553B")
+                fig_rec = create_gauge_chart(best_model['Recall'], "Recall", "#F472B6")
                 show_chart(fig_rec)
             
             with col_g4:
-                fig_f1 = create_gauge_chart(best_model['F1 Score'], "F1 Score", "#AB63FA")
+                fig_f1 = create_gauge_chart(best_model['F1 Score'], "F1 Score", "#A78BFA")
                 show_chart(fig_f1)
             
             st.markdown("---")
@@ -536,7 +706,7 @@ def main():
                 x='Model', y='value', color='variable',
                 barmode='group',
                 title="Detailed model comparison",
-                color_discrete_sequence=['#636EFA', '#00CC96', '#EF553B', '#AB63FA']
+                color_discrete_sequence=PALETTE[:4]
             )
             fig_comp_bar.update_layout(height=400)
             show_chart(fig_comp_bar)
@@ -1567,7 +1737,7 @@ def main():
                 x=fault_by_temp.columns,
                 y=fault_by_temp.index,
                 title="Faults by ambient temperature",
-                color_continuous_scale='YlOrRd'
+            color_continuous_scale=[[0, "#14141C"], [1, "#8B5CF6"]]
             )
             fig_heatmap.update_layout(height=400)
             show_chart(fig_heatmap)
@@ -1576,9 +1746,8 @@ def main():
     st.markdown("---")
     st.markdown(
         """
-        <div style='text-align: center; color: gray;'>
-            <p>Heat Pump FDD | Streamlit + Plotly</p>
-            <p>Heat pump FDD | CoolProp cycle model + Gradient Boosting</p>
+        <div style='text-align:center;color:#7A7A90;padding:8px 0 20px 0;font-size:0.85rem;'>
+            HeatPump FDD · CoolProp cycle · calibrated Gradient Boosting
         </div>
         """,
         unsafe_allow_html=True

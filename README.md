@@ -1,6 +1,6 @@
 # Heat Pump Fault Detection & Diagnostics
 
-Closed-loop FDD for a vapour-compression heat pump: CoolProp R410A cycle → 24 features (including residuals vs a healthy cycle) → calibrated Gradient Boosting → FastAPI + Streamlit.
+Closed-loop FDD for a vapour-compression heat pump: CoolProp R410A cycle → 24 features (including residuals vs a healthy cycle) → calibrated Gradient Boosting → FastAPI + React dashboard.
 
 Built as a **portfolio product**, not a lab notebook: a recruiter can clone, run, and watch the model switch from `Normal` to `Condenser_Fouling` when condenser fouling is injected.
 
@@ -8,23 +8,27 @@ Built as a **portfolio product**, not a lab notebook: a recruiter can clone, run
 
 ## 60-second demo
 
-1. `pip install -r requirements.txt && streamlit run dashboard.py`
-2. Open **Live FDD**, inject `Condenser_Fouling`.
-3. `P_cond` rises, COP drops, the label switches after the red injection line.
-
-Optional API (the dashboard uses it when it is up, otherwise a local engine):
-
 ```bash
-uvicorn api.app:app --reload    # http://localhost:8000/docs
+pip install -r requirements.txt
+uvicorn api.app:app --reload          # http://localhost:8000/docs
+cd web && npm install && npm run dev  # http://localhost:5173
 ```
 
-Docker:
+The glass dashboard loads COP, class mix, a fouling injection trace, and scenario status from `GET /api/stats`, `/api/overview`, `/api/activity`, and `/api/challenges`.
+
+Streamlit (`dashboard.py`) is still in the repo for P-h diagrams and manual inject controls:
+
+```bash
+streamlit run dashboard.py            # http://localhost:8501
+```
+
+Docker (API + React; Streamlit is not in the compose path):
 
 ```bash
 docker compose up --build
 ```
 
-The compose stack wires Streamlit to `http://api:8000`.
+Then open `http://localhost:5173`. The browser talks to `http://localhost:8000`.
 
 ## Why it exists
 
@@ -45,10 +49,9 @@ flowchart LR
     feat[24 features]
     model[GradientBoosting.joblib]
     api[FastAPI]
-    ui[Streamlit]
+    web[React Vite]
 
-    sim --> feat --> model --> api --> ui
-    sim --> ui
+    sim --> feat --> model --> api --> web
 ```
 
 | Path | Role |
@@ -57,9 +60,10 @@ flowchart LR
 | `src/data_generator.py` | 5000 labelled operating points |
 | `src/ml_models.py` | Random Forest + tuned / calibrated Gradient Boosting |
 | `src/inference.py` | Shared predict / simulate / live_trace |
-| `src/service.py` | Dashboard client: API first, local fallback |
-| `api/app.py` | `GET /health`, `POST /predict`, `POST /simulate`, `POST /live` |
-| `dashboard.py` | Exploration, diagnosis, live FDD, P-h diagrams |
+| `src/service.py` | Streamlit client: API first, local fallback |
+| `api/app.py` | `GET /health`, `POST /predict`, `POST /simulate`, `POST /live`, `GET /api/*` |
+| `web/` | Glassmorphism dashboard (primary UI) |
+| `dashboard.py` | Leftover Streamlit: exploration, live inject, P-h diagrams |
 | `models/` | Serialized classifier + metadata |
 
 ## Faults
