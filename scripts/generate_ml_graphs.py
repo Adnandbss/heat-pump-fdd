@@ -19,9 +19,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.fdd.ml_models import FDDClassifier
+from src.studies.synthetic.paths import DATASET_PATH, OUTPUTS
 
-OUTPUT_DIR = ROOT / "outputs" / "ml_graphs"
-DATASET_PATH = ROOT / "outputs" / "dataset_fdd.csv"
+OUTPUT_DIR = OUTPUTS / "ml_graphs"
 
 
 def _read_dataset() -> pd.DataFrame:

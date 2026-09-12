@@ -70,15 +70,14 @@ from src.physics.thermo_lab import (
     sweep_deltas,
 )
 from src.physics.thermodynamic_viz import HAS_COOLPROP, ThermodynamicVisualizer
+from src.studies.synthetic.paths import (
+    COMPARISON_PATH,
+    CONFUSION_PATH,
+    DATASET_PATH,
+    IMPORTANCE_PATH,
+)
 from src.studies.synthetic.scenarios import SyntheticScenarios
 from src.studies.synthetic.taxonomy import FAULT_PARAM_MAP, SCENARIOS
-
-ROOT = Path(__file__).resolve().parent.parent
-OUTPUTS = ROOT / "outputs"
-DATASET_PATH = OUTPUTS / "dataset_fdd.csv"
-COMPARISON_PATH = OUTPUTS / "model_comparison.csv"
-CONFUSION_PATH = OUTPUTS / "confusion_matrix.csv"
-IMPORTANCE_PATH = OUTPUTS / "feature_importance.csv"
 
 app = FastAPI(
     title="Heat Pump FDD API",

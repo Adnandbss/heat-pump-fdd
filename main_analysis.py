@@ -11,8 +11,8 @@ Usage:
     python main_analysis.py
 
 Outputs:
-    - outputs/dataset_fdd.csv : Dataset généré
-    - outputs/model_comparison.csv : Comparaison des modèles
+    - outputs/synthetic/dataset.csv : Dataset généré
+    - outputs/synthetic/model_comparison.csv : Comparaison des modèles
     - outputs/*.png : Visualisations
 """
 
@@ -40,6 +40,7 @@ from sklearn.model_selection import train_test_split
 from src.fdd.ml_models import FDDClassifier, FDDPipeline
 from src.fdd.visualization import FDDVisualizer
 from src.studies.synthetic.generator import FaultDataGenerator, FaultType
+from src.studies.synthetic.paths import MODELS, OUTPUTS, STUDY
 
 
 def print_header(title: str):
@@ -59,8 +60,8 @@ def main():
     # Configuration
     N_SAMPLES = 5000
     RANDOM_SEED = 42
-    OUTPUT_DIR = "outputs"
-    MODEL_DIR = "models"
+    OUTPUT_DIR = str(OUTPUTS)
+    MODEL_DIR = str(MODELS)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     os.makedirs(MODEL_DIR, exist_ok=True)
     
@@ -106,8 +107,8 @@ def main():
         print(f"   {fault:30} | {count:5} ({pct:5.1f}%) {bar}")
     
     # Sauvegarder le dataset
-    df.to_csv(f'{OUTPUT_DIR}/dataset_fdd.csv', index=False, sep=',')
-    print(f"\n💾 Dataset sauvegardé: {OUTPUT_DIR}/dataset_fdd.csv")
+    df.to_csv(f'{OUTPUT_DIR}/dataset.csv', index=False, sep=',')
+    print(f"\n💾 Dataset sauvegardé: {OUTPUT_DIR}/dataset.csv")
     
     # =========================================================================
     # 2. PRÉPARATION DES DONNÉES
@@ -212,7 +213,7 @@ def main():
         'y_pred': best_result.predictions,
     }).to_csv(f'{OUTPUT_DIR}/test_predictions.csv', index=False)
 
-    model_path = os.path.join(MODEL_DIR, 'fdd_classifier.joblib')
+    model_path = os.path.join(MODEL_DIR, 'classifier.joblib')
     best_classifier.save(model_path)
     from sklearn.metrics import classification_report as _cls_report
 
@@ -237,6 +238,10 @@ def main():
         'classes': labels,
         'coolprop': True,
         'calibrated': best_classifier.model_type == 'gradient_boosting',
+        'study': STUDY,
+        'mode': 'heating',
+        'source': 'simulator',
+        'taxonomy': 'project-6class',
     }
     with open(os.path.join(MODEL_DIR, 'metadata.json'), 'w', encoding='utf-8') as f:
         json.dump(metadata, f, indent=2)
@@ -380,16 +385,12 @@ def main():
     
     print(f"""
     📁 Fichiers générés dans {OUTPUT_DIR}/:
-       - dataset_fdd.csv
+       - dataset.csv
        - model_comparison.csv
        - feature_importance.csv
-       - confusion_matrix.png
-       - model_comparison.png
-       - feature_importance.png
-       - data_distribution.png
        - confusion_matrix.csv
        - test_predictions.csv
-       - models/fdd_classifier.joblib
+       - models/synthetic/classifier.joblib
     """)
     
     print("=" * 70)

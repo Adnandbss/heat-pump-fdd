@@ -64,7 +64,7 @@ flowchart LR
 | `api/app.py` | `GET /health`, `POST /predict`, `POST /simulate`, `POST /live`, `GET /api/*` |
 | `web/` | Glassmorphism dashboard (primary UI) |
 | `dashboard.py` | Leftover Streamlit: exploration, live inject, P-h diagrams |
-| `models/` | Serialized classifier + metadata |
+| `models/synthetic/` | Serialized classifier + metadata |
 
 ## Faults
 

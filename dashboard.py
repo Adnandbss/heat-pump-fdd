@@ -202,12 +202,20 @@ def load_data():
     """Charge les données depuis les fichiers générés."""
     data = {}
 
+    from src.studies.synthetic.paths import (
+        COMPARISON_PATH,
+        CONFUSION_PATH,
+        DATASET_PATH,
+        IMPORTANCE_PATH,
+        PREDICTIONS_PATH,
+    )
+
     files = {
-        "synthetic": "outputs/dataset_fdd.csv",
-        "synth_comparison": "outputs/model_comparison.csv",
-        "feature_importance": "outputs/feature_importance.csv",
-        "confusion_matrix": "outputs/confusion_matrix.csv",
-        "test_predictions": "outputs/test_predictions.csv",
+        "synthetic": str(DATASET_PATH),
+        "synth_comparison": str(COMPARISON_PATH),
+        "feature_importance": str(IMPORTANCE_PATH),
+        "confusion_matrix": str(CONFUSION_PATH),
+        "test_predictions": str(PREDICTIONS_PATH),
     }
     for key, path in files.items():
         if os.path.exists(path):
