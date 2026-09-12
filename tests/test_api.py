@@ -1,11 +1,11 @@
 """Inference and API contract tests."""
 
-from pathlib import Path
-
 import pytest
 from fastapi.testclient import TestClient
 
-MODEL_PATH = Path("models/fdd_classifier.joblib")
+from src.studies.synthetic.paths import CLASSIFIER_PATH
+
+MODEL_PATH = CLASSIFIER_PATH
 
 
 @pytest.mark.skipif(not MODEL_PATH.exists(), reason="Train the model with main_analysis.py first")

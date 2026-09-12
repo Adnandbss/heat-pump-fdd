@@ -12,8 +12,9 @@ from .features import FEATURE_COLUMNS
 from .ml_models import FDDClassifier
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_MODEL_PATH = ROOT / "models" / "fdd_classifier.joblib"
-DEFAULT_METADATA_PATH = ROOT / "models" / "metadata.json"
+# Shipped demo lives under the synthetic study. Callers can pass another study.
+DEFAULT_MODEL_PATH = ROOT / "models" / "synthetic" / "classifier.joblib"
+DEFAULT_METADATA_PATH = ROOT / "models" / "synthetic" / "metadata.json"
 
 
 class FDDEngine:

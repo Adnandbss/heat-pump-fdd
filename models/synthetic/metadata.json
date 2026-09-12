@@ -50,5 +50,9 @@
     "Refrigerant_Undercharge"
   ],
   "coolprop": true,
-  "calibrated": true
+  "calibrated": true,
+  "study": "synthetic",
+  "mode": "heating",
+  "source": "simulator",
+  "taxonomy": "project-6class"
 }

@@ -1,14 +1,13 @@
 """Synthetic study: inject a fault, then diagnose through FDDEngine."""
 
-from pathlib import Path
-
 import pytest
 
 from src.fdd.features import FEATURE_COLUMNS
+from src.studies.synthetic.paths import CLASSIFIER_PATH
 from src.studies.synthetic.scenarios import SyntheticScenarios
 from src.studies.synthetic.taxonomy import FAULT_PARAM_MAP
 
-MODEL_PATH = Path("models/fdd_classifier.joblib")
+MODEL_PATH = CLASSIFIER_PATH
 needs_model = pytest.mark.skipif(
     not MODEL_PATH.exists(), reason="Train the model with main_analysis.py first"
 )

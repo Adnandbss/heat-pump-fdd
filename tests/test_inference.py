@@ -1,13 +1,12 @@
 """FDDEngine diagnoses a feature vector; it does not own the synthetic study."""
 
-from pathlib import Path
-
 import pytest
 
 from src.fdd.features import FEATURE_COLUMNS, cycle_to_features
 from src.physics.simulator import HeatPumpSimulator
+from src.studies.synthetic.paths import CLASSIFIER_PATH
 
-MODEL_PATH = Path("models/fdd_classifier.joblib")
+MODEL_PATH = CLASSIFIER_PATH
 needs_model = pytest.mark.skipif(
     not MODEL_PATH.exists(), reason="Train the model with main_analysis.py first"
 )
