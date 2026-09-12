@@ -1,6 +1,6 @@
 """Thermodynamic sanity checks."""
 
-from src.simulator import HAS_COOLPROP, HeatPumpSimulator, RefrigerantProperties
+from src.physics.simulator import HAS_COOLPROP, HeatPumpSimulator, RefrigerantProperties
 
 
 def test_r410a_saturation_pressure_at_0c():

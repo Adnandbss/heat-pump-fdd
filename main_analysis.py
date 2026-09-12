@@ -37,9 +37,9 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 # Imports du projet
-from src.data_generator import FaultDataGenerator, FaultType
-from src.ml_models import FDDClassifier, FDDPipeline
-from src.visualization import FDDVisualizer
+from src.fdd.ml_models import FDDClassifier, FDDPipeline
+from src.fdd.visualization import FDDVisualizer
+from src.studies.synthetic.generator import FaultDataGenerator, FaultType
 
 
 def print_header(title: str):
@@ -330,7 +330,7 @@ def main():
     # =========================================================================
     print_header("7. DÉMONSTRATION DE DIAGNOSTIC")
     
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
     from src.studies.synthetic.scenarios import SyntheticScenarios
 
     engine = FDDEngine(model_path)

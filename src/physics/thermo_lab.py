@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
-from src.thermodynamic_viz import HAS_COOLPROP, R410A
+from .thermodynamic_viz import HAS_COOLPROP, R410A
 
 FLUID = "R410A"
 ETA_IS = 0.75

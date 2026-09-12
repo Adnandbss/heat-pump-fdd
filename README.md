@@ -56,10 +56,10 @@ flowchart LR
 
 | Path | Role |
 |---|---|
-| `src/simulator.py` | Cycle model, CoolProp R410A, fault physics |
-| `src/data_generator.py` | 5000 labelled operating points |
-| `src/ml_models.py` | Random Forest + tuned / calibrated Gradient Boosting |
-| `src/inference.py` | Shared predict / simulate / live_trace |
+| `src/physics/simulator.py` | Cycle model, CoolProp R410A, fault physics |
+| `src/studies/synthetic/generator.py` | 5000 labelled operating points |
+| `src/fdd/ml_models.py` | Random Forest + tuned / calibrated Gradient Boosting |
+| `src/fdd/inference.py` | Load the model and diagnose a feature vector |
 | `src/service.py` | Streamlit client: API first, local fallback |
 | `api/app.py` | `GET /health`, `POST /predict`, `POST /simulate`, `POST /live`, `GET /api/*` |
 | `web/` | Glassmorphism dashboard (primary UI) |

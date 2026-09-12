@@ -7,9 +7,9 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from src.data_generator import FaultDataGenerator, FaultType
-from src.features import cycle_to_features
-from src.simulator import CycleResults, HeatPumpSimulator
+from src.fdd.features import cycle_to_features
+from src.physics.simulator import CycleResults, HeatPumpSimulator
+from src.studies.synthetic.generator import FaultDataGenerator, FaultType
 from src.studies.synthetic.taxonomy import FAULT_PARAM_MAP
 
 

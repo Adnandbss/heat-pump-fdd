@@ -22,8 +22,8 @@ from dataclasses import dataclass
 from enum import Enum
 from tqdm import tqdm
 
-from .simulator import HeatPumpSimulator
-from .features import FEATURE_COLUMNS, cycle_to_features
+from ...fdd.features import FEATURE_COLUMNS, cycle_to_features
+from ...physics.simulator import HeatPumpSimulator
 
 
 class FaultType(Enum):

@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from src.features import FEATURE_COLUMNS, cycle_to_features
-from src.simulator import HeatPumpSimulator
+from src.fdd.features import FEATURE_COLUMNS, cycle_to_features
+from src.physics.simulator import HeatPumpSimulator
 
 MODEL_PATH = Path("models/fdd_classifier.joblib")
 needs_model = pytest.mark.skipif(
@@ -15,7 +15,7 @@ needs_model = pytest.mark.skipif(
 
 @needs_model
 def test_engine_has_no_synthetic_study_api():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
 
     engine = FDDEngine()
     assert not hasattr(engine, "simulate_cycle")
@@ -26,14 +26,14 @@ def test_engine_has_no_synthetic_study_api():
 
 @needs_model
 def test_engine_does_not_export_fault_param_map():
-    import src.inference as inference
+    import src.fdd.inference as inference
 
     assert not hasattr(inference, "FAULT_PARAM_MAP")
 
 
 @needs_model
 def test_engine_predicts_from_a_feature_vector():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
 
     engine = FDDEngine()
     sim = HeatPumpSimulator()
@@ -49,7 +49,7 @@ def test_engine_predicts_from_a_feature_vector():
 
 @needs_model
 def test_engine_predicts_from_a_dataframe():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
     import pandas as pd
 
     engine = FDDEngine()
@@ -63,7 +63,7 @@ def test_engine_predicts_from_a_dataframe():
 
 @needs_model
 def test_engine_rejects_missing_features():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
 
     engine = FDDEngine()
     with pytest.raises(ValueError, match="Missing features"):
@@ -72,7 +72,7 @@ def test_engine_rejects_missing_features():
 
 @needs_model
 def test_engine_feature_names_match_contract():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
 
     engine = FDDEngine()
     assert list(engine.feature_names) == FEATURE_COLUMNS

@@ -17,6 +17,6 @@ def test_scenario_params_match_the_fault_map():
 
 
 def test_features_does_not_own_scenarios():
-    import src.features as features
+    import src.fdd.features as features
 
     assert not hasattr(features, "SCENARIOS")

@@ -10,7 +10,7 @@ MODEL_PATH = Path("models/fdd_classifier.joblib")
 
 @pytest.mark.skipif(not MODEL_PATH.exists(), reason="Train the model with main_analysis.py first")
 def test_normal_point_is_diagnosed():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
     from src.studies.synthetic.scenarios import SyntheticScenarios
 
     engine = FDDEngine()
@@ -24,7 +24,7 @@ def test_normal_point_is_diagnosed():
 
 @pytest.mark.skipif(not MODEL_PATH.exists(), reason="Train the model with main_analysis.py first")
 def test_condenser_fouling_is_not_confused_with_fan():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
     from src.studies.synthetic.scenarios import SyntheticScenarios
 
     engine = FDDEngine()
@@ -207,7 +207,7 @@ def test_pydantic_contracts_reject_unknown_fault():
 
 def test_feature_vector_and_diagnosis_schemas():
     from api.schemas import Diagnosis, FeatureVector, SimulateResponse
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
     from src.studies.synthetic.scenarios import SyntheticScenarios
 
     if not MODEL_PATH.exists():
