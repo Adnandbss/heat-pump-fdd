@@ -35,7 +35,7 @@ class FDDService:
 
     def _engine(self):
         if self._local_engine is None:
-            from .inference import FDDEngine
+            from .fdd.inference import FDDEngine
 
             self._local_engine = FDDEngine()
         return self._local_engine

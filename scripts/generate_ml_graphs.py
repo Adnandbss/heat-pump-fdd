@@ -18,7 +18,7 @@ from sklearn.preprocessing import StandardScaler
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.ml_models import FDDClassifier
+from src.fdd.ml_models import FDDClassifier
 
 OUTPUT_DIR = ROOT / "outputs" / "ml_graphs"
 DATASET_PATH = ROOT / "outputs" / "dataset_fdd.csv"

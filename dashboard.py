@@ -350,7 +350,7 @@ def prediction_demo(df):
     st.subheader("Live diagnosis")
     service = load_service()
 
-    from src.features import FEATURE_COLUMNS
+    from src.fdd.features import FEATURE_COLUMNS
     from src.studies.synthetic.taxonomy import SCENARIOS
 
     scenario = st.selectbox("Preset scenario", list(SCENARIOS.keys()))
@@ -739,7 +739,7 @@ def main():
         
         # Import du module thermodynamique
         try:
-            from src.thermodynamic_viz import ThermodynamicVisualizer, create_pressure_temperature_chart
+            from src.physics.thermodynamic_viz import ThermodynamicVisualizer, create_pressure_temperature_chart
             thermo_viz = ThermodynamicVisualizer()
             
             # Sous-onglets thermodynamiques
@@ -758,7 +758,7 @@ def main():
                 
                 # Indicateur CoolProp
                 try:
-                    from src.thermodynamic_viz import HAS_COOLPROP, R410A
+                    from src.physics.thermodynamic_viz import HAS_COOLPROP, R410A
                     if HAS_COOLPROP:
                         st.success("CoolProp active — R410A properties match ASHRAE saturation tables")
                         
@@ -1636,7 +1636,7 @@ def main():
             st.subheader("Thermodynamic property check")
             
             try:
-                from src.thermodynamic_viz import HAS_COOLPROP, R410A
+                from src.physics.thermodynamic_viz import HAS_COOLPROP, R410A
                 
                 if HAS_COOLPROP:
                     validation_data = {

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.features import FEATURE_COLUMNS
+from src.fdd.features import FEATURE_COLUMNS
 from src.studies.synthetic.scenarios import SyntheticScenarios
 from src.studies.synthetic.taxonomy import FAULT_PARAM_MAP
 
@@ -42,7 +42,7 @@ def test_package_reexports_scenarios():
 
 @needs_model
 def test_simulate_cycle_payload_shape():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
 
     engine = FDDEngine()
     payload = SyntheticScenarios(engine).simulate_cycle(fault_type="Normal")
@@ -56,7 +56,7 @@ def test_simulate_cycle_payload_shape():
 
 @needs_model
 def test_unknown_fault_name_falls_back_to_healthy_params():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
 
     payload = SyntheticScenarios(FDDEngine()).simulate_cycle(fault_type="Not_A_Fault")
     assert payload["conditions"]["injected_fault"] == "Not_A_Fault"
@@ -65,7 +65,7 @@ def test_unknown_fault_name_falls_back_to_healthy_params():
 
 @needs_model
 def test_severity_overrides_default_map():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
 
     scenarios = SyntheticScenarios(FDDEngine())
     mild = scenarios.simulate_cycle(fault_type="Condenser_Fouling", severity=0.10)
@@ -75,7 +75,7 @@ def test_severity_overrides_default_map():
 
 @needs_model
 def test_fault_overrides_win_over_the_map():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
 
     scenarios = SyntheticScenarios(FDDEngine())
     zero = scenarios.simulate_cycle(
@@ -87,7 +87,7 @@ def test_fault_overrides_win_over_the_map():
 
 @needs_model
 def test_live_trace_stays_normal_before_inject():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
 
     trace = SyntheticScenarios(FDDEngine()).live_trace(
         fault_type="Condenser_Fouling",
@@ -105,7 +105,7 @@ def test_live_trace_stays_normal_before_inject():
 
 @needs_model
 def test_live_trace_normal_never_injects():
-    from src.inference import FDDEngine
+    from src.fdd.inference import FDDEngine
 
     trace = SyntheticScenarios(FDDEngine()).live_trace(
         fault_type="Normal", inject_at=2, n_points=5

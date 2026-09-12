@@ -2,9 +2,9 @@
 
 from dataclasses import replace
 
-from src.features import FEATURE_COLUMNS, cycle_to_features, healthy_cycle
-from src.data_generator import FaultDataGenerator, FaultType
-from src.simulator import HeatPumpSimulator
+from src.fdd.features import FEATURE_COLUMNS, cycle_to_features, healthy_cycle
+from src.physics.simulator import HeatPumpSimulator
+from src.studies.synthetic.generator import FaultDataGenerator, FaultType
 
 
 def test_feature_count():
@@ -12,7 +12,7 @@ def test_feature_count():
 
 
 def test_features_module_has_no_study_taxonomy():
-    import src.features as features
+    import src.fdd.features as features
 
     assert not hasattr(features, "SCENARIOS")
     assert not hasattr(features, "FAULT_PARAM_MAP")

@@ -59,11 +59,9 @@ from api.schemas import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-from src.features import FEATURE_COLUMNS
-from src.inference import FDDEngine
-from src.studies.synthetic.scenarios import SyntheticScenarios
-from src.studies.synthetic.taxonomy import FAULT_PARAM_MAP, SCENARIOS
-from src.thermo_lab import (
+from src.fdd.features import FEATURE_COLUMNS
+from src.fdd.inference import FDDEngine
+from src.physics.thermo_lab import (
     ambient_heatmap,
     ashrae_table,
     condenser_sweep,
@@ -71,7 +69,9 @@ from src.thermo_lab import (
     evaporator_sweep,
     sweep_deltas,
 )
-from src.thermodynamic_viz import HAS_COOLPROP, ThermodynamicVisualizer
+from src.physics.thermodynamic_viz import HAS_COOLPROP, ThermodynamicVisualizer
+from src.studies.synthetic.scenarios import SyntheticScenarios
+from src.studies.synthetic.taxonomy import FAULT_PARAM_MAP, SCENARIOS
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUTS = ROOT / "outputs"

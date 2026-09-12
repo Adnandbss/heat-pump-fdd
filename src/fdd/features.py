@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Optional
 
-from .simulator import CycleResults, HeatPumpSimulator
+from ..physics.simulator import CycleResults, HeatPumpSimulator
 
 FEATURE_COLUMNS: List[str] = [
     "T_ambient",
