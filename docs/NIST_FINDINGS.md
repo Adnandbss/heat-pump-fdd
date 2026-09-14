@@ -113,3 +113,36 @@ data and the same model. A random split measures the installation as much as the
 That is the same failure mode as training and testing from one simulator, in a different guise
 — and here it is measured rather than argued. Any accuracy figure this project reports should
 name its validation protocol.
+
+## Calibration budget: how many healthy tests?
+
+Protocol (leave-one-machine-out, both directions, mean): `GradientBoostingClassifier(random_state=42)`
+trained **only** on the training machine; eight residuals; kNN healthy reference
+(`k = min(5, n)`) in (`T_source`, `T_sink`). `n` healthy tests are drawn from the **test**
+machine to build that reference. Those `n` rows are **held out of the test set** — otherwise
+`No_Fault` is scored on the same points that defined the yardstick. Twenty random draws
+(seeds 0–19); mean and 10th/90th percentiles. `n = 0` and `n = all` are the published
+endpoints and are deterministic.
+
+Controls recovered exactly: `n = 0` → **0.318 / 0.290**; `n = all` → **0.602 / 0.479**.
+
+| n healthy (target machine) | Accuracy | p10–p90 | F1 macro |
+|---|---|---|---|
+| 0 (reference transferred) | 0.318 | — | 0.290 |
+| 1 | 0.290 | 0.204 – 0.401 | 0.271 |
+| 5 | 0.314 | 0.226 – 0.382 | 0.289 |
+| 10 | 0.377 | 0.345 – 0.404 | 0.324 |
+| 20 | 0.409 | 0.378 – 0.438 | 0.349 |
+| 50 | 0.456 | 0.438 – 0.474 | 0.380 |
+| all (~625–727) | 0.602 | — | 0.479 |
+
+90 % of the gap 0.318 → 0.602 is **0.574**. No finite `n` on the grid reaches it.
+**n = 50 recovers about 49 % of the gain.** Getting to 90 % takes essentially the full
+healthy set of the target machine.
+
+Spreading the `n` points over the (`T_source`, `T_sink`) envelope, rather than drawing at
+random, helps most when `n` is small (n = 5: **0.391** vs 0.314). The gap shrinks as `n`
+grows. Field reading: a handful of commissioning tests is not a calibration; coverage of the
+operating season is.
+
+Notebook and figure: `EDA/EDA_NIST_calibration.ipynb`, `docs/calibration_budget.png`.

@@ -347,23 +347,32 @@ bonne santé. La question devient : **combien de temps ?**
 > dont on connaît le prix est utilisable ; une méthode dont on ignore la condition ne l'est
 > pas.
 
-# 12. Ce qui sera mesuré ensuite
+# 12. Budget de calibration — mesuré
 
-La suite directe est le **budget de calibration** : combien d'essais sains de la machine
-cible faut-il pour passer du plancher de 0,318 au plafond de 0,602 ?
+Combien d'essais sains de la machine cible faut-il pour passer de 0,318 à 0,602 ?
 
-Le protocole est défini : validation par machine dans les deux sens, référence saine
-construite sur un nombre croissant d'essais sains de la machine testée, tirages répétés pour
-obtenir un intervalle plutôt qu'un point.
+Leave-one-machine-out, les deux sens, vingt tirages. Les `n` sains qui calibrent la référence
+sont **retirés du test**. Bornes retrouvées : n = 0 → 0,318 ; n = all → 0,602.
 
-Résultat attendu : une courbe, et un nombre exploitable sur le terrain.
+| n essais sains (machine cible) | Accuracy | F1 macro |
+|---|---|---|
+| 0 (référence transférée) | 0,318 | 0,290 |
+| 5 | 0,314 | 0,289 |
+| 10 | 0,377 | 0,324 |
+| 20 | 0,409 | 0,349 |
+| 50 | 0,456 | 0,380 |
+| tous (~625–727) | 0,602 | 0,479 |
 
 | Grandeur | Valeur |
 |---|---|
-| Essais sains nécessaires pour récupérer 90 % du gain | **[non encore mesuré]** |
+| Essais sains nécessaires pour récupérer 90 % du gain | **tous les sains de la machine** |
 
-Ce nombre est la traduction industrielle de tout ce qui précède : la durée d'observation à
-prévoir avant qu'un diagnostic soit fiable sur une machine donnée.
+À n = 50 on n'a récupéré que **~49 %** de l'écart. Le seuil 0,574 n'est atteint qu'avec
+l'ensemble des essais sains. Une poignée de mesures de mise en service ne calibre pas :
+il faut couvrir le domaine de fonctionnement. Répartir les n points sur les températures
+aide surtout à petit n (n = 5 : 0,391 au lieu de 0,314).
+
+Figure : `docs/calibration_budget.png`. Notebook : `EDA/EDA_NIST_calibration.ipynb`.
 
 # 13. Ce que ce projet ne fait pas
 
