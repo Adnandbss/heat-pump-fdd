@@ -42,17 +42,20 @@ Détail et méthode dans [NIST_FINDINGS](NIST_FINDINGS.md). Trois choses compten
 **1. Le protocole de validation change tout.** Sur 5386 essais réels, six classes, même
 modèle :
 
-| Validation | Accuracy |
-|---|---|
-| CV aléatoire (mélange les machines) | **0,95** |
-| Leave-one-machine-out (honnête) | **0,60** |
+| Validation | Référence saine | Accuracy |
+|---|---|---|
+| CV aléatoire (mélange les machines) | machine cible | **0,95** |
+| Leave-one-machine-out | machine cible (calibrée) | **0,602** |
+| Leave-one-machine-out | machine d'entraînement (transférée) | **0,318** |
 
 Un split aléatoire mesure l'installation autant que le défaut. C'est le même problème que
 d'entraîner et tester depuis le même simulateur — mais ici il est **mesuré**.
 
 **2. Le design en résidus est validé, et c'est le meilleur argument du projet.** Les résidus
-font passer le transfert entre machines de **0,333 à 0,602**, pour 1,7 point perdu en CV
-aléatoire. La méthode Li & Braun que nomme `src/fdd/features.py` tient sur des mesures réelles.
+font passer la détection de **0,333 à 0,602 lorsque la référence saine est calibrée sur la
+machine cible**, pour 1,7 point perdu en CV aléatoire. Sans cette calibration, le transfert
+plafonne à **0,318**. La méthode Li & Braun que nomme `src/fdd/features.py` tient sur des
+mesures réelles.
 
 Corollaire : **ajouter les grandeurs brutes aux résidus dégrade le transfert** (0,602 → 0,562),
 parce que les valeurs absolues laissent le modèle ré-identifier la machine.
@@ -85,9 +88,9 @@ démontera en une question. Le 99,8 % actuel mesure la séparabilité des signat
 modèle physique, pas une détection sur machine réelle. Proposition :
 
 > Signatures de défauts séparables à 99,8 % en validation croisée sur données simulées.
-> Méthode par résidus confrontée aux essais NIST : le transfert entre deux machines réelles
-> passe de 0,33 à 0,60 grâce aux résidus, contre 0,95 en validation aléatoire — laquelle
-> surestime largement.
+> Méthode par résidus confrontée aux essais NIST : 0,602 lorsque la référence saine est
+> calibrée sur la machine cible, **0,318** sans cette calibration, 0,95 en validation
+> aléatoire — laquelle surestime largement.
 
 Moins spectaculaire, et défendable.
 
@@ -117,9 +120,11 @@ retirer — NIST couvre les deux, donc les produire est défendable.
 **Découper `api/app.py`** — 582 lignes, la couture est nette : 4 routes d'inférence
 (`/health` `/predict` `/simulate` `/live`) contre 17 routes `/api/*` qui servent le dashboard.
 
-**Creuser le modèle de référence** — le baseline actuel des notebooks est un simple
-plus-proche-voisin sain. Un vrai modèle ajusté sur les essais sans défaut, comme NIST en
-construit, devrait faire mieux : **0,602 est un plancher, pas un plafond.**
+**Budget de calibration** — le baseline actuel des notebooks est un simple
+plus-proche-voisin sain. Le plafond honnête du transfert est mesuré à **0,318**. Le 0,602
+exige une référence saine calibrée sur la machine cible. Polynôme d'ordre 2, point de rosée,
+Ridge et forêt aléatoire ont tous été essayés : aucun ne lève ce plafond. La suite n'est
+donc pas de chercher une meilleure référence, mais de chiffrer le budget de calibration.
 
 **Front et ménage** — `web/src/` (routing, moins de widgets), puis Streamlit et les modules de
 visualisation en `legacy/`. En dernier : le démo clone-and-run ne doit jamais casser.

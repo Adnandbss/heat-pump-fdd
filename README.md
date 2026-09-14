@@ -99,7 +99,11 @@ The residual design was checked against the NIST *FDD Heat Pump Cooling* campaig
 | Raw measurements | 0.954 | 0.333 |
 | Residuals only | 0.937 | **0.602** |
 
-Two things follow. **Residuals nearly double cross-machine transfer**, which is the empirical case for the Li & Braun design this project builds on. And **a random split scores 0.95 where an honest one scores 0.60** — so any accuracy figure here, including the one above, has to name its validation protocol.
+Toutes les lignes à résidus utilisent une référence saine calibrée sur la machine cible.
+Avec une référence transférée depuis la machine d'entraînement, « résidus seuls » tombe de
+0,602 à **0,318**.
+
+Two things follow. **Residuals nearly double detection when the healthy reference is calibrated on the target machine** (0.333 → 0.602). Transferred from another machine, the ceiling is 0.318 — the cost of that calibration is what the project measures next. And **a random split scores 0.95 where an honest one scores 0.60** — so any accuracy figure here, including the one above, has to name its validation protocol.
 
 ## Tests
 

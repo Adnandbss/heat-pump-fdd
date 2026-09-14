@@ -73,7 +73,7 @@ Three concrete modelling defects follow:
    superheat and discharge temperature. The `+ 8.0 * (1.0 - fan_evap_ratio)` pinch term pushes
    the other way.
 
-## Residuals nearly double cross-machine transfer
+## Residuals nearly double detection when the healthy reference is calibrated on the target machine
 
 Gradient boosting, six classes, no target leakage. Healthy baseline for the residuals: median
 of the five nearest fault-free tests in (`T_source`, `T_sink`) **within the same machine**.
@@ -85,6 +85,10 @@ of the five nearest fault-free tests in (`T_source`, `T_sink`) **within the same
 | **Residuals only** | 0.937 | **0.602** | **0.479** |
 | Residuals + conditions | 0.945 | 0.594 | 0.479 |
 
+Every residual row uses a healthy reference calibrated on the target machine.
+With a reference transferred from the training machine, “residuals only” falls from
+0.602 to **0.318**.
+
 Read the two columns against each other: **the feature set that scores best under random
 cross-validation — raw + residuals, 0.973 — is not the one that transfers best.** Ranking
 models on a random split would pick the wrong design.
@@ -92,15 +96,14 @@ models on a random split would pick the wrong design.
 Majority-class reference: 0.251.
 
 **This is the empirical vindication of the Li & Braun residual design** that `src/fdd/features.py`
-already names in its docstring. Residuals take cross-machine transfer from 0.333 to 0.602 and
-cost 1.7 points of same-machine accuracy.
+already names in its docstring. Residuals take detection from 0.333 to 0.602 **when the healthy reference is calibrated on the target machine**, at a cost of 1.7 points of same-machine accuracy. Without that calibration the transfer ceiling is **0.318**.
 
-**Adding raw quantities back to the residuals hurts transfer** (0.602 → 0.562): absolute values
+**Adding raw quantities back to the residuals hurts leave-one-machine-out detection**
+(0.602 → 0.562), still with a target-calibrated reference: absolute values
 let the model re-identify the machine. `FEATURE_COLUMNS` currently mixes 19 absolute quantities
 with 5 residuals — worth revisiting.
 
-The nearest-neighbour baseline is deliberately crude; a fitted reference model over the
-fault-free tests, as NIST itself builds, should do better. **0.602 is a floor.**
+**0.602 is not a transferable floor.** It requires fault-free data from the target machine. Rebuilt from the training machine only, the ceiling is **0.318** (F1 macro 0.290). A second-order polynomial with indoor dew point — the form NIST uses — reaches 0.302; a random forest reaches 0.265. No reference model tried lifts the ceiling.
 
 ## What this says about the reported metric
 
