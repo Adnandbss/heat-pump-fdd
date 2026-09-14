@@ -24,7 +24,7 @@ US customary units.
 
 ## Feature mapping
 
-`FEATURE_COLUMNS` in `src/features.py`, in order.
+`FEATURE_COLUMNS` in `src/fdd/features.py`, in order.
 
 | # | Feature | NIST source | Status |
 |---|---|---|---|

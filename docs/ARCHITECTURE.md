@@ -4,32 +4,53 @@ How a reading goes from the simulated cycle to a fault label on the dashboard, a
 modules are on that path.
 
 ```
-simulator.py  →  features.py  →  data_generator.py  →  ml_models.py  →  inference.py  →  api/app.py  →  web/
-  R410A cycle     24 features      labelled samples     GradientBoosting   FDDEngine       FastAPI       React
+physics/simulator.py → fdd/features.py → studies/synthetic/generator.py → fdd/ml_models.py → fdd/inference.py → api/app.py → web/
+     R410A cycle         24 features          labelled samples              GradientBoosting     FDDEngine        FastAPI      React
 ```
 
-## Modules on the serving path
+## Layers
+
+`src/` is organised in three layers. The import rule is one-directional:
+
+```
+studies/  →  fdd/  →  physics/
+```
+
+`physics/` imports nothing from the project; `fdd/` may import `physics/`; only `studies/`
+may import both. Five tests enforce it (`test_engine_has_no_synthetic_study_api`,
+`test_features_module_has_no_study_taxonomy`, `test_ml_models_does_not_import_the_data_generator`,
+and the package guards in `test_packages.py`).
 
 | Module | Exports | Pulled in by |
 |---|---|---|
-| `src/simulator.py` | `HeatPumpSimulator`, `CycleResults`, `RefrigerantProperties`, `HAS_COOLPROP` | `features`, `data_generator`, `inference` |
-| `src/features.py` | `FEATURE_COLUMNS` (24), `SCENARIOS`, `cycle_to_features` | `data_generator`, `inference`, `api/app` |
-| `src/data_generator.py` | `FaultDataGenerator`, `FaultType` | `inference` |
-| `src/ml_models.py` | `FDDClassifier` | `inference` |
-| `src/inference.py` | `FDDEngine`, `FAULT_PARAM_MAP` | `api/app` |
-| `src/thermo_lab.py` | P-h / COP lab helpers | `api/app` |
-| `src/thermodynamic_viz.py` | `ThermodynamicVisualizer`, `R410A`, `HAS_COOLPROP` | `api/app`, `thermo_lab` |
-| `api/schemas.py` | Pydantic request/response contracts | `api/app` |
+| `src/physics/simulator.py` | `HeatPumpSimulator`, `CycleResults`, `RefrigerantProperties`, `HAS_COOLPROP` | `features`, `generator`, `scenarios` |
+| `src/physics/thermo_lab.py` | P-h / COP lab helpers | `api/app.py` |
+| `src/physics/thermodynamic_viz.py` | `ThermodynamicVisualizer`, `R410A`, `HAS_COOLPROP` | `api/app.py`, `thermo_lab` |
+| `src/fdd/features.py` | `FEATURE_COLUMNS` (24), `cycle_to_features`, `healthy_cycle` | `generator`, `scenarios`, `api/app.py` |
+| `src/fdd/ml_models.py` | `FDDClassifier`, `FDDPipeline` | `inference`, `main_analysis.py` |
+| `src/fdd/inference.py` | `FDDEngine` — load a model, diagnose a vector | `api/app.py` |
+| `src/studies/synthetic/generator.py` | `FaultDataGenerator`, `FaultType` | `scenarios` |
+| `src/studies/synthetic/scenarios.py` | `SyntheticScenarios` — `simulate_cycle`, `live_trace` | `api/app.py` |
+| `src/studies/synthetic/taxonomy.py` | `FAULT_PARAM_MAP`, `SCENARIOS` | `api/app.py` |
+| `src/studies/synthetic/paths.py` | `STUDY`, `DATASET_PATH`, `CLASSIFIER_PATH`, … | `api/app.py`, `inference`, `scripts/` |
+| `api/schemas.py` | Pydantic request/response contracts | `api/app.py` |
 
-Feature and class lists are mirrored in `models/metadata.json`; treat that file as the
-record of what the shipped model was trained on.
+`FDDEngine` only diagnoses. Building a faulted cycle for the demo belongs to
+`SyntheticScenarios`, which wraps an engine — the same seam as the API surface below.
+
+Artefact locations come from `paths.py` alone; no path is hard-coded elsewhere. Feature and
+class lists are mirrored in `models/synthetic/metadata.json`, which also records the study it
+came from (`study`, `mode`, `source`, `taxonomy`).
 
 ## Not on the serving path
 
 `dashboard.py` (Streamlit), `src/service.py` (httpx client used by Streamlit),
-`src/visualization.py`, `main_analysis.py` (training entry point), `scripts/`.
+`src/fdd/visualization.py` (training-time plots), `main_analysis.py` (training entry point),
+`scripts/`.
 
-Removing any of these would not affect `api/app.py` or the React app.
+Removing any of these would not affect `api/app.py` or the React app. None of them is covered
+by a test, so **`pytest` stays green even if they are broken** — check them by hand
+(`python -c "import dashboard"`) after any move.
 
 ## API surface
 
@@ -47,9 +68,16 @@ A split along that seam is the natural next refactor.
 
 | File | Covers |
 |---|---|
-| `tests/test_thermo.py` | R410A saturation pressure, nominal cycle invariants (COP, `P_cond > P_evap`) |
-| `tests/test_features.py` | 24-column contract, feature keys, fault signatures stay distinguishable |
-| `tests/test_api.py` | `FDDEngine` diagnoses, route contracts, schema rejection (skipped without `models/`) |
+| `tests/test_thermo.py` | R410A saturation pressure, nominal cycle invariants |
+| `tests/test_features.py` | 24-column contract, fault signatures stay distinguishable |
+| `tests/test_scenarios.py` | `simulate_cycle`, `live_trace`, severity overrides |
+| `tests/test_inference.py` | `FDDEngine` predicts, and carries no study API |
+| `tests/test_taxonomy.py` | `FAULT_PARAM_MAP` / `SCENARIOS` stay aligned |
+| `tests/test_paths.py` | artefact layout per study |
+| `tests/test_packages.py`, `tests/test_ml_models.py` | layering guards |
+| `tests/test_api.py` | route contracts, schema rejection (skipped without a model) |
+
+42 tests today.
 
 ## Training data
 
@@ -59,7 +87,7 @@ The training set is **entirely synthetic**. No measured data feeds the model.
 points uniformly from `T_source ∈ (-10, 20) °C`, `T_sink ∈ (30, 55) °C`,
 `speed_ratio ∈ (0.3, 1.0)`, injects a fault by degrading physical parameters in
 `simulator.py` (heat-exchanger `UA`, airflow ratio, refrigerant charge), then adds Gaussian
-measurement noise. The result is written to `outputs/dataset_fdd.csv` — 5000 rows,
+measurement noise. The result is written to `outputs/synthetic/dataset.csv` — 5000 rows,
 2000 `Normal` and 3000 faulted across 5 fault classes — and that CSV is what both the
 trainer and the dashboard routes read.
 
@@ -107,74 +135,9 @@ Two traps when using it:
 - Chapter 5 publishes fitted slopes and plots rather than per-test rows. Raw rows come from
   the cooling-mode spreadsheets or from NIST on request.
 
-## Target structure
-
-The repository currently assumes a single study: the simulator is the only data source, and
-that assumption is wired into the shared layers. Supporting a second study — measured NIST
-data — means separating three concerns that are presently mixed.
-
-```
-src/
-├── physics/          the physical model
-│   ├── simulator.py
-│   ├── thermo_lab.py
-│   └── thermodynamic_viz.py
-│
-├── fdd/              the method, shared by every study
-│   ├── features.py       feature contract + Li & Braun residuals
-│   ├── ml_models.py      trainer
-│   └── inference.py      FDDEngine: load a model, diagnose a vector
-│
-└── studies/
-    ├── synthetic/    heating, A7/W40, own taxonomy
-    │   ├── generator.py
-    │   └── taxonomy.py
-    └── nist/         cooling, air-to-air, NIST taxonomy
-        ├── loader.py
-        └── taxonomy.py
-
-outputs/<study>/      models/<study>/
-```
-
-Layering rule: `studies/` may import `fdd/` and `physics/`; `fdd/` may import `physics/`;
-`physics/` imports nothing from the project. Two current edges violate it.
-
-### Coupling 1 — `FDDEngine` contains the synthetic study
-
-`src/inference.py` instantiates `FaultDataGenerator` (line 51), owns `FAULT_PARAM_MAP`
-(line 21) mapping class names to simulator parameters, and exposes `simulate_cycle()`
-(line 84). Those are synthetic-study concerns living inside the shared engine.
-
-Split it by responsibility:
-
-- **diagnose** — load model and metadata, score a feature vector → stays in `fdd/inference.py`
-- **simulate** — build a faulted cycle for the demo → moves to `studies/synthetic/`
-
-This is the same seam as the API split: `/predict` and `/health` are diagnosis, `/simulate`
-and `/live` are the synthetic study driving the demo.
-
-### Coupling 2 — the default baseline is simulated
-
-`features.py::cycle_to_features` falls back to `healthy_cycle()`, which calls the simulator.
-The `baseline=` parameter already allows an external reference to be injected, so no
-signature changes; what is needed is that the default be understood as the synthetic
-study's choice rather than a property of the method.
-
-### What is already safe
-
-`models/fdd_classifier.joblib` contains **no reference to any project module** — only
-scikit-learn classes (`sklearn.ensemble._gb`, `sklearn.calibration`, …). `joblib.dump` saved
-the estimator, not the `FDDClassifier` wrapper. Moving `ml_models.py` will not break model
-loading. `api/` does not move, so the Dockerfile `CMD` is unaffected.
-
-### What breaks silently
-
-`dashboard.py` and `scripts/generate_ml_graphs.py` import from `src` and **no test covers
-them**. They must be updated with everything else or they fail only when someone runs them.
-
 ## Gotcha: the committed model is a pickle
 
-`models/fdd_classifier.joblib` is a pickled scikit-learn `GradientBoosting` estimator
+`models/synthetic/classifier.joblib` is a pickled scikit-learn `GradientBoosting` estimator
 tracked in git, so **the `scikit-learn==1.6.1` pin in `requirements.txt` is load-bearing**.
 
 Installing a different minor version makes the model fail to unpickle, and every test that

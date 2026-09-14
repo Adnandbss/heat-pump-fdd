@@ -66,6 +66,18 @@ signatures mesurées et simulées (accord 12/16) :
 | Obstruction condenseur | `subcooling` **inversé** — devrait monter, le simulateur le fait descendre |
 | Débit évaporateur | `superheat` et `T_discharge` **inversés** — terme `+ 8.0 * (1.0 - fan_evap_ratio)` |
 
+**4. La limite de température de refoulement n'est jamais appliquée.** `simulator.py` déclare
+`self.T_discharge_max = 130.0` et ne s'en sert pas :
+
+| Conditions | `T_discharge` produit |
+|---|---|
+| −5 °C / 50 °C | **200 °C** |
+| −10 °C / 55 °C | **319 °C** |
+
+Ces points sont **dans** les plages d'entraînement (`T_source` descend à −10, `T_sink` monte à
+55), donc une partie des 5000 échantillons contient des cycles physiquement impossibles —
+319 °C au refoulement d'un R-410A n'existe pas. À corriger avant toute reprise du dataset.
+
 ## Les décisions qui t'appartiennent
 
 **A. Comment annoncer la performance.** C'est le point le plus urgent, et le seul qu'un jury

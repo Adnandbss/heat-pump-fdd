@@ -90,6 +90,17 @@ Per-class F1: `Normal` 1.00, `Condenser_Fouling` 1.00, `Condenser_Fan_Fault` 1.0
 
 These numbers measure **how cleanly the simulator separates faults**, not field-labelled HVAC data. The demo still has to show that fouling is not predicted as a fan fault.
 
+### Confronted with measured data
+
+The residual design was checked against the NIST *FDD Heat Pump Cooling* campaign — 7375 chamber tests on two machines with imposed faults. Full method and figures in [docs/NIST_FINDINGS.md](docs/NIST_FINDINGS.md).
+
+| Feature set | Random CV | Leave-one-machine-out |
+|---|---|---|
+| Raw measurements | 0.954 | 0.333 |
+| Residuals only | 0.937 | **0.602** |
+
+Two things follow. **Residuals nearly double cross-machine transfer**, which is the empirical case for the Li & Braun design this project builds on. And **a random split scores 0.95 where an honest one scores 0.60** — so any accuracy figure here, including the one above, has to name its validation protocol.
+
 ## Tests
 
 ```bash
