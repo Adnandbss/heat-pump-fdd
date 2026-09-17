@@ -99,11 +99,24 @@ The residual design was checked against the NIST *FDD Heat Pump Cooling* campaig
 | Raw measurements | 0.954 | 0.333 |
 | Residuals only | 0.937 | **0.602** |
 
-Toutes les lignes à résidus utilisent une référence saine calibrée sur la machine cible.
-Avec une référence transférée depuis la machine d'entraînement, « résidus seuls » tombe de
-0,602 à **0,318**.
+Every residual row above uses a healthy reference calibrated on the **target** machine. Rebuilt from the training machine only — a genuinely unknown unit — residuals-only drops to **0.318** (F1 macro 0.290), against 0.251 for the majority class. A second-order polynomial with indoor dew point, the form NIST itself uses, reaches 0.302; a random forest 0.265. No reference model tried lifts that ceiling.
 
-Two things follow. **Residuals nearly double detection when the healthy reference is calibrated on the target machine** (0.333 → 0.602). Transferred from another machine, the ceiling is 0.318 — the cost of that calibration is what the project measures next. And **a random split scores 0.95 where an honest one scores 0.60** — so any accuracy figure here, including the one above, has to name its validation protocol.
+Two things follow. **Residuals nearly double detection when the healthy reference is calibrated on the target machine** (0.333 → 0.602). And **a random split scores 0.95 where an honest one scores 0.60** — so any accuracy figure here, including the 99.8% above, has to name its validation protocol.
+
+### What calibration costs
+
+If residual FDD needs healthy data from the machine in service, the practical question is how much. Measured by leave-one-machine-out over 20 draws, with the calibrating tests held out of the test set:
+
+| Healthy tests from the target machine | Accuracy | F1 macro |
+|---|---|---|
+| 0 — transferred reference | 0.318 | 0.290 |
+| 10 | 0.377 | 0.324 |
+| 50 | 0.456 | 0.380 |
+| all (~625–727) | 0.602 | 0.479 |
+
+**Fifty healthy tests recover only about 49% of the gap.** Reaching 90% takes essentially the full set. Spreading the sampled tests across the operating range rather than drawing at random helps most when few are available (n = 5: 0.391 against 0.314).
+
+The field reading: a handful of commissioning measurements is not a calibration. Covering the operating envelope is what matters, and that is a deployment constraint rather than an algorithmic one.
 
 ## Tests
 
