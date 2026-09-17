@@ -212,7 +212,7 @@ pas : la **surcharge** et la **restriction de ligne liquide**.
 
 Le choix ne repose pas sur un empilement d'algorithmes. Sur des données simulées où les
 classes sont déjà nettement séparées, un modèle supplémentaire n'apporte rien de mesurable :
-Random Forest obtient 99,7 % contre 99,8 %. L'écart n'est pas significatif. Multiplier les
+Random Forest et le Gradient Boosting obtiennent tous deux 99,6 %. L'écart n'est pas significatif. Multiplier les
 modèles aurait donné une illusion de rigueur ; le travail utile était ailleurs, dans la
 validation.
 
@@ -378,7 +378,7 @@ Figure : `docs/calibration_budget.png`. Notebook : `EDA/EDA_NIST_calibration.ipy
 
 Par honnêteté, et parce que chacune de ces limites a été vérifiée plutôt que supposée :
 
-- **Il ne détecte pas les pannes à 99 % sur le terrain.** Le 99,8 % mesure la séparabilité des
+- **Il ne détecte pas les pannes à 99 % sur le terrain.** Le 99,6 % mesure la séparabilité des
   signatures à l'intérieur du modèle physique, sur données simulées.
 - **Il ne prédit pas les pannes futures.** Les essais mesurés sont stationnaires, sans axe du
   temps.
@@ -411,7 +411,7 @@ uvicorn api.app:app --reload
 cd web && npm install && npm run dev
 ```
 
-La suite de tests automatiques compte 42 tests et doit rester intégralement verte. Elle
+La suite de tests automatiques compte 43 tests et doit rester intégralement verte. Elle
 couvre les invariants thermodynamiques, le contrat de grandeurs, les règles d'architecture
 et les contrats de l'API.
 
@@ -425,10 +425,10 @@ documentation technique.
 
 | Mesure | Valeur | Ce qu'elle signifie |
 |---|---|---|
-| Simulé, validation aléatoire | 99,8 % | Séparabilité dans le modèle physique |
+| Simulé, validation aléatoire | 99,6 % | Séparabilité dans le modèle physique |
 | Mesuré, validation aléatoire | 0,95 | Surestime : mélange les deux machines |
 | Mesuré, par machine, référence calibrée | 0,602 | Avec essais sains de la machine cible |
 | Mesuré, par machine, référence transférée | 0,318 | Sur une machine réellement inconnue |
 | Classe majoritaire | 0,251 | Référence basse |
-| Accord des sens de variation | 12 / 16 | Simulation contre mesure |
+| Accord des sens de variation | 20 / 22 | Simulation contre mesure |
 | Recouvrement des domaines | 5,3 % | Interdit la comparaison des valeurs absolues |
