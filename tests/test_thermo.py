@@ -15,3 +15,21 @@ def test_nominal_cycle_cop():
     assert result.COP > 1.5
     assert result.P_cond > result.P_evap
     assert result.T_discharge > result.T_suction
+
+
+def test_discharge_temperature_stays_within_envelope():
+    """T_discharge_max is a hard cap on the training domain, not a log string."""
+    import numpy as np
+
+    sim = HeatPumpSimulator()
+    for T_source in np.linspace(-10.0, 20.0, 7):
+        for T_sink in np.linspace(30.0, 55.0, 6):
+            for speed_ratio in np.linspace(0.3, 1.0, 5):
+                result = sim.simulate_cycle(
+                    T_source=float(T_source),
+                    T_sink=float(T_sink),
+                    speed_ratio=float(speed_ratio),
+                )
+                assert result.T_discharge <= sim.T_discharge_max + 1e-6
+    named = sim.simulate_cycle(T_source=-10.0, T_sink=55.0, speed_ratio=1.0)
+    assert named.T_discharge <= 130.0

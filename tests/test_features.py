@@ -60,5 +60,8 @@ def test_fouling_and_fan_signatures_differ():
     base = sim.simulate_cycle(T_source=7, T_sink=40, speed_ratio=0.7)
     fouling = sim.simulate_cycle(T_source=7, T_sink=40, speed_ratio=0.7, condenser_fouling=0.40)
     fan = sim.simulate_cycle(T_source=7, T_sink=40, speed_ratio=0.7, fan_cond_ratio=0.55)
-    assert (base.subcooling - fouling.subcooling) > (base.subcooling - fan.subcooling)
+    # NIST: condenser blockage backs liquid up → subcooling rises.
+    assert fouling.subcooling > base.subcooling
+    # Condenser fan still distinguishable: smaller subcooling shift, higher discharge.
+    assert abs(fouling.subcooling - base.subcooling) > abs(fan.subcooling - base.subcooling)
     assert fan.T_discharge > fouling.T_discharge

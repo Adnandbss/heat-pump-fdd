@@ -264,7 +264,7 @@ class HeatPumpSimulator:
         evaporator_fouling : float
             Niveau d'encrassement évaporateur (0 à 1)
         refrigerant_charge : float
-            Charge de réfrigérant (1.0 = nominal, <1 = sous-charge)
+            Charge de réfrigérant (1.0 = nominal, <1 = sous-charge, >1 = surcharge)
         fan_evap_ratio : float
             Ratio débit ventilateur évaporateur (1.0 = nominal)
         fan_cond_ratio : float
@@ -282,10 +282,11 @@ class HeatPumpSimulator:
         UA_evap *= fan_evap_ratio ** 1.45
         UA_cond *= fan_cond_ratio ** 1.45
 
+        # Fan-evap UA already raises pinch. The extra 8 K term made T_discharge
+        # rise with airflow loss, against the measured NIST sign — drop it.
         pinch_evap = (
             5.0
             + 7.0 * (1.0 - UA_evap / self.UA_evap_nom)
-            + 8.0 * (1.0 - fan_evap_ratio)
         )
         pinch_cond = (
             5.0
@@ -310,6 +311,14 @@ class HeatPumpSimulator:
             P_evap *= (0.55 + 0.45 * refrigerant_charge)
             T_evap = self.refrigerant.saturation_temperature(P_evap)
             T_evap = np.clip(T_evap, self.T_evap_min, self.T_evap_max)
+
+        # Overcharge: extra liquid stacks in the condenser — high-side pressure rises
+        if refrigerant_charge > 1.0:
+            excess = refrigerant_charge - 1.0
+            P_cond *= 1.0 + 0.90 * excess
+            T_cond = self.refrigerant.saturation_temperature(P_cond)
+            T_cond = np.clip(T_cond, self.T_cond_min, self.T_cond_max)
+            P_cond = self.refrigerant.saturation_pressure(T_cond)
         
         compression_ratio = P_cond / max(P_evap, 0.5)
         
@@ -317,19 +326,25 @@ class HeatPumpSimulator:
         eta_is = self.calculate_isentropic_efficiency(compression_ratio, speed_ratio)
         eta_vol = self.calculate_volumetric_efficiency(compression_ratio, speed_ratio)
         
-        # Superheat: fouling lengthens the two-phase region more than a fan does
+        # Superheat: less indoor airflow absorbs less heat → lower superheat (NIST).
+        # Evaporator fouling still lengthens the two-phase region.
         superheat = 6.0 * (1.0 + 0.85 * evaporator_fouling) * (
-            1.0 + 0.20 * (1.0 - fan_evap_ratio)
+            1.0 - 0.20 * (1.0 - fan_evap_ratio)
         )
         if refrigerant_charge < 1.0:
             superheat *= 1.0 + 1.4 * (1.0 - refrigerant_charge)
+        if refrigerant_charge > 1.0:
+            superheat *= max(1.0 - 1.4 * (refrigerant_charge - 1.0), 0.25)
         
-        # Subcooling: fouling shrinks the liquid zone; fan mainly lifts T_cond
-        subcooling = 4.5 * (1.0 - 0.65 * condenser_fouling) * (
+        # Subcooling: condenser blockage backs liquid up (NIST: subcooling rises).
+        # A condenser-fan fault mainly lifts T_cond and slightly cuts the liquid zone.
+        subcooling = 4.5 * (1.0 + 0.65 * condenser_fouling) * (
             1.0 - 0.12 * (1.0 - fan_cond_ratio)
         )
         if refrigerant_charge < 1.0:
             subcooling *= max(refrigerant_charge, 0.25)
+        if refrigerant_charge > 1.0:
+            subcooling *= 1.0 + 2.2 * (refrigerant_charge - 1.0)
         subcooling = max(subcooling, 0.4)
         
         # === Températures aux bornes du compresseur ===
@@ -344,6 +359,9 @@ class HeatPumpSimulator:
         # Correction par rendement isentropique
         T_discharge = T_suction + (T_discharge_ideal - T_suction) / eta_is
         T_discharge += 10.0 * (1.0 - fan_cond_ratio)
+        # Lower evaporator airflow cools suction; CR rise must not invert the NIST sign.
+        T_discharge -= 25.0 * (1.0 - fan_evap_ratio)
+        T_discharge = min(float(T_discharge), self.T_discharge_max)
         
         # === Débit massique ===
         rho_suction = self.refrigerant.vapor_density(T_suction, P_evap)
@@ -351,6 +369,8 @@ class HeatPumpSimulator:
         mass_flow = self.V_sw * f_actual * rho_suction * eta_vol
         if refrigerant_charge < 1.0:
             mass_flow *= 0.55 + 0.45 * refrigerant_charge
+        if refrigerant_charge > 1.0:
+            mass_flow *= 1.0 + 0.25 * (refrigerant_charge - 1.0)
         if fan_evap_ratio < 1.0:
             mass_flow *= 0.75 + 0.25 * fan_evap_ratio
         
