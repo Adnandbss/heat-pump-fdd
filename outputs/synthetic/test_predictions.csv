@@ -608,7 +608,7 @@ Condenser_Fouling,Condenser_Fouling
 Refrigerant_Undercharge,Refrigerant_Undercharge
 Normal,Normal
 Condenser_Fouling,Condenser_Fouling
-Evaporator_Fan_Fault,Evaporator_Fan_Fault
+Evaporator_Fan_Fault,Refrigerant_Undercharge
 Normal,Normal
 Condenser_Fan_Fault,Condenser_Fan_Fault
 Refrigerant_Undercharge,Refrigerant_Undercharge
@@ -882,7 +882,7 @@ Normal,Normal
 Evaporator_Fouling,Evaporator_Fouling
 Evaporator_Fouling,Evaporator_Fouling
 Refrigerant_Undercharge,Refrigerant_Undercharge
-Refrigerant_Undercharge,Refrigerant_Undercharge
+Refrigerant_Undercharge,Evaporator_Fan_Fault
 Normal,Normal
 Condenser_Fouling,Condenser_Fouling
 Condenser_Fouling,Condenser_Fouling
@@ -968,7 +968,7 @@ Normal,Normal
 Condenser_Fan_Fault,Condenser_Fan_Fault
 Evaporator_Fan_Fault,Evaporator_Fan_Fault
 Condenser_Fouling,Condenser_Fouling
-Evaporator_Fouling,Evaporator_Fouling
+Evaporator_Fouling,Refrigerant_Undercharge
 Condenser_Fouling,Condenser_Fouling
 Refrigerant_Undercharge,Refrigerant_Undercharge
 Normal,Normal
