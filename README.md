@@ -71,11 +71,11 @@ flowchart LR
 | Class | Physical signature |
 |---|---|
 | Normal | Nominal A7/W40-like operation |
-| Condenser_Fouling | Pinch up, subcooling down, modest discharge rise |
+| Condenser_Fouling | Pinch up, subcooling up, modest discharge rise |
 | Evaporator_Fouling | P_evap down, superheat up |
 | Refrigerant_Undercharge | P_evap down, superheat up, capacity down |
 | Condenser_Fan_Fault | Airflow down, P_cond and T_discharge rise, COP down |
-| Evaporator_Fan_Fault | Airflow down, mass flow and capacity down |
+| Evaporator_Fan_Fault | Airflow down, superheat and T_discharge down, capacity down |
 
 ## Results
 
@@ -83,10 +83,10 @@ Hold-out on 5000 CoolProp cycles (24 features, 30% test, Gradient Boosting + Gri
 
 | Model | Accuracy | F1 macro |
 |---|---|---|
-| Gradient Boosting (calibrated) | 99.8% | 0.997 |
-| Random Forest | 99.7% | 0.995 |
+| Gradient Boosting (calibrated) | 99.6% | 0.994 |
+| Random Forest | 99.6% | 0.994 |
 
-Per-class F1: `Normal` 1.00, `Condenser_Fouling` 1.00, `Condenser_Fan_Fault` 1.00, `Refrigerant_Undercharge` 0.99, `Evaporator_Fouling` 0.99.
+Per-class F1: `Normal` 1.00, `Condenser_Fouling` 1.00, `Condenser_Fan_Fault` 1.00, `Refrigerant_Undercharge` 0.98, `Evaporator_Fouling` 0.99, `Evaporator_Fan_Fault` 0.99.
 
 These numbers measure **how cleanly the simulator separates faults**, not field-labelled HVAC data. The demo still has to show that fouling is not predicted as a fan fault.
 
@@ -101,7 +101,7 @@ The residual design was checked against the NIST *FDD Heat Pump Cooling* campaig
 
 Every residual row above uses a healthy reference calibrated on the **target** machine. Rebuilt from the training machine only — a genuinely unknown unit — residuals-only drops to **0.318** (F1 macro 0.290), against 0.251 for the majority class. A second-order polynomial with indoor dew point, the form NIST itself uses, reaches 0.302; a random forest 0.265. No reference model tried lifts that ceiling.
 
-Two things follow. **Residuals nearly double detection when the healthy reference is calibrated on the target machine** (0.333 → 0.602). And **a random split scores 0.95 where an honest one scores 0.60** — so any accuracy figure here, including the 99.8% above, has to name its validation protocol.
+Two things follow. **Residuals nearly double detection when the healthy reference is calibrated on the target machine** (0.333 → 0.602). And **a random split scores 0.95 where an honest one scores 0.60** — so any accuracy figure here, including the 99.6% above, has to name its validation protocol.
 
 ### What calibration costs
 

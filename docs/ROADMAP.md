@@ -23,7 +23,7 @@ outputs/<étude>/   models/<étude>/
 Règle : `studies/` → `fdd/` → `physics/`. Zéro violation aujourd'hui, et cinq tests la
 verrouillent (`test_engine_has_no_synthetic_study_api`, etc.).
 
-**42 tests passent.** L'équivalence de comportement a été vérifiée à chaque étape du refactor
+**43 tests passent.** L'équivalence de comportement a été vérifiée à chaque étape du refactor
 en comparant les sorties avant/après octet pour octet.
 
 **Confrontation aux essais NIST** — deux notebooks dans `EDA/`, résultats dans
@@ -60,34 +60,26 @@ mesures réelles.
 Corollaire : **ajouter les grandeurs brutes aux résidus dégrade le transfert** (0,602 → 0,562),
 parce que les valeurs absolues laissent le modèle ré-identifier la machine.
 
-**3. Trois erreurs de physique dans `simulator.py`**, trouvées en comparant les signes des
-signatures mesurées et simulées (accord 12/16) :
+**3. Quatre erreurs de physique dans `simulator.py`**, trouvées en comparant les signes des
+signatures mesurées et simulées. Corrigées : l'accord passe de **12/16 à 20/22**.
 
-| Défaut | Problème |
-|---|---|
-| Surcharge | **non modélisée** — seul `refrigerant_charge < 1.0` a une branche, toutes les pentes sont nulles |
-| Obstruction condenseur | `subcooling` **inversé** — devrait monter, le simulateur le fait descendre |
-| Débit évaporateur | `superheat` et `T_discharge` **inversés** — terme `+ 8.0 * (1.0 - fan_evap_ratio)` |
+| Défaut | Ce qui clochait | Après correctif |
+|---|---|---|
+| Surcharge | non modélisée — pentes toutes nulles | `subcooling +`, `W_comp +`, `P_cond +`, `superheat −` |
+| Obstruction condenseur | `subcooling` inversé | monte, comme mesuré |
+| Débit évaporateur | `superheat` et `T_discharge` inversés | les deux descendent |
+| `T_discharge_max = 130` | déclaré, jamais appliqué (319 °C à −10/55) | capé sur tout le domaine d'entraînement |
 
-**4. La limite de température de refoulement n'est jamais appliquée.** `simulator.py` déclare
-`self.T_discharge_max = 130.0` et ne s'en sert pas :
-
-| Conditions | `T_discharge` produit |
-|---|---|
-| −5 °C / 50 °C | **200 °C** |
-| −10 °C / 55 °C | **319 °C** |
-
-Ces points sont **dans** les plages d'entraînement (`T_source` descend à −10, `T_sink` monte à
-55), donc une partie des 5000 échantillons contient des cycles physiquement impossibles —
-319 °C au refoulement d'un R-410A n'existe pas. À corriger avant toute reprise du dataset.
+Deux désaccords restent : `W_comp` sous-charge, `COP` surcharge. La classe
+`REFRIGERANT_OVERCHARGE` n'est toujours pas dans le mix des 5000 exemples.
 
 ## Les décisions qui t'appartiennent
 
 **A. Comment annoncer la performance.** C'est le point le plus urgent, et le seul qu'un jury
-démontera en une question. Le 99,8 % actuel mesure la séparabilité des signatures dans le
+démontera en une question. Le 99,6 % actuel mesure la séparabilité des signatures dans le
 modèle physique, pas une détection sur machine réelle. Proposition :
 
-> Signatures de défauts séparables à 99,8 % en validation croisée sur données simulées.
+> Signatures de défauts séparables à 99,6 % en validation croisée sur données simulées.
 > Méthode par résidus confrontée aux essais NIST : 0,602 lorsque la référence saine est
 > calibrée sur la machine cible, **0,318** sans cette calibration, 0,95 en validation
 > aléatoire — laquelle surestime largement.
@@ -111,7 +103,7 @@ retirer — NIST couvre les deux, donc les produire est défendable.
 
 **Nettoyage du cœur** — une PR par idée :
 
-- [ ] Corriger les trois erreurs de `simulator.py` ci-dessus, puis re-mesurer la concordance
+- [x] Corriger les quatre erreurs de `simulator.py`, re-mesurer la concordance (20/22)
 - [ ] `compression_ratio` et `pressure_ratio` sont **le même nombre** (vérifié à la précision
       machine). Le modèle a 23 entrées indépendantes, pas 24 — et `test_feature_count` fige 24
 - [ ] Unifier `FAULT_PARAM_MAP` / `SCENARIOS`
@@ -132,7 +124,7 @@ visualisation en `legacy/`. En dernier : le démo clone-and-run ne doit jamais c
 ## Règles de travail
 
 1. Une PR = une idée, commit par commit.
-2. `pytest` vert avant et après chaque PR — 42 aujourd'hui.
+2. `pytest` vert avant et après chaque PR — 43 aujourd'hui.
 3. Rien qui casse le clone-and-run.
 4. Le pin `scikit-learn==1.6.1` est **porteur** : le `.joblib` commité ne se charge qu'avec
    cette version. La changer impose de réentraîner via `main_analysis.py`.

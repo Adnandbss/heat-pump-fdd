@@ -49,29 +49,25 @@ onto this project's heating-mode simulator:
 **Absolute-value comparison against the simulator is not available.** Comparing slopes and
 signs of residuals against fault level remains valid, and is insensitive to the offset.
 
-## Sign agreement: 12 / 16 (75 %)
+## Sign agreement: 20 / 22 (91 %)
 
 Each quantity regressed on fault level with `T_source` and `T_sink` as covariates, compared
-against a parameter sweep of the simulator.
+against a parameter sweep of the simulator. Zero simulated slopes are scored `∅` and do not
+enter the total.
+
+Was 12 / 16 before four simulator fixes (discharge cap, overcharge branches, condenser-fouling
+subcooling sign, evaporator-fan superheat / discharge signs).
 
 | Fault | Agreement | Disagreement |
 |---|---|---|
-| Undercharge | 5/6 | `W_comp` |
-| Condenser blockage | 4/5 | `subcooling` — measured **+**, simulated **−** |
-| Indoor airflow | 3/5 | `superheat` and `T_discharge` both inverted |
-| Overcharge | 0/0 | simulator produces no signal at all |
+| Undercharge | 5/6 | `W_comp` — measured **+**, simulated **−** |
+| Condenser blockage | 5/5 | — |
+| Indoor airflow | 5/5 | — |
+| Overcharge | 5/6 | `COP` — measured **+**, simulated **−** |
 
-Three concrete modelling defects follow:
-
-1. **Overcharge is not modelled.** Every simulated slope is zero — `simulator.py` only branches
-   on `refrigerant_charge < 1.0`. `REFRIGERANT_OVERCHARGE` is declared but inert, and 942
-   measured overcharge rows have no counterpart.
-2. **Condenser-blockage subcooling runs backwards.** Blocking a condenser makes liquid
-   accumulate and subcooling **rise** — which is what the measurements show. The simulator
-   lowers it. `d_subcooling` is one of the model's five residual features.
-3. **Evaporator airflow has two inverted signs.** Measured, reduced indoor airflow lowers
-   superheat and discharge temperature. The `+ 8.0 * (1.0 - fan_evap_ratio)` pinch term pushes
-   the other way.
+Overcharge now produces the four measured signs that were previously all `∅`: `subcooling +`,
+`W_comp +`, `P_cond +`, `superheat −`. Two disagreements remain, neither of which was in the
+P3 brief: undercharge compressor work, and overcharge COP.
 
 ## Residuals nearly double detection when the healthy reference is calibrated on the target machine
 
