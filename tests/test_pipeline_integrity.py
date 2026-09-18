@@ -27,9 +27,10 @@ def _small_dataset(n: int = 360, seed: int = 0) -> pd.DataFrame:
     gen = FaultDataGenerator(random_seed=seed)
     distribution = {
         FaultType.NORMAL: 0.40,
-        FaultType.CONDENSER_FOULING: 0.15,
-        FaultType.EVAPORATOR_FOULING: 0.15,
+        FaultType.CONDENSER_FOULING: 0.10,
+        FaultType.EVAPORATOR_FOULING: 0.10,
         FaultType.REFRIGERANT_UNDERCHARGE: 0.10,
+        FaultType.REFRIGERANT_OVERCHARGE: 0.10,
         FaultType.CONDENSER_FAN_FAULT: 0.10,
         FaultType.EVAPORATOR_FAN_FAULT: 0.10,
     }

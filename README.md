@@ -76,6 +76,7 @@ flowchart LR
 | Refrigerant_Undercharge | P_evap down, superheat up, capacity down |
 | Condenser_Fan_Fault | Airflow down, P_cond and T_discharge rise, COP down |
 | Evaporator_Fan_Fault | Airflow down, superheat and T_discharge down, capacity down |
+| Refrigerant_Overcharge | P_cond and subcooling up, superheat down |
 
 ## Results
 
@@ -85,18 +86,25 @@ Hold-out on 5000 CoolProp cycles (24 features). Split: 2625 train / 875 val / 15
 
 | Model | Test accuracy | 95 % CI | Test F1 | Val F1 |
 |---|---|---|---|---|
-| **Random Forest (shipped)** | **91.9 %** | 90.4 – 93.1 | 0.918 | 0.916 |
-| Gradient Boosting (calibrated) | 91.9 % | 90.4 – 93.2 | 0.915 | 0.914 |
+| **Random Forest (shipped)** | **89.3 %** | 87.6 – 90.7 | 0.872 | 0.896 |
+| Gradient Boosting (calibrated) | 90.5 % | 88.9 – 91.9 | 0.882 | 0.899 |
 
-The two models are tied on val (ΔF1 = 0.002). Random Forest is shipped: cheaper inference,
-readable importances. 5-fold CV on **train only**: F1 0.914 ± 0.009.
+The two models are tied on val (ΔF1 = 0.003). Random Forest is shipped: cheaper inference,
+readable importances. 5-fold CV on **train only**: F1 0.881 ± 0.017.
 
-Per-class F1 (test): `Condenser_Fan_Fault` 1.00, `Evaporator_Fan_Fault` 0.97, `Normal` 0.94,
-`Refrigerant_Undercharge` 0.88, `Evaporator_Fouling` 0.87, `Condenser_Fouling` 0.85.
+Per-class F1 (test): `Condenser_Fan_Fault` 0.97, `Evaporator_Fan_Fault` 0.97, `Normal` 0.94,
+`Refrigerant_Overcharge` 0.88, `Refrigerant_Undercharge` 0.84, `Evaporator_Fouling` 0.79,
+`Condenser_Fouling` 0.71.
+
+Adding overcharge (and dropping the unmodelled valve-leak ghost class) moved the headline
+from 91.9 % [90.4 – 93.1] on six classes to **89.3 % [87.6 – 90.7]** on seven. Overcharge is
+caught (F1 0.88); it is not collapsed into condenser fouling (11 / 150 overcharge test rows
+called fouling, 9 / 150 the other way) once the generator stopped injecting fouling into
+overcharge samples.
 
 The previous 99.6 % was invalid: `d_COP` equalled the detection label (`== 0` on all 2000
 fault-free rows, and on no other class). Derived quantities are now recomputed from the
-noisy sensors; `d_COP` importance falls from 0.30 to 0.034. Logged in
+noisy sensors; `d_COP` importance falls from 0.30 to 0.036. Logged in
 `outputs/results.csv` (`X0` / `holdout-test`).
 
 These numbers measure **how cleanly the simulator separates faults**, not field-labelled HVAC data. The demo still has to show that fouling is not predicted as a fan fault.
@@ -112,7 +120,7 @@ The residual design was checked against the NIST *FDD Heat Pump Cooling* campaig
 
 Every residual row above uses a healthy reference calibrated on the **target** machine. Rebuilt from the training machine only — a genuinely unknown unit — residuals-only drops to **0.318** (F1 macro 0.290), against 0.251 for the majority class. A second-order polynomial with indoor dew point, the form NIST itself uses, reaches 0.302; a random forest 0.265. No reference model tried lifts that ceiling.
 
-Two things follow. **Residuals nearly double detection when the healthy reference is calibrated on the target machine** (0.333 → 0.602). And **a random split scores 0.95 where an honest one scores 0.60** — so any accuracy figure here, including the 91.9 % above, has to name its validation protocol.
+Two things follow. **Residuals nearly double detection when the healthy reference is calibrated on the target machine** (0.333 → 0.602). And **a random split scores 0.95 where an honest one scores 0.60** — so any accuracy figure here, including the 89.3 % above, has to name its validation protocol.
 
 ### What calibration costs
 

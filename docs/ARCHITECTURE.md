@@ -77,7 +77,7 @@ A split along that seam is the natural next refactor.
 | `tests/test_packages.py`, `tests/test_ml_models.py` | layering guards |
 | `tests/test_api.py` | route contracts, schema rejection (skipped without a model) |
 
-70 tests today.
+76 tests today.
 
 ## Training data
 
@@ -89,15 +89,17 @@ points uniformly from `T_source ∈ (-10, 20) °C`, `T_sink ∈ (30, 55) °C`,
 `simulator.py` (heat-exchanger `UA`, airflow ratio, refrigerant charge), then adds Gaussian
 measurement noise and **recomputes derived quantities** (`COP`, ratios, pinches, residuals)
 from the noisy sensors. The result is written to `outputs/synthetic/dataset.csv` — 5000 rows,
-2000 `Normal` and 3000 faulted across 5 fault classes — and that CSV is what both the
+2000 `Normal` and 3000 faulted (500 each of 6 fault classes) — and that CSV is what both the
 trainer and the dashboard routes read.
 
 `data/nistir_7350_data_in_appendix_d(NF).csv` is **not read by any code**. It is the
 fault-free baseline table from NISTIR 7350, kept as a physical reference.
 
-`FaultType` declares 8 faults, but the default distribution generates 6. Both
-`REFRIGERANT_OVERCHARGE` and `COMPRESSOR_VALVE_LEAK` have a complete `FaultConfig` and
-injection branch that no shipped dataset exercises.
+`FaultType` declares 7 classes, all of which the default mix generates. A test
+(`tests/test_fault_taxonomy.py`) asserts `FaultType` == dataset labels ==
+`metadata.json["classes"]`. `COMPRESSOR_VALVE_LEAK` was removed: the simulator has no
+volumetric-efficiency parameter, and the old injection branch was a mix of undercharge and
+evaporator fouling. Modelling a real valve leak is simulator debt, not a generator flag.
 
 ## Known limits
 

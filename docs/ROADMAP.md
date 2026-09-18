@@ -23,7 +23,7 @@ outputs/<étude>/   models/<étude>/
 Règle : `studies/` → `fdd/` → `physics/`. Zéro violation aujourd'hui, et cinq tests la
 verrouillent (`test_engine_has_no_synthetic_study_api`, etc.).
 
-**70 tests** passent (dont les gardes d'étanchéité P0). L'équivalence de comportement a été
+**76 tests** passent (dont les gardes d'étanchéité P0 et la cohérence de taxonomie P4). L'équivalence de comportement a été
 vérifiée à chaque étape du refactor en comparant les sorties avant/après octet pour octet.
 
 **Confrontation aux essais NIST** — quatre notebooks dans `EDA/` (descriptif, modèle,
@@ -81,21 +81,24 @@ signatures mesurées et simulées. Corrigées : l'accord passe de **12/16 à 20/
 | Débit évaporateur | `superheat` et `T_discharge` inversés | les deux descendent |
 | `T_discharge_max = 130` | déclaré, jamais appliqué (319 °C à −10/55) | capé sur tout le domaine d'entraînement |
 
-Deux désaccords restent : `W_comp` sous-charge, `COP` surcharge. La classe
-`REFRIGERANT_OVERCHARGE` n'est toujours pas dans le mix des 5000 exemples.
+Deux désaccords restent : `W_comp` sous-charge, `COP` surcharge. La surcharge est désormais
+dans le mix (500 / 5000). La fuite de clapet n'est pas modélisée : il faudrait un paramètre
+`volumetric_efficiency_loss` (gaz chaud du refoulement vers l'aspiration) — dette du
+simulateur, pas un flag du générateur.
 
 ## Les décisions qui t'appartiennent
 
 **A. Comment annoncer la performance.** C'est le point le plus urgent, et le seul qu'un jury
-démontera en une question. Le 91,9 % actuel (hold-out 30 %, sélection sur val, intervalle
-Wilson 90,4 – 93,1) mesure la séparabilité des signatures dans le modèle physique, pas une
-détection sur machine réelle. Le 99,6 % précédent était une fuite d'étiquette. Proposition :
+démontera en une question. Le 89,3 % actuel (hold-out 30 %, sélection sur val, intervalle
+Wilson 87,6 – 90,7, sept classes) mesure la séparabilité des signatures dans le modèle
+physique, pas une détection sur machine réelle. Le 99,6 % précédent était une fuite
+d'étiquette. Proposition :
 
 ⚠️ **Cette formulation est provisoire** : elle cite 0,602 sans mentionner que ce chiffre suppose
 une référence saine aux conditions du défaut. À figer **après X3**, pas avant.
 
-> Signatures de défauts séparables à 91,9 % [90,4 – 93,1] en hold-out sur données simulées
-> (sélection sur val, `Pipeline` sklearn). Méthode par résidus confrontée aux essais NIST :
+> Signatures de défauts séparables à 89,3 % [87,6 – 90,7] en hold-out sur données simulées
+> (sept classes, sélection sur val, `Pipeline` sklearn). Méthode par résidus confrontée aux essais NIST :
 > 0,602 lorsque la référence saine est calibrée sur la machine cible, **0,318** sans cette
 > calibration, 0,95 en validation aléatoire — laquelle surestime largement.
 
@@ -117,9 +120,11 @@ reste **P5**.
 **C. `FEATURE_COLUMNS` en résidus seuls ?** Il mélange aujourd'hui 19 grandeurs absolues et 5
 résidus. La mesure dit que ce mélange nuit au transfert.
 
-**D. Les deux défauts fantômes.** `REFRIGERANT_OVERCHARGE` et `COMPRESSOR_VALVE_LEAK` ont une
-`FaultType` et une branche d'injection, mais ne sont jamais générés. Les produire ou les
-retirer — NIST couvre les deux, donc les produire est défendable.
+**D. Les deux défauts fantômes** — **fait, P4.** `REFRIGERANT_OVERCHARGE` est produite
+(500 / 5000), après retrait du `condenser_fouling` parasite dans la branche d'injection.
+`COMPRESSOR_VALVE_LEAK` est retirée : le simulateur n'expose pas de perte de rendement
+volumétrique, et l'ancienne branche était un mélange de deux autres pannes. Chiffre livré :
+**89,3 % [87,6 – 90,7]** (sept classes), contre 91,9 % [90,4 – 93,1] sur six.
 
 ## GRAND 1 — Diagnostic (FDD)
 
@@ -144,9 +149,30 @@ Gardes dans `tests/test_pipeline_integrity.py` : dérivées cohérentes, aucun r
 classe, `d_COP` n'est plus un détecteur parfait, labels mélangés → score de la classe
 majoritaire.
 
-X4 reste à faire, mais elle ne mentira plus par construction : la fuite d'étiquette est fermée.
+X4 peut maintenant être menée sans que la fuite d'étiquette traverse le hold-out.
 P5 (contrat résidus + conditions, retirer le doublon `pressure_ratio`) n'est plus bloqué par
 le bruit des dérivées.
+
+### 1A ter. P4 — Les deux classes fantômes · **fait**
+
+`FaultType` déclarait huit classes, le jeu en produisait six.
+
+**Surcharge — produite.** P3 lui avait donné une physique (pression haute, sous-refroidissement
+qui monte, surchauffe qui baisse). X1 a montré que c'est la seule panne NIST détectée à 0,786
+sans calibration. Le correctif important n'est pas de l'ajouter : c'est de retirer
+`condenser_fouling = severity * 0.2` de la branche d'injection, vestige de l'époque où la
+surcharge n'avait pas de physique. Sans ça, chaque surcharge contenait un vrai encrassement.
+
+**Fuite de clapet — retirée.** Pas de paramètre `volumetric_efficiency_loss` dans
+`simulate_cycle`. L'ancienne branche mélangeait sous-charge et encrassement évaporateur.
+La générer aurait créé une classe qui est littéralement deux autres. À modéliser plus tard,
+côté physique.
+
+Après régénération (5000 lignes, 7 classes) : **89,3 % [87,6 – 90,7]**, F1 0,872. Avant
+(6 classes) : 91,9 % [90,4 – 93,1]. La surcharge est détectée (F1 0,88). Confusion avec
+l'encrassement condenseur : 11 / 150 et 9 / 150 — résidu physique (les deux élèvent P_cond),
+pas le couplage artificiel. Garde : `tests/test_fault_taxonomy.py` (FaultType == dataset ==
+metadata).
 
 ### 1A. Vérité et hygiène
 
@@ -155,7 +181,7 @@ le bruit des dérivées.
 | P1 | Vérité des chiffres dans la documentation | fait |
 | P2 | Budget de calibration mesuré | fait |
 | P3 | Quatre défauts de physique corrigés, accord des signes 12/16 → 20/22 | fait |
-| P4 | Décision D : produire la surcharge, trancher la fuite de clapet | à faire |
+| P4 | Décision D : produire la surcharge, trancher la fuite de clapet | **fait** |
 | P5 | Contrat de features : résidus + conditions ; retirer le doublon `pressure_ratio` | à faire |
 | P6 | Découper `api/app.py` — 4 routes d'inférence contre 17 de tableau de bord | à faire |
 
@@ -168,7 +194,7 @@ toutes, **numérotées dans l'ordre d'exécution** — pas dans l'ordre où l'id
 
 | | Entraîné sur | Testé sur | Ce que ça mesure | État |
 |---|---|---|---|---|
-| **X0** | simulé | simulé, hold-out | Un classifieur peut-il inverser le simulateur | fait — **91,9 % [90,4 – 93,1]** |
+| **X0** | simulé | simulé, hold-out | Un classifieur peut-il inverser le simulateur | fait — **89,3 % [87,6 – 90,7]** (7 cl.) |
 | **X1** | mesuré | mesuré, autre machine | **Quelles pannes** sont détectées | **fait** |
 | **X2** | — | mesuré, autre machine | Le ML bat-il une **table de règles** | **fait** |
 | **X3** | mesuré | mesuré, autre machine | Quel **estimateur de référence saine** est le meilleur | **fait** |
@@ -260,15 +286,17 @@ seule expérience qui teste si le simulateur décrit la réalité.
 ### Ordre recommandé
 
 ```
-P0  ── fait (91,9 % [90,4 – 93,1])
+P0  ── fait (91,9 % [90,4 – 93,1], 6 classes)
+P4  ── fait (surcharge ; 89,3 % [87,6 – 90,7], 7 classes)
 P5 ──> X4 ──> X5
-P4, P6                               parallèle
+P6                               parallèle
 X3                                   indépendant — données NIST seules
 G                                    indépendant — durcir les garde-fous
 ```
 
-**P0 est livré.** X4 peut maintenant être menée sans que la fuite d'étiquette traverse le
-hold-out. P5 (contrat de features) reste un prérequis *utile* de X4, plus un bloquant.
+**P0 et P4 sont livrés.** X4 peut maintenant être menée sans que la fuite d'étiquette traverse
+le hold-out, et sans classes fantômes. P5 (contrat de features) reste un prérequis *utile*
+de X4, plus un bloquant.
 
 **X3 est livré.** Sans les répliques du plan d'essais (dmin = 0,5 °C), le 0,602 tombe à
 **0,482**. Le chiffre de chambre n'est pas encore remplacé dans README / dossier — PR séparée.
@@ -289,7 +317,7 @@ X4 et X5 produiront vraisemblablement des résultats **négatifs**, et c'est leu
 
 Chaque expérience menée jusqu'ici en a suggéré une nouvelle. C'est sain, et c'est sans fin.
 
-**Le périmètre du grand 1 est figé à X4–X5 et P4–P6.** Toute question soulevée par ces
+**Le périmètre du grand 1 est figé à X4–X5 et P5–P6.** Toute question soulevée par ces
 expériences part dans une liste « suite », pas dans le périmètre courant. Sans cette règle, le
 projet ne sera jamais livré.
 

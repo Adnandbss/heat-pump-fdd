@@ -34,4 +34,4 @@ def test_metadata_describes_the_study():
     assert meta["study"] == "synthetic"
     assert meta["mode"] == "heating"
     assert meta["source"] == "simulator"
-    assert meta["taxonomy"] == "project-6class"
+    assert meta["taxonomy"] == "project-7class"

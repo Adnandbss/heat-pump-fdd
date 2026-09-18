@@ -12,7 +12,6 @@ Les défauts simulés incluent:
 - Sur-charge en réfrigérant (Refrigerant Overcharge)
 - Défaillance ventilateur condenseur (Condenser Fan Fault)
 - Défaillance ventilateur évaporateur (Evaporator Fan Fault)
-- Fuite au compresseur (Compressor Valve Leak)
 """
 
 import warnings
@@ -89,7 +88,6 @@ class FaultType(Enum):
     REFRIGERANT_OVERCHARGE = "Refrigerant_Overcharge"
     CONDENSER_FAN_FAULT = "Condenser_Fan_Fault"
     EVAPORATOR_FAN_FAULT = "Evaporator_Fan_Fault"
-    COMPRESSOR_VALVE_LEAK = "Compressor_Valve_Leak"
 
 
 @dataclass
@@ -156,10 +154,6 @@ class FaultDataGenerator:
                 FaultType.EVAPORATOR_FAN_FAULT, 0.20, 0.60,
                 "Défaillance ventilateur évaporateur (20-60%)"
             ),
-            FaultType.COMPRESSOR_VALVE_LEAK: FaultConfig(
-                FaultType.COMPRESSOR_VALVE_LEAK, 0.10, 0.40,
-                "Fuite clapet compresseur (10-40%)"
-            ),
         }
         
         # Plages de conditions opératoires
@@ -197,21 +191,15 @@ class FaultDataGenerator:
             params['refrigerant_charge'] = 1.0 - severity
             
         elif fault_type == FaultType.REFRIGERANT_OVERCHARGE:
-            # Sur-charge : augmente pression condensation
+            # Extra charge only. Do not piggy-back condenser fouling: that
+            # contamination made overcharge look like fouling by construction.
             params['refrigerant_charge'] = 1.0 + severity * 0.5
-            params['condenser_fouling'] = severity * 0.2  # Effet indirect
             
         elif fault_type == FaultType.CONDENSER_FAN_FAULT:
             params['fan_cond_ratio'] = 1.0 - severity
             
         elif fault_type == FaultType.EVAPORATOR_FAN_FAULT:
             params['fan_evap_ratio'] = 1.0 - severity
-            
-        elif fault_type == FaultType.COMPRESSOR_VALVE_LEAK:
-            # Fuite clapet : réduit rendement volumétrique effectif
-            # Simulé par une combinaison de facteurs
-            params['refrigerant_charge'] = 1.0 - severity * 0.3
-            params['evaporator_fouling'] = severity * 0.15
         
         return params
     

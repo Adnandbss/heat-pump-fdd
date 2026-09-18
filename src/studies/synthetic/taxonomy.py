@@ -5,6 +5,7 @@ FAULT_PARAM_MAP = {
     "Condenser_Fouling": {"condenser_fouling": 0.40},
     "Evaporator_Fouling": {"evaporator_fouling": 0.25},
     "Refrigerant_Undercharge": {"refrigerant_charge": 0.80},
+    "Refrigerant_Overcharge": {"refrigerant_charge": 1.10},
     "Condenser_Fan_Fault": {"fan_cond_ratio": 0.55},
     "Evaporator_Fan_Fault": {"fan_evap_ratio": 0.55},
 }
@@ -29,6 +30,11 @@ SCENARIOS = {
         "fault_type": "Refrigerant_Undercharge",
         "params": {"refrigerant_charge": 0.80},
         "description": "20% undercharge from a leak",
+    },
+    "Refrigerant overcharge 10%": {
+        "fault_type": "Refrigerant_Overcharge",
+        "params": {"refrigerant_charge": 1.10},
+        "description": "10% overcharge — extra liquid in the condenser",
     },
     "Condenser fan fault": {
         "fault_type": "Condenser_Fan_Fault",

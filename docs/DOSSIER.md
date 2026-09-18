@@ -264,10 +264,12 @@ une sévérité tirée, et le cycle est recalculé.
 
 ![Distribution des grandeurs dans le jeu synthétique](../outputs/synthetic/data_distribution.png)
 
-Six classes sont produites : sain, encrassement de condenseur, encrassement d'évaporateur,
-sous-charge, ventilateur de condenseur, ventilateur d'évaporateur. Deux autres — surcharge et
-fuite de clapet — sont **déclarées avec une branche d'injection mais jamais générées**. Ce sont
-des classes fantômes, et leur sort est une décision documentée plutôt que laissée en l'état.
+Sept classes sont produites : sain, encrassement de condenseur, encrassement d'évaporateur,
+sous-charge, **surcharge**, ventilateur de condenseur, ventilateur d'évaporateur. La surcharge
+est générée depuis P4, après retrait d'un `condenser_fouling` parasite qui contaminait chaque
+échantillon. La fuite de clapet a été **retirée** : le simulateur n'a pas de paramètre de
+rendement volumétrique, et l'ancienne branche était un mélange de sous-charge et
+d'encrassement évaporateur.
 
 ## Le bruit de mesure
 
@@ -282,8 +284,9 @@ $\texttt{pressure\_ratio} = P_{cond}/P_{evap}$ et $COP = Q_{cond}/W_{comp}$.
 Avant cette correction, `d_COP` n'était bruité d'aucun côté : il valait exactement 0 pour les
 2000 essais sains, et pour eux seuls. Un arbre à une feuille séparait défaut de sain à 100 %.
 C'était l'étiquette de détection en clair dans le vecteur d'entrée. Le 99,6 % publié alors
-était invalide. Le chiffre honnête, après fermeture des quatre fuites du pipeline, est
-**91,9 % [90,4 – 93,1]** (hold-out, sélection sur val).
+était invalide. Le chiffre honnête, après fermeture des quatre fuites du pipeline, était
+**91,9 % [90,4 – 93,1]** sur six classes. P4 a ajouté la surcharge : le chiffre livré est
+**89,3 % [87,6 – 90,7]** (hold-out, sélection sur val, sept classes).
 
 La portée de ce qui reste dans le modèle — partie suivante.
 
@@ -298,20 +301,22 @@ l'interprétabilité. Scaler et classifieur dans un `sklearn.Pipeline`. Split 26
 
 | Modèle | Accuracy test | IC 95 % | F1 test | F1 val |
 |---|---|---|---|---|
-| **Forêt aléatoire (livré)** | **91,9 %** | 90,4 – 93,1 | 0,918 | 0,916 |
-| Gradient Boosting calibré | 91,9 % | 90,4 – 93,2 | 0,915 | 0,914 |
+| **Forêt aléatoire (livré)** | **89,3 %** | 87,6 – 90,7 | 0,872 | 0,896 |
+| Gradient Boosting calibré | 90,5 % | 88,9 – 91,9 | 0,882 | 0,899 |
 
-Validation croisée 5 plis **sur le train seulement** : F1 0,914 ± 0,009.
+Validation croisée 5 plis **sur le train seulement** : F1 0,881 ± 0,017.
 
-**Pourquoi pas douze algorithmes.** Les deux candidats sont à égalité. Empiler des algorithmes
-aurait donné une **illusion de rigueur**. Le travail utile était dans le protocole : ne pas
-choisir sur le test, publier un intervalle.
+**Pourquoi pas douze algorithmes.** Les deux candidats sont à égalité sur val (ΔF1 = 0,003).
+Empiler des algorithmes aurait donné une **illusion de rigueur**. Le travail utile était dans
+le protocole : ne pas choisir sur le test, publier un intervalle.
 
 ![Matrice de confusion, jeu simulé](../outputs/synthetic/confusion_matrix.png)
 
-La matrice de confusion n'est plus quasi parfaite. Les ventilateurs restent séparés (F1 1,00 et
-0,97) ; les deux encrassements se confondent encore (0,85 et 0,87). C'est de la physique, pas
-une fuite.
+La matrice de confusion n'est plus quasi parfaite. Les ventilateurs restent séparés (F1 0,97) ;
+la surcharge est détectée (F1 0,88) et ne se confond pas avec l'encrassement condenseur
+(11 / 150 et 9 / 150 dans les deux sens) une fois le couplage artificiel retiré. Les deux
+encrassements restent les classes difficiles (0,71 et 0,79). C'est de la physique : les deux
+élèvent la pression haute.
 
 ## Ce dont le modèle se sert réellement
 
@@ -326,16 +331,16 @@ contrat de features est donc largement surdimensionné, ce qui prépare une simp
 
 | Rang | Grandeur | Importance |
 |---|---|---|
-| 1 | `delta_T_evap` | 0,149 |
-| 2 | `delta_T_cond` | 0,147 |
-| 3 | `d_T_discharge` | 0,130 |
-| 4 | `superheat` | 0,118 |
-| 5 | `subcooling` | 0,085 |
-| 6 | `d_W_comp` | 0,075 |
-| 9 | `d_COP` | **0,034** |
+| 1 | `delta_T_cond` | 0,140 |
+| 2 | `delta_T_evap` | 0,131 |
+| 3 | `superheat` | 0,129 |
+| 4 | `d_T_discharge` | 0,118 |
+| 5 | `subcooling` | 0,088 |
+| 6 | `d_W_comp` | 0,078 |
+| 9 | `d_COP` | **0,036** |
 
 Avant correction, `d_COP` + `delta_T_cond` + `delta_T_evap` portaient 76 % de l'importance, et
-les trois étaient exempts de bruit. Après recalcul des dérivées, `d_COP` tombe à 3,4 %. Les
+les trois étaient exempts de bruit. Après recalcul des dérivées, `d_COP` tombe à 3,6 %. Les
 pinches restent utiles — ils sont désormais cohérents avec les températures bruitées.
 
 ## `FDDEngine` — charger et diagnostiquer, rien d'autre
@@ -798,7 +803,7 @@ la densité des mesures saines disponibles.
 ## Ce que le système fait
 
 Il modélise un cycle thermodynamique complet et en dérive des signatures de panne cohérentes ;
-il en fabrique un jeu d'apprentissage ; il diagnostique six classes ; il sert le tout par une
+il en fabrique un jeu d'apprentissage ; il diagnostique sept classes ; il sert le tout par une
 API et un tableau de bord qui se clonent et tournent sans préparation. Son architecture en
 couches permet d'ajouter une source de données sans toucher à la méthode — démontré en
 pratique, pas seulement affirmé.
@@ -808,9 +813,10 @@ corrections de physique et un résultat que la simulation seule ne pouvait pas d
 
 ## Ce qu'il ne fait pas
 
-- Il ne détecte pas les pannes à 99 % sur le terrain : 91,9 % [90,4 – 93,1] mesure la
+- Il ne détecte pas les pannes à 99 % sur le terrain : 89,3 % [87,6 – 90,7] mesure la
   séparabilité des signatures à l'intérieur du modèle physique, en hold-out, après fermeture
-  d'une fuite d'étiquette qui affichait 99,6 %.
+  d'une fuite d'étiquette qui affichait 99,6 % et après l'ajout de la surcharge (six classes :
+  91,9 %).
 - Il ne fonctionne pas sur une machine inconnue sans calibration préalable.
 - Il ne prédit pas les pannes futures : les essais disponibles sont stationnaires, sans axe du
   temps. Leur en inventer un produirait exactement le genre de chiffre que ce travail s'attache
@@ -818,8 +824,8 @@ corrections de physique et un résultat que la simulation seule ne pouvait pas d
 
 ## La formulation défendable
 
-> Les signatures de défaut sont séparables à 91,9 % [90,4 – 93,1] en hold-out sur données
-> simulées (sélection sur val, `Pipeline` sklearn). Confrontée à des essais mesurés
+> Les signatures de défaut sont séparables à 89,3 % [87,6 – 90,7] en hold-out sur données
+> simulées (sept classes, sélection sur val, `Pipeline` sklearn). Confrontée à des essais mesurés
 > indépendants, la méthode des résidus fait passer la détection de 0,33 à 0,60 lorsque la
 > référence saine est calibrée sur la machine cible — contre 0,32 sans cette calibration, et
 > 0,95 en validation aléatoire, laquelle surestime largement.
@@ -1050,7 +1056,7 @@ retrouvés exactement.
 
 | Chiffre | Où |
 |---|---|
-| 91,9 % [90,4 – 93,1] simulé | `main_analysis.py`, `outputs/results.csv` (X0 / holdout-test) |
+| 89,3 % [87,6 – 90,7] simulé | `main_analysis.py`, `outputs/results.csv` (X0 / holdout-test) |
 | 0,95 / 0,602 / 0,318 | `EDA/EDA_NIST_model.ipynb`, `EDA_NIST_reference.ipynb` |
 | Accord des signes 20/22 | `EDA/EDA_NIST_model.ipynb` |
 | Budget de calibration | `EDA/EDA_NIST_calibration.ipynb` |

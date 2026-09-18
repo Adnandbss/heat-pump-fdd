@@ -761,7 +761,7 @@ def create_pressure_temperature_chart(df: pd.DataFrame) -> go.Figure:
         'Refrigerant_Undercharge': '#F39C12',
         'Condenser_Fan_Fault': '#9B59B6',
         'Evaporator_Fan_Fault': '#1ABC9C',
-        'Compressor_Valve_Leak': '#E91E63',
+        'Refrigerant_Overcharge': '#8E44AD',
     }
     
     for fault_type in df['fault_type'].unique():

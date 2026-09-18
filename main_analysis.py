@@ -96,9 +96,10 @@ def main():
     # Distribution des classes
     fault_distribution = {
         FaultType.NORMAL: 0.40,
-        FaultType.CONDENSER_FOULING: 0.15,
-        FaultType.EVAPORATOR_FOULING: 0.15,
+        FaultType.CONDENSER_FOULING: 0.10,
+        FaultType.EVAPORATOR_FOULING: 0.10,
         FaultType.REFRIGERANT_UNDERCHARGE: 0.10,
+        FaultType.REFRIGERANT_OVERCHARGE: 0.10,
         FaultType.CONDENSER_FAN_FAULT: 0.10,
         FaultType.EVAPORATOR_FAN_FAULT: 0.10,
     }
@@ -245,6 +246,16 @@ def main():
     )
     cm_norm = cm_df.div(cm_df.sum(axis=1).replace(0, 1), axis=0)
     cm_norm.to_csv(f'{OUTPUT_DIR}/confusion_matrix.csv')
+    oc, cf = "Refrigerant_Overcharge", "Condenser_Fouling"
+    if oc in cm_df.index and cf in cm_df.columns:
+        oc_n = int(cm_df.loc[oc].sum())
+        oc_as_cf = int(cm_df.loc[oc, cf]) if oc_n else 0
+        cf_as_oc = int(cm_df.loc[cf, oc]) if cf in cm_df.index else 0
+        print(
+            f"\n🔍 Surcharge ↔ encrassement condenseur (test): "
+            f"{oc}→{cf} {oc_as_cf}/{oc_n}  "
+            f"{cf}→{oc} {cf_as_oc}/{int(cm_df.loc[cf].sum())}"
+        )
     pd.DataFrame({
         'y_true': y_test.values,
         'y_pred': best_result.predictions,
@@ -290,7 +301,7 @@ def main():
         'study': STUDY,
         'mode': 'heating',
         'source': 'simulator',
-        'taxonomy': 'project-6class',
+        'taxonomy': 'project-7class',
     }
     metadata.update(_git_stamp())
     with open(os.path.join(MODEL_DIR, 'metadata.json'), 'w', encoding='utf-8') as f:
@@ -427,6 +438,8 @@ def main():
          "speed": 0.7, "fault_type": "Evaporator_Fouling"},
         {"name": "Fuite réfrigérant 20%", "T_source": 7, "T_sink": 40,
          "speed": 0.7, "fault_type": "Refrigerant_Undercharge"},
+        {"name": "Surcharge réfrigérant 10%", "T_source": 7, "T_sink": 40,
+         "speed": 0.7, "fault_type": "Refrigerant_Overcharge"},
     ]
 
     print("\n🎯 Test de diagnostic sur cas simulés:\n")
