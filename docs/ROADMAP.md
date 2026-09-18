@@ -92,6 +92,25 @@ A7/W40 disparaît, et avec lui la distinction encrassement / ventilateur. Le sim
 serait pas jeté — il deviendrait le **modèle de référence sain**, son vrai rôle dans la méthode
 Li & Braun. Décision de fond, pas de refactor.
 
+**C bis. Les grandeurs dérivées contournent le bruit de mesure.** Dans
+`studies/synthetic/generator.py`, le bruit gaussien est appliqué **après** le calcul des
+grandeurs dérivées, qui ne sont pas recalculées. Résultat mesuré sur les 5000 exemples :
+
+| Grandeur | Lignes cohérentes avec ses entrées |
+|---|---|
+| `pressure_ratio`, `compression_ratio` | **0 %** |
+| `COP` | **0 %** |
+| `delta_T_evap`, `delta_T_cond` | **0 %** |
+
+Aucune ligne ne vérifie `pressure_ratio = P_cond / P_evap`. Le modèle reçoit donc deux
+versions de la même information, une bruitée et une propre — le bruit est partiellement
+récupérable par différence (écart-type du rapport : 0,028). Une part du 99,6 % vient d'une
+information indisponible sur une machine réelle.
+
+À corriger dans le même chantier que la décision C : soit recalculer les dérivées après
+bruitage, soit ne plus les transmettre si l'on passe aux résidus seuls. Les deux règlent le
+problème, le second le règle par construction.
+
 **C. `FEATURE_COLUMNS` en résidus seuls ?** Il mélange aujourd'hui 19 grandeurs absolues et 5
 résidus. La mesure dit que ce mélange nuit au transfert.
 
