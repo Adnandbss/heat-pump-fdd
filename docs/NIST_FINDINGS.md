@@ -279,3 +279,52 @@ to ignore and the physics still names.
 boosting (0.83): a threshold on two or three residuals is enough. The learned model earns
 its keep mainly on **no-fault** and, to a lesser extent, overcharge — where a single
 direction does not split the classes.
+
+## Stage 1: the healthy-reference estimator
+
+The published 0.602 is a **kNN, k=5, median**, in `(T_source, T_sink)`, on healthy tests of
+the **target** machine. Stage 2 was benchmarked in X2. Stage 1 was not. Classifier frozen
+(`GradientBoostingClassifier(random_state=42)`, train residuals = that same kNN on
+train-healthy). Only the test-time estimator varies. Control recovered exactly:
+**0.602 / 0.479**.
+
+`KNeighborsRegressor` (sklearn default = **mean**) scores **0.554**, not 0.602. The project's
+median is worth 4.8 points. `dmin` is Euclidean, the same metric as the tree.
+
+**28 % of faulty tests have a healthy neighbour within 0.1 °C** (72 % within 0.5 °C). The
+campaign is replicated by construction.
+
+| Estimator (target-machine healthy, no dew) | dmin=0 | dmin=0.5 °C |
+|---|---|---|
+| kNN k=5 median — **published** | **0.602** | **0.482** |
+| kNN k=1 median | 0.650 | 0.501 |
+| kNN k=5 mean | 0.554 | 0.485 |
+| Global median | 0.337 | 0.336 |
+| Linear / poly2 / ridge | ~0.46 | ~0.46 |
+| Random forest | 0.513 | — |
+
+The curve is monotonic. A small `k` looks ten points better until replicas are forbidden;
+then k=1 and k=5 sit on the same step. Fitted surfaces are flat in `dmin`: they never used
+the twins, and they never reach 0.602.
+
+Indoor dew point in the kNN **of both stages** (train and test) drops accuracy
+**0.602 → 0.576**. Leave-one-out MAE on healthy tests improves slightly. Judging stage 1 on
+regression error would have picked the variant that loses at the end of the chain.
+
+Per class, kNN k=5: no-fault F1 **0.735 → 0.434** at dmin=0.5 °C. Undercharge stays
+(0.854 → 0.841). The 12 accuracy points are mostly “recognising a healthy twin”.
+
+**Verdict.** 0.602 **holds as the chamber-protocol number** (a healthy test exists at the
+same condition). It **does not hold** as the project's reference performance on a unit in
+service. The preliminary 0.511 is superseded by **0.482**. Numbers:
+`outputs/results.csv` (`experiment=X3`), `outputs/x3_estimator_dmin.csv`. Notebook and
+figure: `EDA/EDA_NIST_reference_bench.ipynb`, `docs/nist_x3_dmin.png`.
+
+**0.602 is not replaced in this change.** If the field-like protocol becomes the headline,
+these five citations must move together in a separate PR:
+
+- `README.md` — residuals-only LOMO **0.602**
+- `docs/DOSSIER.md` (+ `docs/DOSSIER.pdf`)
+- `docs/ROADMAP.md`
+- `docs/NIST_FINDINGS.md` — this file, every 0.602 above this section
+- `outputs/results.csv` — `X0b` / `LOMO` / `target-machine` / `residuals` / `accuracy`

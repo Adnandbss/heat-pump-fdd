@@ -561,6 +561,10 @@ Ce n'est pas un échec : c'est une mesure.
 > dit pas que la méthode échoue, il dit ce qu'elle exige : une calibration saine sur la machine
 > en service. Une méthode dont on connaît le prix est utilisable ; une méthode dont on ignore
 > la condition ne l'est pas.
+>
+> Le 0,602 porte lui-même une condition supplémentaire, mesurée depuis et détaillée en
+> **section 12** : il suppose une mesure saine à la condition même du défaut. Sur une machine en
+> service, la valeur réaliste est entre 0,43 et 0,52.
 
 # 10. Le budget de calibration
 
@@ -660,7 +664,73 @@ pour l'une d'elles il est nul.**
 > compter : les défauts de charge, sur une machine jamais vue, dont l'un sans installation
 > préalable.
 
-# 12. Conclusion
+# 12. Ce que le 0,602 suppose vraiment
+
+Les sections précédentes annoncent 0,602 lorsque la référence saine est calibrée sur la machine
+cible. Un benchmark de l'estimateur de référence a mesuré ce que ce chiffre suppose — et la
+réponse limite sa portée.
+
+## La campagne d'essais est répliquée par construction
+
+**28 % des essais défaillants ont un essai sain à moins de 0,1 °C**, et 72 % à moins de 0,5 °C.
+C'est logique pour une campagne contrôlée : le laboratoire teste les mêmes conditions nominales
+avec et sans défaut. Sur une machine en service, où les mesures saines enregistrées sont celles
+qui se sont présentées, ce jumeau n'existe pas.
+
+## Ce qui se passe quand on interdit le jumeau
+
+![La référence saine n'est utile que si elle est proche](nist_x3_dmin.png)
+
+En interdisant les voisins situés à moins de `dmin` de la condition à diagnostiquer :
+
+| `dmin` | accuracy |
+|---|---|
+| 0 — protocole publié | **0,602** |
+| 0,1 °C | 0,519 |
+| 0,25 °C | 0,499 |
+| 0,5 °C | **0,482** |
+| 1,0 °C | 0,452 |
+| 2,0 °C | 0,434 |
+
+**Il suffit d'exclure les voisins à 0,1 °C pour perdre huit points.** La chute est immédiate, ce
+qui signifie que le chiffre repose sur des jumeaux quasi exacts plutôt que sur une estimation.
+
+## Trois enseignements du benchmark
+
+**Les surfaces ajustées sont plates.** Régression linéaire, polynôme d'ordre 2, Ridge : environ
+0,46 quel que soit `dmin`. Elles n'ont jamais utilisé les jumeaux — et n'atteignent jamais
+0,602. Sur le graphique, la ligne horizontale est celle vers laquelle tous les estimateurs de
+voisinage convergent une fois les répliques exclues.
+
+**La médiane vaut 4,8 points.** L'implémentation du projet prend la médiane des cinq voisins ;
+la moyenne, choix par défaut de la bibliothèque, donne 0,554. Un détail d'implémentation porte
+une part réelle du résultat.
+
+**Et surtout, le gain n'est pas où on croyait.** Par classe, à `dmin = 0,5 °C` :
+
+| Classe | F1 à `dmin=0` | F1 à `dmin=0,5` |
+|---|---|---|
+| Sans défaut | 0,735 | **0,434** |
+| Sous-charge | 0,854 | 0,841 |
+
+Les douze points d'accuracy perdus viennent presque entièrement de la reconnaissance de l'état
+**sain**. Le diagnostic des défauts de charge, lui, survit sans jumeau. L'avantage des répliques
+ne servait pas à nommer les pannes : il servait à reconnaître la machine en bonne santé.
+
+## Le verdict
+
+Le 0,602 **tient comme chiffre de protocole en chambre climatique** — un essai sain existe à la
+même condition, c'est une propriété du plan d'expérience. Il **ne tient pas** comme performance
+attendue sur une machine en service, où la valeur réaliste se situe entre **0,43 et 0,52** selon
+la densité des mesures saines disponibles.
+
+> **Pour le jury.** C'est la troisième fois dans ce document qu'un chiffre change de sens selon
+> un détail de protocole : le découpage aléatoire contre le découpage par machine, l'origine de
+> la référence saine, et maintenant la structure du plan d'essais. Ce n'est pas une accumulation
+> de malchance — c'est la démonstration que le protocole, et non le modèle, est ce qui porte le
+> résultat.
+
+# 13. Conclusion
 
 ## Ce que le système fait
 
@@ -689,8 +759,12 @@ corrections de physique et un résultat que la simulation seule ne pouvait pas d
 > simulées (sélection sur val, `Pipeline` sklearn). Confrontée à des essais mesurés
 > indépendants, la méthode des résidus fait passer la détection de 0,33 à 0,60 lorsque la
 > référence saine est calibrée sur la machine cible — contre 0,32 sans cette calibration, et
-> 0,95 en validation aléatoire, laquelle surestime largement. Le coût de cette calibration a
-> été mesuré : il faut couvrir le domaine de fonctionnement, pas quelques points.
+> 0,95 en validation aléatoire, laquelle surestime largement.
+>
+> Ce 0,60 suppose toutefois une mesure saine à la condition même du défaut, ce que garantit une
+> campagne en chambre et non une machine en service : à distance réaliste, la performance se
+> situe entre 0,43 et 0,52. Le coût de la calibration a été mesuré, et il porte autant sur la
+> **proximité** des mesures saines que sur leur nombre.
 
 ---
 
