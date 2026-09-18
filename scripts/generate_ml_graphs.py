@@ -137,7 +137,7 @@ def main() -> None:
     clf = FDDClassifier(model_type="gradient_boosting")
     train_sizes, train_scores, val_scores = learning_curve(
         clf.model,
-        Xs,
+        X,
         y,
         cv=3,
         train_sizes=np.linspace(0.35, 1.0, 5),

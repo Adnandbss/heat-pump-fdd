@@ -42,20 +42,49 @@ def test_documentation_cites_no_dead_path(md):
     )
 
 
-def test_headline_metrics_name_their_protocol():
-    """A bare accuracy figure must never appear without its protocol nearby.
-
-    The project measured a 0.95 / 0.60 gap between two validation protocols on the
-    same model and data. A number without its protocol is therefore not a result.
-    """
+def test_lomo_figure_names_its_protocol():
+    """0.602 without leave-one-machine-out nearby is the bug this test exists for."""
     readme = ROOT / "README.md"
     if not readme.exists():
         pytest.skip("README absent")
     text = readme.read_text(encoding="utf-8").lower()
-    if "0.602" not in text and "99.6" not in text and "99,6" not in text:
-        pytest.skip("no headline figure to check")
-    protocol_words = ("leave-one-machine-out", "cross-validation", "cv ", "hold-out",
-                      "holdout", "validation", "protocol")
-    assert any(w in text for w in protocol_words), (
-        "README states a performance figure without naming any validation protocol."
+    idx = text.find("0.602")
+    assert idx >= 0, "README no longer publishes the NIST LOMO figure 0.602"
+    window = text[max(0, idx - 500): idx + 500]
+    assert "leave-one-machine-out" in window, (
+        "0.602 appears in the README without the LOMO protocol in the same passage."
     )
+
+
+def test_readme_x0_matches_results_csv():
+    from tools.results import value
+
+    acc = value(
+        experiment="X0",
+        protocol="holdout-test",
+        metric="accuracy",
+        model="random-forest",
+        label="__global__",
+    )
+    pct = f"{acc * 100:.1f}"
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert pct in text, f"README does not publish the logged hold-out accuracy {pct} %"
+    assert "hold-out" in text.lower() or "holdout" in text.lower()
+
+
+def test_dossier_x0_matches_results_csv():
+    from tools.results import value
+
+    acc = value(
+        experiment="X0",
+        protocol="holdout-test",
+        metric="accuracy",
+        model="random-forest",
+        label="__global__",
+    )
+    french = f"{acc * 100:.1f}".replace(".", ",")
+    dossier = ROOT / "docs" / "DOSSIER.md"
+    if not dossier.exists():
+        pytest.skip("DOSSIER.md absent")
+    text = dossier.read_text(encoding="utf-8")
+    assert french in text, f"DOSSIER.md does not publish the logged hold-out accuracy {french} %"

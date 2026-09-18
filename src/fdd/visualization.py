@@ -528,7 +528,8 @@ class FDDVisualizer:
         df: pd.DataFrame,
         feature_cols: List[str],
         label_col: str = 'fault_type',
-        save_path: Optional[str] = None
+        save_path: Optional[str] = None,
+        best_name: Optional[str] = None,
     ) -> plt.Figure:
         """
         Crée une figure de synthèse pour le rapport.
@@ -537,13 +538,16 @@ class FDDVisualizer:
         gs = GridSpec(2, 3, figure=fig, hspace=0.3, wspace=0.3)
         
         # Récupérer le meilleur résultat
-        best_name = max(results_dict.keys(), key=lambda k: results_dict[k].f1_macro)
+        if best_name is None or best_name not in results_dict:
+            best_name = max(results_dict.keys(), key=lambda k: results_dict[k].f1_macro)
         best_result = results_dict[best_name]
+        class_names = list(best_result.class_names) if best_result.class_names else None
+        if not class_names:
+            class_names = list(pd.unique(df[label_col]))
         
         # 1. Matrice de confusion (grande)
         ax1 = fig.add_subplot(gs[0, :2])
         cm = best_result.confusion_matrix
-        class_names = list(set(df[label_col]))
         cm_norm = cm.astype('float') / cm.sum(axis=1, keepdims=True)
         
         sns.heatmap(cm_norm, annot=True, fmt='.2f', cmap='Blues',

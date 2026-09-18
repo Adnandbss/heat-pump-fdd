@@ -579,7 +579,7 @@ def main():
         with col3:
             kpi_card("% Normal", f"{normal_pct:.1f}%", "healthy operating points")
         with col4:
-            kpi_card("Best accuracy", f"{best_acc:.1f}%", "hold-out Gradient Boosting")
+            kpi_card("Best accuracy", f"{best_acc:.1f}%", "hold-out, selected on val")
         
         st.markdown("---")
         

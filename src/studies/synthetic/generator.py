@@ -15,15 +15,69 @@ Les défauts simulés incluent:
 - Fuite au compresseur (Compressor Valve Leak)
 """
 
+import warnings
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional
 from dataclasses import dataclass
 from enum import Enum
 from tqdm import tqdm
 
-from ...fdd.features import FEATURE_COLUMNS, cycle_to_features
+from ...fdd.features import DEFAULT_CAPACITY_NOM, FEATURE_COLUMNS, cycle_to_features
 from ...physics.simulator import HeatPumpSimulator
+
+NOISE_SCALE = {
+    "temperature": 0.5,  # ±0.5 °C
+    "pressure": 0.02,    # ±2 %
+    "power": 0.03,       # ±3 %
+}
+
+SENSOR_NOISE = {
+    "T_ambient": "temperature",
+    "T_setpoint": "temperature",
+    "P_evap": "pressure",
+    "P_cond": "pressure",
+    "T_evap": "temperature",
+    "T_cond": "temperature",
+    "T_suction": "temperature",
+    "T_discharge": "temperature",
+    "superheat": "temperature",
+    "subcooling": "temperature",
+    "W_comp": "power",
+    "Q_cond": "power",
+}
+
+BASELINE_SENSOR_NOISE = {
+    "P_evap": "pressure",
+    "P_cond": "pressure",
+    "T_evap": "temperature",
+    "T_cond": "temperature",
+    "T_discharge": "temperature",
+    "superheat": "temperature",
+    "subcooling": "temperature",
+    "W_comp": "power",
+    "Q_cond": "power",
+}
+
+
+def recompute_derived(sample: Dict, capacity_nom: float = DEFAULT_CAPACITY_NOM) -> Dict:
+    """Rebuild ratios, COP and pinches from the (possibly noisy) sensor columns.
+
+    Call this *after* measurement noise. Leaving the simulator's pre-noise
+    values in place is how ``d_COP`` used to equal the detection label.
+    """
+    p_evap = float(sample["P_evap"])
+    p_cond = float(sample["P_cond"])
+    w_comp = float(sample["W_comp"])
+    q_cond = float(sample["Q_cond"])
+    sample["compression_ratio"] = p_cond / p_evap if p_evap else 0.0
+    sample["pressure_ratio"] = p_cond / p_evap if p_evap else 0.0
+    sample["COP"] = q_cond / w_comp if w_comp else 0.0
+    sample["delta_T_evap"] = float(sample["T_ambient"]) - float(sample["T_evap"])
+    sample["delta_T_cond"] = float(sample["T_cond"]) - float(sample["T_setpoint"])
+    sample["capacity_ratio"] = q_cond / capacity_nom if capacity_nom else 0.0
+    return sample
 
 
 class FaultType(Enum):
@@ -69,6 +123,8 @@ class FaultDataGenerator:
     ):
         self.simulator = simulator or HeatPumpSimulator()
         self.rng = np.random.default_rng(random_seed)
+        self.n_rejected = 0
+        self.n_dropped_nan = 0
         
         # Configuration des défauts par défaut
         self.fault_configs = {
@@ -190,20 +246,12 @@ class FaultDataGenerator:
             speed_ratio=speed_ratio,
         )
         
-        # Ajouter du bruit de mesure réaliste
-        noise_scale = {
-            'temperature': 0.5,   # ±0.5°C
-            'pressure': 0.02,     # ±2% pression
-            'power': 0.03,        # ±3% puissance
-        }
-        
         def add_noise(value, scale_type):
-            if scale_type == 'temperature':
-                return value + self.rng.normal(0, noise_scale['temperature'])
-            elif scale_type == 'pressure':
-                return value * (1 + self.rng.normal(0, noise_scale['pressure']))
-            else:
-                return value * (1 + self.rng.normal(0, noise_scale['power']))
+            if scale_type == "temperature":
+                return value + self.rng.normal(0, NOISE_SCALE["temperature"])
+            if scale_type == "pressure":
+                return value * (1 + self.rng.normal(0, NOISE_SCALE["pressure"]))
+            return value * (1 + self.rng.normal(0, NOISE_SCALE["power"]))
         
         sample = cycle_to_features(
             result,
@@ -214,27 +262,40 @@ class FaultDataGenerator:
             baseline=baseline,
             simulator=self.simulator,
         )
-        sample["T_ambient"] = add_noise(sample["T_ambient"], "temperature")
-        sample["T_setpoint"] = add_noise(sample["T_setpoint"], "temperature")
-        sample["P_evap"] = add_noise(sample["P_evap"], "pressure")
-        sample["P_cond"] = add_noise(sample["P_cond"], "pressure")
-        sample["T_evap"] = add_noise(sample["T_evap"], "temperature")
-        sample["T_cond"] = add_noise(sample["T_cond"], "temperature")
-        sample["T_suction"] = add_noise(sample["T_suction"], "temperature")
-        sample["T_discharge"] = add_noise(sample["T_discharge"], "temperature")
-        sample["superheat"] = add_noise(sample["superheat"], "temperature")
-        sample["subcooling"] = add_noise(sample["subcooling"], "temperature")
-        sample["W_comp"] = add_noise(sample["W_comp"], "power")
-        sample["Q_cond"] = add_noise(sample["Q_cond"], "power")
-        sample["d_T_discharge"] = sample["T_discharge"] - baseline.T_discharge
-        sample["d_superheat"] = sample["superheat"] - baseline.superheat
-        sample["d_subcooling"] = sample["subcooling"] - baseline.subcooling
-        sample["d_COP"] = sample["COP"] - baseline.COP
-        sample["d_W_comp"] = sample["W_comp"] - baseline.W_comp
+        for col, kind in SENSOR_NOISE.items():
+            sample[col] = add_noise(sample[col], kind)
+        capacity_nom = self.simulator.capacity_nom
+        recompute_derived(sample, capacity_nom)
+
+        # The healthy reference is a sensor reading too — noise it independently,
+        # then rebuild its COP from the noisy powers, otherwise d_* keep a
+        # noise-free half of the subtraction.
+        ref = {
+            "T_ambient": T_source,
+            "T_setpoint": T_sink,
+            "P_evap": baseline.P_evap,
+            "P_cond": baseline.P_cond,
+            "T_evap": baseline.T_evap,
+            "T_cond": baseline.T_cond,
+            "T_discharge": baseline.T_discharge,
+            "superheat": baseline.superheat,
+            "subcooling": baseline.subcooling,
+            "W_comp": baseline.W_comp,
+            "Q_cond": baseline.Q_cond,
+        }
+        for col, kind in BASELINE_SENSOR_NOISE.items():
+            ref[col] = add_noise(ref[col], kind)
+        recompute_derived(ref, capacity_nom)
+
+        sample["d_T_discharge"] = sample["T_discharge"] - ref["T_discharge"]
+        sample["d_superheat"] = sample["superheat"] - ref["superheat"]
+        sample["d_subcooling"] = sample["subcooling"] - ref["subcooling"]
+        sample["d_COP"] = sample["COP"] - ref["COP"]
+        sample["d_W_comp"] = sample["W_comp"] - ref["W_comp"]
         sample["fault_type"] = fault_type.value
         sample["fault_severity"] = severity
         sample["is_faulty"] = 0 if fault_type == FaultType.NORMAL else 1
-        
+
         return sample
     
     def generate_dataset(
@@ -287,23 +348,24 @@ class FaultDataGenerator:
             first_type = list(samples_per_type.keys())[0]
             samples_per_type[first_type] += diff
         
-        # Générer les échantillons
         all_samples = []
-        
+        self.n_rejected = 0
+        self.n_dropped_nan = 0
+
         iterator = samples_per_type.items()
         if show_progress:
             iterator = tqdm(list(iterator), desc="Generating fault types")
-        
+
         for fault_type, n in iterator:
             config = self.fault_configs[fault_type]
-            
-            for _ in range(n):
-                # Conditions aléatoires
+            produced = 0
+            attempts = 0
+            max_attempts = max(n * 50, n + 1)
+            while produced < n and attempts < max_attempts:
+                attempts += 1
                 T_source = self.rng.uniform(*self.T_source_range)
                 T_sink = self.rng.uniform(*self.T_sink_range)
                 speed_ratio = self.rng.uniform(*self.speed_ratio_range)
-                
-                # Sévérité aléatoire dans la plage du défaut
                 if fault_type == FaultType.NORMAL:
                     severity = 0.0
                 else:
@@ -311,23 +373,35 @@ class FaultDataGenerator:
                         config.severity_min,
                         config.severity_max
                     )
-                
                 try:
                     sample = self.generate_single_sample(
                         T_source, T_sink, speed_ratio,
                         fault_type, severity
                     )
                     all_samples.append(sample)
-                except Exception as e:
-                    # Skip samples qui causent des erreurs numériques
-                    continue
-        
+                    produced += 1
+                except Exception:
+                    self.n_rejected += 1
+            if produced < n:
+                warnings.warn(
+                    f"{fault_type.value}: {produced}/{n} samples after {attempts} attempts "
+                    f"({self.n_rejected} rejected)",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+
         df = pd.DataFrame(all_samples)
-        
-        # Nettoyer les valeurs aberrantes
-        df = df.replace([np.inf, -np.inf], np.nan)
-        df = df.dropna()
-        
+        n_before = len(df)
+        df = df.replace([np.inf, -np.inf], np.nan).dropna()
+        self.n_dropped_nan = n_before - len(df)
+        if self.n_rejected or self.n_dropped_nan:
+            warnings.warn(
+                f"generator dropped {self.n_rejected} failed cycles and "
+                f"{self.n_dropped_nan} non-finite rows "
+                f"(kept {len(df)}/{n_samples})",
+                RuntimeWarning,
+                stacklevel=2,
+            )
         return df
     
     def generate_time_series_dataset(
@@ -397,7 +471,8 @@ class FaultDataGenerator:
                     sample['timestep'] = t
                     sample['time_to_failure'] = max(0, sequence_length - t - 1)
                     all_samples.append(sample)
-                except:
+                except Exception:
+                    self.n_rejected += 1
                     continue
         
         return pd.DataFrame(all_samples)

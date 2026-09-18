@@ -49,3 +49,21 @@ def test_bounded_metrics_are_in_range():
         if r["metric"] in BOUNDED:
             v = float(r["value"])
             assert 0.0 <= v <= 1.0, f"{r['metric']} out of range: {r}"
+
+
+def test_log_replaces_atomically(tmp_path, monkeypatch):
+    from tools import results as results_mod
+
+    path = tmp_path / "results.csv"
+    monkeypatch.setattr(results_mod, "RESULTS_PATH", path)
+    results_mod.log(
+        experiment="T", protocol="holdout", reference="sim",
+        metric="accuracy", value=0.5, n=10,
+    )
+    results_mod.log(
+        experiment="T", protocol="holdout", reference="sim",
+        metric="accuracy", value=0.6, n=10,
+    )
+    rows = results_mod.get(experiment="T", metric="accuracy")
+    assert len(rows) == 1
+    assert float(rows[0]["value"]) == pytest.approx(0.6)

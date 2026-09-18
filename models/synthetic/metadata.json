@@ -1,19 +1,24 @@
 {
-  "model_name": "Gradient Boosting",
-  "model_type": "gradient_boosting",
-  "accuracy": 0.996,
-  "precision": 0.994074074074074,
-  "recall": 0.994074074074074,
-  "f1": 0.994074074074074,
+  "model_name": "Random Forest",
+  "model_type": "random_forest",
+  "accuracy": 0.9186666666666666,
+  "accuracy_ci_low": 0.9037402847727122,
+  "accuracy_ci_high": 0.9314540601636162,
+  "precision": 0.9258271086158664,
+  "recall": 0.9124074074074073,
+  "f1": 0.9181496552011209,
   "f1_per_class": {
     "Condenser_Fan_Fault": 1.0,
-    "Condenser_Fouling": 1.0,
-    "Evaporator_Fan_Fault": 0.9933333333333333,
-    "Evaporator_Fouling": 0.9911111111111112,
-    "Normal": 1.0,
-    "Refrigerant_Undercharge": 0.98
+    "Condenser_Fouling": 0.851258581235698,
+    "Evaporator_Fan_Fault": 0.9668874172185431,
+    "Evaporator_Fouling": 0.8706896551724138,
+    "Normal": 0.9375,
+    "Refrigerant_Undercharge": 0.8825622775800712
   },
   "n_samples": 5000,
+  "n_train": 2625,
+  "n_val": 875,
+  "n_test": 1500,
   "n_features": 24,
   "features": [
     "T_ambient",
@@ -50,9 +55,15 @@
     "Refrigerant_Undercharge"
   ],
   "coolprop": true,
-  "calibrated": true,
+  "calibrated": false,
+  "selected_on": "val",
   "study": "synthetic",
   "mode": "heating",
   "source": "simulator",
-  "taxonomy": "project-6class"
+  "taxonomy": "project-6class",
+  "sklearn_version": "1.6.1",
+  "random_state": 42,
+  "dataset_sha256": "92d0e312b9331533f47b4636733cd913870664e6b5134aa53af917148d023b7a",
+  "git_sha": "39fdb261d577f1e9aa11eae391099d598fd36fb4",
+  "git_dirty": true
 }

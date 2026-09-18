@@ -16,6 +16,8 @@ not a result, and this project has measured how much that matters.
 from __future__ import annotations
 
 import csv
+import os
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -70,10 +72,21 @@ def log(
     rows.append(row)
     rows.sort(key=lambda r: tuple(r[c] for c in _KEY))
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with RESULTS_PATH.open("w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=COLUMNS)
-        w.writeheader()
-        w.writerows(rows)
+    fd, tmp = tempfile.mkstemp(
+        prefix="results.", suffix=".tmp", dir=str(RESULTS_PATH.parent)
+    )
+    try:
+        with os.fdopen(fd, "w", newline="", encoding="utf-8") as fh:
+            writer = csv.DictWriter(fh, fieldnames=COLUMNS)
+            writer.writeheader()
+            writer.writerows(rows)
+        os.replace(tmp, RESULTS_PATH)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def get(**filters) -> list[dict]:

@@ -1,6 +1,7 @@
 experiment,protocol,reference,features,model,label,metric,value,n,note
-X0,random-cv,simulated,24-col,gradient-boosting,__global__,accuracy,0.996,5000,hold-out 30% sur cycles simules
-X0,random-cv,simulated,24-col,gradient-boosting,__global__,f1,0.994,5000,
+X0,cv-train,simulated,24-col,random-forest,__global__,f1,0.913901,2625,"5-fold stratified, train only, std=0.0086"
+X0,holdout-test,simulated,24-col,random-forest,__global__,accuracy,0.918667,1500,"95% Wilson CI [0.904, 0.931]; selected on val; CV-train F1=0.914±0.009"
+X0,holdout-test,simulated,24-col,random-forest,__global__,f1,0.91815,1500,macro; selected on val
 X0b,LOMO,target-machine,raw,gradient-boosting,__global__,accuracy,0.333,5386,
 X0b,LOMO,target-machine,raw+residuals,gradient-boosting,__global__,accuracy,0.562,5386,
 X0b,LOMO,target-machine,residuals,gradient-boosting,__global__,accuracy,0.602,5386,

@@ -20,13 +20,13 @@ import sys
 import os
 import io
 import json
-import warnings
+import hashlib
+import subprocess
+from pathlib import Path
 
 # Forcer l'encodage UTF-8 pour Windows (évite les erreurs avec les emojis)
 if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-
-warnings.filterwarnings('ignore')
 
 # Imports scientifiques
 import numpy as np
@@ -39,8 +39,31 @@ from sklearn.model_selection import train_test_split
 # Imports du projet
 from src.fdd.ml_models import FDDClassifier, FDDPipeline
 from src.fdd.visualization import FDDVisualizer
+from src.physics.simulator import HAS_COOLPROP
 from src.studies.synthetic.generator import FaultDataGenerator, FaultType
 from src.studies.synthetic.paths import MODELS, OUTPUTS, STUDY
+
+
+def _sha256(path: str) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _git_stamp() -> dict:
+    root = Path(__file__).resolve().parent
+    try:
+        sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=root, text=True, stderr=subprocess.DEVNULL
+        ).strip()
+        dirty = subprocess.check_output(
+            ["git", "status", "--porcelain"], cwd=root, text=True, stderr=subprocess.DEVNULL
+        ).strip()
+        return {"git_sha": sha, "git_dirty": bool(dirty)}
+    except (OSError, subprocess.CalledProcessError):
+        return {"git_sha": None, "git_dirty": None}
 
 
 def print_header(title: str):
@@ -96,6 +119,11 @@ def main():
     )
     
     print(f"\n✅ Dataset généré: {len(df)} échantillons")
+    if generator.n_rejected or generator.n_dropped_nan:
+        print(
+            f"   ⚠️  Rejets simulateur: {generator.n_rejected}  "
+            f"lignes non finies: {generator.n_dropped_nan}"
+        )
     
     # Distribution des classes
     print(f"\n📈 Distribution des défauts:")
@@ -121,17 +149,24 @@ def main():
     X = df[feature_cols]
     y = df[label_col]
     
-    # Split train/test
-    X_train, X_test, y_train, y_test = train_test_split(
+    # Split train / val / test. Selection never sees the test split.
+    X_trainval, X_test, y_trainval, y_test = train_test_split(
         X, y,
         test_size=0.3,
         random_state=RANDOM_SEED,
-        stratify=y
+        stratify=y,
     )
-    
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_trainval, y_trainval,
+        test_size=0.25,
+        random_state=RANDOM_SEED,
+        stratify=y_trainval,
+    )
+
     print(f"\n📊 Données préparées:")
     print(f"   - Train: {len(X_train)} échantillons")
-    print(f"   - Test:  {len(X_test)} échantillons")
+    print(f"   - Val:   {len(X_val)} échantillons  (sélection)")
+    print(f"   - Test:  {len(X_test)} échantillons  (jamais pour choisir)")
     print(f"   - Features: {len(feature_cols)}")
     print(f"   - Classes: {y.nunique()}")
     
@@ -154,8 +189,9 @@ def main():
     # Entraîner et évaluer
     results = pipeline.fit_evaluate_all(
         X_train, y_train,
+        X_val, y_val,
         X_test, y_test,
-        feature_cols
+        feature_cols,
     )
     
     # Tableau comparatif
@@ -172,11 +208,12 @@ def main():
     # =========================================================================
     print_header("4. ANALYSE DU MEILLEUR MODÈLE")
     
-    best_model_name = comparison_df.iloc[0]['Model']
+    best_model_name = pipeline.best_model_name or comparison_df.iloc[0]['Model']
     best_result = results[best_model_name]
-    
-    print(f"\n🏆 Meilleur Modèle: {best_model_name}")
-    print(f"\n   Accuracy:  {best_result.accuracy:.4f}")
+
+    print(f"\n🏆 Modèle retenu (sélection sur val): {best_model_name}")
+    print(f"\n   Accuracy test:  {best_result.accuracy:.4f}  "
+          f"[{best_result.accuracy_ci_low:.3f}, {best_result.accuracy_ci_high:.3f}]")
     print(f"   Precision: {best_result.precision_macro:.4f}")
     print(f"   Recall:    {best_result.recall_macro:.4f}")
     print(f"   F1 Score:  {best_result.f1_macro:.4f}")
@@ -215,6 +252,7 @@ def main():
 
     model_path = os.path.join(MODEL_DIR, 'classifier.joblib')
     best_classifier.save(model_path)
+    from sklearn import __version__ as sklearn_version
     from sklearn.metrics import classification_report as _cls_report
 
     per_class = _cls_report(
@@ -224,6 +262,8 @@ def main():
         'model_name': best_model_name,
         'model_type': best_classifier.model_type,
         'accuracy': float(best_result.accuracy),
+        'accuracy_ci_low': float(best_result.accuracy_ci_low),
+        'accuracy_ci_high': float(best_result.accuracy_ci_high),
         'precision': float(best_result.precision_macro),
         'recall': float(best_result.recall_macro),
         'f1': float(best_result.f1_macro),
@@ -233,16 +273,26 @@ def main():
             if name in per_class
         },
         'n_samples': int(len(df)),
+        'n_train': int(len(X_train)),
+        'n_val': int(len(X_val)),
+        'n_test': int(len(X_test)),
         'n_features': int(len(feature_cols)),
         'features': feature_cols,
         'classes': labels,
-        'coolprop': True,
+        'coolprop': bool(HAS_COOLPROP),
         'calibrated': best_classifier.model_type == 'gradient_boosting',
+        'selected_on': 'val',
+        'random_state': RANDOM_SEED,
+        'sklearn_version': sklearn_version,
+        'dataset_sha256': _sha256(f'{OUTPUT_DIR}/dataset.csv'),
+        'n_rejected': int(generator.n_rejected),
+        'n_dropped_nan': int(generator.n_dropped_nan),
         'study': STUDY,
         'mode': 'heating',
         'source': 'simulator',
         'taxonomy': 'project-6class',
     }
+    metadata.update(_git_stamp())
     with open(os.path.join(MODEL_DIR, 'metadata.json'), 'w', encoding='utf-8') as f:
         json.dump(metadata, f, indent=2)
     print(f"\n💾 Modèle sauvegardé: {model_path}")
@@ -254,14 +304,39 @@ def main():
     
     best_classifier = pipeline.models[best_model_name]
     cv_mean, cv_std = best_classifier.cross_validate(
-        df[feature_cols], df[label_col],
+        X_train, y_train,
         cv=5, feature_columns=feature_cols
     )
-    
-    print(f"\n🔄 Validation Croisée (5-fold):")
+
+    print(f"\n🔄 Validation Croisée (5-fold, train seulement):")
     print(f"   F1 Score Moyen: {cv_mean:.4f}")
     print(f"   Écart-type:     {cv_std:.4f}")
     print(f"   Intervalle 95%: [{cv_mean - 1.96*cv_std:.4f}, {cv_mean + 1.96*cv_std:.4f}]")
+
+    from tools.results import log
+    model_slug = best_classifier.model_type.replace("_", "-")
+    ci_note = (
+        f"95% Wilson CI [{best_result.accuracy_ci_low:.3f}, {best_result.accuracy_ci_high:.3f}]; "
+        f"selected on val; CV-train F1={cv_mean:.3f}±{cv_std:.3f}"
+    )
+    log(
+        experiment="X0", protocol="holdout-test", reference="simulated",
+        features="24-col", model=model_slug, label="__global__",
+        metric="accuracy", value=float(best_result.accuracy),
+        n=int(best_result.n), note=ci_note,
+    )
+    log(
+        experiment="X0", protocol="holdout-test", reference="simulated",
+        features="24-col", model=model_slug, label="__global__",
+        metric="f1", value=float(best_result.f1_macro),
+        n=int(best_result.n), note="macro; selected on val",
+    )
+    log(
+        experiment="X0", protocol="cv-train", reference="simulated",
+        features="24-col", model=model_slug, label="__global__",
+        metric="f1", value=float(cv_mean),
+        n=int(len(X_train)), note=f"5-fold stratified, train only, std={cv_std:.4f}",
+    )
     
     # =========================================================================
     # 6. VISUALISATIONS
@@ -313,7 +388,8 @@ def main():
     
     # Enveloppe compresseur
     print("📊 Génération de l'enveloppe de fonctionnement...")
-    operating_points = list(zip(df['T_evap'].sample(100), df['T_cond'].sample(100)))
+    sampled = df.sample(100, random_state=RANDOM_SEED)
+    operating_points = list(zip(sampled['T_evap'], sampled['T_cond']))
     fig = viz.plot_compressor_envelope(
         operating_points=operating_points,
         save_path=f'{OUTPUT_DIR}/compressor_envelope.png'
@@ -324,7 +400,8 @@ def main():
     print("📊 Génération de la figure de synthèse...")
     fig = viz.create_report_figure(
         results, df, feature_cols, 'fault_type',
-        save_path=f'{OUTPUT_DIR}/fdd_overview.png'
+        save_path=f'{OUTPUT_DIR}/fdd_overview.png',
+        best_name=best_model_name,
     )
     plt.close()
     

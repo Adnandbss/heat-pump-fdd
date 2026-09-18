@@ -23,8 +23,8 @@ outputs/<étude>/   models/<étude>/
 Règle : `studies/` → `fdd/` → `physics/`. Zéro violation aujourd'hui, et cinq tests la
 verrouillent (`test_engine_has_no_synthetic_study_api`, etc.).
 
-**43 tests passent.** L'équivalence de comportement a été vérifiée à chaque étape du refactor
-en comparant les sorties avant/après octet pour octet.
+**70 tests** passent (dont les gardes d'étanchéité P0). L'équivalence de comportement a été
+vérifiée à chaque étape du refactor en comparant les sorties avant/après octet pour octet.
 
 **Confrontation aux essais NIST** — quatre notebooks dans `EDA/` (descriptif, modèle,
 référence, calibration), résultats dans `docs/NIST_FINDINGS.md`.
@@ -33,7 +33,9 @@ référence, calibration), résultats dans `docs/NIST_FINDINGS.md`.
 sur l'encrassement condenseur, surchauffe et refoulement inversés sur le ventilateur
 d'évaporateur, plafond de refoulement jamais appliqué. L'accord des sens de variation avec les
 essais mesurés passe de **12/16 à 20/22**, et l'accuracy simulée de 99,8 % à 99,6 % — baisse
-attendue, le modèle n'apprend plus sur des cycles impossibles.
+attendue, le modèle n'apprend plus sur des cycles impossibles. **P0** a ensuite fermé quatre
+fuites du pipeline : le chiffre simulé honnête est **91,9 % [90,4 – 93,1]** (hold-out,
+sélection sur val).
 
 **Dossier de présentation** — `docs/DOSSIER.md` et son PDF : le système module par module,
 équations, figures commentées, et les limites connues.
@@ -85,16 +87,17 @@ Deux désaccords restent : `W_comp` sous-charge, `COP` surcharge. La classe
 ## Les décisions qui t'appartiennent
 
 **A. Comment annoncer la performance.** C'est le point le plus urgent, et le seul qu'un jury
-démontera en une question. Le 99,6 % actuel mesure la séparabilité des signatures dans le
-modèle physique, pas une détection sur machine réelle. Proposition :
+démontera en une question. Le 91,9 % actuel (hold-out 30 %, sélection sur val, intervalle
+Wilson 90,4 – 93,1) mesure la séparabilité des signatures dans le modèle physique, pas une
+détection sur machine réelle. Le 99,6 % précédent était une fuite d'étiquette. Proposition :
 
 ⚠️ **Cette formulation est provisoire** : elle cite 0,602 sans mentionner que ce chiffre suppose
 une référence saine aux conditions du défaut. À figer **après X3**, pas avant.
 
-> Signatures de défauts séparables à 99,6 % en validation croisée sur données simulées.
-> Méthode par résidus confrontée aux essais NIST : 0,602 lorsque la référence saine est
-> calibrée sur la machine cible, **0,318** sans cette calibration, 0,95 en validation
-> aléatoire — laquelle surestime largement.
+> Signatures de défauts séparables à 91,9 % [90,4 – 93,1] en hold-out sur données simulées
+> (sélection sur val, `Pipeline` sklearn). Méthode par résidus confrontée aux essais NIST :
+> 0,602 lorsque la référence saine est calibrée sur la machine cible, **0,318** sans cette
+> calibration, 0,95 en validation aléatoire — laquelle surestime largement.
 
 Moins spectaculaire, et défendable.
 
@@ -104,24 +107,12 @@ A7/W40 disparaît, et avec lui la distinction encrassement / ventilateur. Le sim
 serait pas jeté — il deviendrait le **modèle de référence sain**, son vrai rôle dans la méthode
 Li & Braun. Décision de fond, pas de refactor.
 
-**C bis. Les grandeurs dérivées contournent le bruit de mesure.** Dans
-`studies/synthetic/generator.py`, le bruit gaussien est appliqué **après** le calcul des
-grandeurs dérivées, qui ne sont pas recalculées. Résultat mesuré sur les 5000 exemples :
-
-| Grandeur | Lignes cohérentes avec ses entrées |
-|---|---|
-| `pressure_ratio`, `compression_ratio` | **0 %** |
-| `COP` | **0 %** |
-| `delta_T_evap`, `delta_T_cond` | **0 %** |
-
-Aucune ligne ne vérifie `pressure_ratio = P_cond / P_evap`. Le modèle reçoit donc deux
-versions de la même information, une bruitée et une propre — le bruit est partiellement
-récupérable par différence (écart-type du rapport : 0,028). Une part du 99,6 % vient d'une
-information indisponible sur une machine réelle.
-
-À corriger dans le même chantier que la décision C : soit recalculer les dérivées après
-bruitage, soit ne plus les transmettre si l'on passe aux résidus seuls. Les deux règlent le
-problème, le second le règle par construction.
+**C bis. Les grandeurs dérivées** — **fait, absorbé par P0.** Le bruit est appliqué aux
+capteurs, puis `COP`, `pressure_ratio`, `compression_ratio`, `delta_T_*` et `capacity_ratio`
+sont recalculés, et la référence saine des `d_*` est bruitée indépendamment. Un test
+permanent vérifie `pressure_ratio = P_cond / P_evap` et qu'aucun résidu n'est identiquement
+nul sur une classe. Retirer `pressure_ratio` du contrat (doublon de `compression_ratio`)
+reste **P5**.
 
 **C. `FEATURE_COLUMNS` en résidus seuls ?** Il mélange aujourd'hui 19 grandeurs absolues et 5
 résidus. La mesure dit que ce mélange nuit au transfert.
@@ -136,6 +127,27 @@ Tout ce qui suit relève du diagnostic : nommer une panne présente. Le grand 2 
 sur séries temporelles — ne démarre **qu'une fois le grand 1 terminé**, et seulement si un jeu
 de données adapté existe.
 
+### 1A bis. P0 — Étanchéité du pipeline · **fait**
+
+Quatre fuites mesurées sur le 99,6 % — corrigées, jeu régénéré, modèle réentraîné
+(`scikit-learn==1.6.1`). Chiffre publié : **91,9 % [90,4 – 93,1]** hold-out test,
+Random Forest sélectionné sur val (GB à 0,002 de F1, départagé sur l'inférence).
+
+| | Fuite | Correction |
+|---|---|---|
+| 1 | `d_COP == 0` pour les 2000 `Normal`, et eux seuls | dérivées recalculées après bruitage ; référence saine bruitée |
+| 2 | `scaler.fit_transform(X)` avant `cross_val_score` | `Pipeline([scaler, clf])` |
+| 3 | CV finale sur `df` complet | 5-fold sur `X_train` seul — F1 0,914 ± 0,009 |
+| 4 | Sélection sur le test (5ᵉ décimale) | train / val / test ; sélection sur val ; Wilson à côté du score |
+
+Gardes dans `tests/test_pipeline_integrity.py` : dérivées cohérentes, aucun résidu nul sur une
+classe, `d_COP` n'est plus un détecteur parfait, labels mélangés → score de la classe
+majoritaire.
+
+X4 reste à faire, mais elle ne mentira plus par construction : la fuite d'étiquette est fermée.
+P5 (contrat résidus + conditions, retirer le doublon `pressure_ratio`) n'est plus bloqué par
+le bruit des dérivées.
+
 ### 1A. Vérité et hygiène
 
 | | Chantier | État |
@@ -144,7 +156,7 @@ de données adapté existe.
 | P2 | Budget de calibration mesuré | fait |
 | P3 | Quatre défauts de physique corrigés, accord des signes 12/16 → 20/22 | fait |
 | P4 | Décision D : produire la surcharge, trancher la fuite de clapet | à faire |
-| P5 | Contrat de features : résidus + conditions, et le bruit des dérivées (décision C bis) | à faire |
+| P5 | Contrat de features : résidus + conditions ; retirer le doublon `pressure_ratio` | à faire |
 | P6 | Découper `api/app.py` — 4 routes d'inférence contre 17 de tableau de bord | à faire |
 
 ### 1B. Les expériences
@@ -156,11 +168,11 @@ toutes, **numérotées dans l'ordre d'exécution** — pas dans l'ordre où l'id
 
 | | Entraîné sur | Testé sur | Ce que ça mesure | État |
 |---|---|---|---|---|
-| **X0** | simulé | simulé, tirage aléatoire | Un classifieur peut-il inverser le simulateur | fait — 99,6 % |
+| **X0** | simulé | simulé, hold-out | Un classifieur peut-il inverser le simulateur | fait — **91,9 % [90,4 – 93,1]** |
 | **X1** | mesuré | mesuré, autre machine | **Quelles pannes** sont détectées | **fait** |
-| **X2** | — | mesuré, autre machine | Le ML bat-il une **table de règles** | à faire |
+| **X2** | — | mesuré, autre machine | Le ML bat-il une **table de règles** | **fait** |
 | **X3** | mesuré | mesuré, autre machine | Quel **estimateur de référence saine** est le meilleur | à faire |
-| **X4** | simulé | simulé, **conditions non vues** | Le 99,6 % survit-il hors des points appris | à faire |
+| **X4** | simulé | simulé, **conditions non vues** | Le 91,9 % survit-il hors des points appris | à faire |
 | **X5** | simulé | **mesuré** | Le simulateur décrit-il la réalité | à faire |
 
 #### X1 — Quelles pannes sont réellement détectées · fait
@@ -187,29 +199,12 @@ pour l'une d'elles il est nul.
 
 Notebook : `EDA/EDA_NIST_perclass.ipynb`.
 
-#### X2 — Le modèle bat-il une table de règles · ½ j
+#### X2 — Le modèle bat-il une table de règles · **fait**
 
-**La question que posera tout jury qui connaît le domaine.**
-
-Le FDD par résidus est un domaine où la méthode de référence est une table de règles sur les
-signes : sous-refroidissement qui monte et pression haute qui monte, c'est une obstruction de
-condenseur. Le projet cite cette méthode en fondation **sans l'avoir jamais implémentée** — il
-utilise ses résidus, puis pose un Gradient Boosting dessus.
-
-La table existe déjà : c'est la matrice des signes mesurés construite pour l'accord
-simulation/mesure. Un classifieur qui vote sur ces directions tient en une trentaine de lignes,
-sans entraînement.
-
-Trois évaluations, à protocole identique : règles avec référence calibrée, règles avec référence
-transférée, et **règles sans aucune référence** — cette dernière n'ayant pas d'équivalent côté
-modèle appris, puisqu'une règle regarde des directions et non des valeurs.
-
-Les deux issues sont publiables : soit le modèle appris gagne sa place avec des chiffres, soit
-une table de signes issue de la physique l'égale, ce qui est un résultat peu commun.
-
-À ajouter au périmètre : un **arbre de décision de profondeur 3**, qui situe le curseur entre la
-règle écrite à la main et l'ensemble de centaines d'arbres. Si l'écart est de cinq points, la
-complexité ne s'achète pas cher.
+Le boosting gagne sa place : 0,602 / 0,479 contre 0,365 / 0,243 pour la table de signes
+(référence calibrée). Un arbre de profondeur 3 n'est que 4 points d'accuracy derrière.
+Sans référence saine appariée, la table retombe sur la classe majoritaire (0,245). Détail
+et figure : `docs/NIST_FINDINGS.md`, `EDA/EDA_NIST_rules.ipynb`.
 
 #### X3 — Benchmark de l'estimateur de référence saine · 1,5 j
 
@@ -217,8 +212,8 @@ complexité ne s'achète pas cher.
 c'était la même expérience.)*
 
 Le système a deux étages : un **estimateur** qui prédit ce que lirait une machine saine dans
-les conditions courantes, puis un **classifieur** qui travaille sur l'écart. L'étage 2 n'a
-jamais été comparé à quoi que ce soit — c'est X2. L'étage 1 ne l'a été que partiellement.
+les conditions courantes, puis un **classifieur** qui travaille sur l'écart. L'étage 2 a
+été comparé à une table de signes (X2). L'étage 1 ne l'a été que partiellement.
 
 Une exploration préliminaire a déjà produit trois résultats à confirmer proprement :
 
@@ -260,7 +255,7 @@ retirer une région entière du domaine — par exemple `T_sink > 48 °C` — en
 tester dessus.
 
 C'est le geste qui a tout révélé sur les données mesurées, appliqué cette fois au jeu simulé.
-**Si le score s'effondre, le 99,6 % est en partie de la mémorisation de points de
+**Si le score s'effondre, le 91,9 % est en partie de la mémorisation de points de
 fonctionnement.** Aucune donnée ni modèle nouveau.
 
 #### X5 — Simulé aux conditions NIST, testé sur le réel · 2 j
@@ -284,23 +279,36 @@ seule expérience qui teste si le simulateur décrit la réalité.
 ### Ordre recommandé
 
 ```
-X2  ->  X3  ->  X4  ->  X5        en parallèle de  P4 -> P5 -> P6
+P0  ── fait (91,9 % [90,4 – 93,1])
+P5 ──> X4 ──> X5
+P4, P6                               parallèle
+X3                                   indépendant — données NIST seules
+G                                    indépendant — durcir les garde-fous
 ```
 
-**X2 d'abord** : demi-journée, répond à l'objection du domaine, et se nourrit de X1 qui dit
-quelles pannes sont dures. Puis **X3**, la seule qui vise une amélioration — et qui doit
-confirmer ou infirmer que le 0,602 tombe à 0,511 sans répliques. Puis **X4**, dont le résultat
-conditionne tout le discours sur le volet simulé. **X5** en dernier, la plus lourde.
+**P0 est livré.** X4 peut maintenant être menée sans que la fuite d'étiquette traverse le
+hold-out. P5 (contrat de features) reste un prérequis *utile* de X4, plus un bloquant.
 
-X4 et X5 produiront vraisemblablement des résultats **négatifs**. C'est leur intérêt : un
-résultat négatif mesuré vaut mieux qu'un chiffre jamais confronté. Mais il faut le savoir avant
-de les lancer, et ne pas en espérer un chiffre flatteur.
+**X3** ne porte que sur les essais mesurés NIST. Une exploration préliminaire suggère que le
+0,602 tombe à 0,511 sans les répliques du plan d'essais.
+
+**G — durcir les garde-fous** (0,75 j), issu du §8 bis de l'audit :
+- un test qui compare les nombres des tableaux markdown à `results.csv` — sans lui, la « source
+  unique » est déclarative et le fichier n'est qu'une quatrième copie ;
+- une contrainte de **voisinage** sur le test protocole, qui ne peut pratiquement pas échouer
+  en l'état (le mot « validation » figure dans presque tout README) ;
+- `log()` atomique via `os.replace()`, plus un `log_many()` — la boucle actuelle réécrit tout
+  le fichier à chaque appel ;
+- brancher les notebooks sur `tools.results.log` au lieu de saisir à la main.
+
+X4 et X5 produiront vraisemblablement des résultats **négatifs**, et c'est leur intérêt. P0
+étant fermé, elles ne produiront plus un 0,99 de façade.
 
 ### Règle d'arrêt
 
 Chaque expérience menée jusqu'ici en a suggéré une nouvelle. C'est sain, et c'est sans fin.
 
-**Le périmètre du grand 1 est figé à X2–X5 et P4–P6.** Toute question soulevée par ces
+**Le périmètre du grand 1 est figé à X3–X5 et P4–P6.** Toute question soulevée par ces
 expériences part dans une liste « suite », pas dans le périmètre courant. Sans cette règle, le
 projet ne sera jamais livré.
 
