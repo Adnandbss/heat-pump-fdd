@@ -26,14 +26,17 @@ verrouillent (`test_engine_has_no_synthetic_study_api`, etc.).
 **43 tests passent.** L'équivalence de comportement a été vérifiée à chaque étape du refactor
 en comparant les sorties avant/après octet pour octet.
 
-**Confrontation aux essais NIST** — deux notebooks dans `EDA/`, résultats dans
-`docs/NIST_FINDINGS.md`.
+**Confrontation aux essais NIST** — quatre notebooks dans `EDA/` (descriptif, modèle,
+référence, calibration), résultats dans `docs/NIST_FINDINGS.md`.
 
-## Le reste en suspens
+**Quatre défauts de physique corrigés** — surcharge non modélisée, sous-refroidissement inversé
+sur l'encrassement condenseur, surchauffe et refoulement inversés sur le ventilateur
+d'évaporateur, plafond de refoulement jamais appliqué. L'accord des sens de variation avec les
+essais mesurés passe de **12/16 à 20/22**, et l'accuracy simulée de 99,8 % à 99,6 % — baisse
+attendue, le modèle n'apprend plus sur des cycles impossibles.
 
-- [ ] `git mv outputs/ml_graphs outputs/synthetic/ml_graphs` — 13 PNG sont restés à l'ancien
-      emplacement alors que `scripts/generate_ml_graphs.py:24` écrit désormais sous
-      `outputs/synthetic/`. Au prochain run, deux dossiers dont un périmé.
+**Dossier de présentation** — `docs/DOSSIER.md` et son PDF : le système module par module,
+équations, figures commentées, et les limites connues.
 
 ## Ce que les données NIST ont appris
 
@@ -118,29 +121,134 @@ résidus. La mesure dit que ce mélange nuit au transfert.
 `FaultType` et une branche d'injection, mais ne sont jamais générés. Les produire ou les
 retirer — NIST couvre les deux, donc les produire est défendable.
 
-## Chantiers suivants
+## GRAND 1 — Diagnostic (FDD)
 
-**Nettoyage du cœur** — une PR par idée :
+Tout ce qui suit relève du diagnostic : nommer une panne présente. Le grand 2 — le pronostic
+sur séries temporelles — ne démarre **qu'une fois le grand 1 terminé**, et seulement si un jeu
+de données adapté existe.
 
-- [x] Corriger les quatre erreurs de `simulator.py`, re-mesurer la concordance (20/22)
-- [ ] `compression_ratio` et `pressure_ratio` sont **le même nombre** (vérifié à la précision
-      machine). Le modèle a 23 entrées indépendantes, pas 24 — et `test_feature_count` fige 24
-- [ ] Unifier `FAULT_PARAM_MAP` / `SCENARIOS`
-- [ ] Trancher les deux défauts fantômes (décision D)
+### 1A. Vérité et hygiène
 
-**Découper `api/app.py`** — 582 lignes, la couture est nette : 4 routes d'inférence
-(`/health` `/predict` `/simulate` `/live`) contre 17 routes `/api/*` qui servent le dashboard.
+| | Chantier | État |
+|---|---|---|
+| P1 | Vérité des chiffres dans la documentation | fait |
+| P2 | Budget de calibration mesuré | fait |
+| P3 | Quatre défauts de physique corrigés, accord des signes 12/16 → 20/22 | fait |
+| P4 | Décision D : produire la surcharge, trancher la fuite de clapet | à faire |
+| P5 | Contrat de features : résidus + conditions, et le bruit des dérivées (décision C bis) | à faire |
+| P6 | Découper `api/app.py` — 4 routes d'inférence contre 17 de tableau de bord | à faire |
 
-**Budget de calibration** — le baseline actuel des notebooks est un simple
-plus-proche-voisin sain. Le plafond honnête du transfert est mesuré à **0,318**. Le 0,602
-exige une référence saine calibrée sur la machine cible. Polynôme d'ordre 2, point de rosée,
-Ridge et forêt aléatoire ont tous été essayés : aucun ne lève ce plafond. La suite n'est
-donc pas de chercher une meilleure référence, mais de chiffrer le budget de calibration.
+### 1B. Les expériences qui manquent
 
-**Front et ménage** — `web/src/` (routing, moins de widgets), puis Streamlit et les modules de
-visualisation en `legacy/`. En dernier : le démo clone-and-run ne doit jamais casser.
+**C'est la partie que le projet n'a jamais faite**, et c'est elle qui produit des résultats
+plutôt que des corrections.
+
+« Détecter une panne » n'est pas une expérience, c'en est cinq. Le projet n'en a mené que
+trois, dont la plus facile :
+
+| | Entraîné sur | Testé sur | Ce que ça mesure | État |
+|---|---|---|---|---|
+| **E0** | simulé | simulé, tirage aléatoire | Un classifieur peut-il inverser le simulateur | fait — 99,6 % |
+| **E1** | simulé | simulé, **conditions non vues** | Généralise-t-il hors des points appris | **jamais fait** |
+| **E2** | simulé | **mesuré** | Le simulateur décrit-il la réalité | **jamais fait** |
+| **E3** | mesuré | mesuré, même machine | La tâche est-elle apprenable sur du réel | fait — 0,95 |
+| **E4** | mesuré | mesuré, autre machine | Transfère-t-elle entre unités | fait — 0,602 / 0,318 |
+
+#### E1 — Hold-out sur le domaine de fonctionnement · ½ j
+
+Même jeu de données, **découpage différent** : au lieu d'un tirage aléatoire sur les 5000
+exemples, retirer une région entière du domaine — par exemple tout ce qui dépasse
+`T_sink > 48 °C` — entraîner sur le reste, tester dessus.
+
+C'est exactement le geste qui a tout révélé sur les données NIST, appliqué cette fois au jeu
+simulé. **Si le score s'effondre, le 99,6 % est en partie de la mémorisation de points de
+fonctionnement, pas de la reconnaissance de signature.**
+
+Aucune donnée nouvelle, aucun modèle nouveau. Le résultat conditionne tout le discours sur le
+volet simulé, et il peut le détruire — c'est son intérêt.
+
+#### E2 — Simulé aux conditions NIST, testé sur le réel · 2 j
+
+Le recouvrement de domaine de 5,3 % a longtemps été présenté comme un obstacle. **C'en est un
+de sampling, pas de physique** : il découle des plages de tirage choisies pour l'entraînement,
+pas d'une limite du simulateur.
+
+Vérification faite, le simulateur tourne aux conditions NIST et produit des valeurs
+plausibles — mais qui ne collent pas :
+
+| Conditions | `P_evap` | `P_cond` | τ | COP |
+|---|---|---|---|---|
+| Simulé à 24/35 °C | 14,04 bar | 24,19 bar | 1,72 | 4,32 |
+| **Mesuré NIST, sain** | **10,5 bar** | **25,7 bar** | **2,37** | **3,41** |
+
+Aspiration surestimée de 35 %, taux de compression sous-estimé de 28 %, COP optimiste de 27 %.
+**Le simulateur est systématiquement optimiste** — aucune des expériences précédentes ne
+pouvait le dire.
+
+L'expérience : élargir les plages d'échantillonnage, régénérer un jeu simulé aux conditions
+NIST, entraîner dessus, tester sur les essais réels. Quatre classes se correspondent —
+obstruction condenseur, débit intérieur, sous-charge, surcharge.
+
+C'est **la seule expérience qui teste si le simulateur décrit la réalité**, et donc la seule
+qui donne une valeur au volet simulé au-delà de la démonstration.
+
+#### A — Meilleure référence saine à budget contraint · 1 j
+
+La seule piste qui vise une **amélioration** plutôt qu'une mesure.
+
+Dans le protocole du budget de calibration, la référence saine est toujours un kNN, y compris
+à `n = 1` ou `n = 5`. Or un kNN sur cinq points ne sait pas interpoler, il recopie le voisin le
+plus proche — d'où les intervalles énormes à petit `n`, où un tirage malheureux fait pire que
+pas de calibration du tout.
+
+Un modèle paramétrique — le polynôme d'ordre 2 du NIST, ou une forme guidée par la physique du
+pincement — devrait le dominer précisément là où les données sont rares.
+
+**Ce qui n'a jamais été testé** : l'exploration des modèles de référence a comparé kNN,
+polynôme et forêt aléatoire **à `n = tous`**. Jamais à `n = 10` ou `n = 50`.
+
+Enjeu : si un polynôme atteint 80 % du gain avec 50 essais là où le kNN plafonne à 49 %, la
+conclusion publiable passe de « il faut couvrir tout le domaine » à **« 50 essais bien
+exploités suffisent »**. C'est un résultat industriel directement actionnable.
+
+Et si ça échoue, la conclusion reste publiable : *quatre estimateurs de référence comparés à
+budget contraint, aucun ne bat le plus proche voisin.*
+
+### Ordre recommandé
+
+```
+E1  ->  A  ->  E2        en parallèle de  P4 -> P5 -> P6
+```
+
+E1 d'abord : une demi-journée, et son résultat conditionne le discours sur tout le volet
+simulé. Puis A, la seule qui peut améliorer un chiffre. E2 en dernier, la plus lourde et la
+plus ambitieuse.
+
+### Fin du grand 1
+
+Le grand 1 est terminé quand les six chantiers sont livrés, les trois expériences menées, et
+que chaque chiffre du dépôt est accompagné de son protocole.
+
+## GRAND 2 — Pronostic sur séries temporelles
+
+**Non démarré, et conditionné à l'obtention d'un jeu de données adapté.**
+
+Les essais NIST sont **stationnaires** : un défaut imposé et maintenu, mesuré à l'équilibre. Il
+n'y a ni horloge, ni dégradation progressive, ni instant de défaillance. Y appliquer un modèle
+temporel reviendrait à inventer un axe du temps qui n'existe pas — exactement le type de
+résultat que ce projet s'attache à ne pas produire.
+
+Critères éliminatoires d'un jeu utilisable : horodatage régulier sur des mois, au moins un
+événement terminal daté par unité, conditions extérieures enregistrées, plusieurs unités.
+
+Sources acceptables par ordre de préférence : historique de terrain ou banc instrumenté ; à
+défaut un jeu de référence hors domaine, clairement étiqueté comme étude de méthode ; en
+dernier recours une dégradation **simulée**, présentée comme telle.
+
+Le pronostic n'est pas un modèle différent du diagnostic, c'est une **donnée** différente.
 
 ## Règles de travail
+
 
 1. Une PR = une idée, commit par commit.
 2. `pytest` vert avant et après chaque PR — 43 aujourd'hui.
