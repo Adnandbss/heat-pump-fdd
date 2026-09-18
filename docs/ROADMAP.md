@@ -154,6 +154,7 @@ trois, dont la plus facile :
 | **E3** | mesuré | mesuré, même machine | La tâche est-elle apprenable sur du réel | fait — 0,95 |
 | **E4** | mesuré | mesuré, autre machine | Transfère-t-elle entre unités | fait — 0,602 / 0,318 |
 | **E5** | mesuré | mesuré, autre machine | **Quelles pannes** sont détectées, et lesquelles non | **jamais fait** |
+| **E6** | — | mesuré, autre machine | **Le ML bat-il une table de règles** issue de la physique | **jamais fait** |
 
 #### E5 — Quelles pannes sont réellement détectées · ½ j
 
@@ -182,6 +183,43 @@ c'est une question de physique, pas d'algorithme — et c'est une conclusion en 
 
 À faire **en premier** : c'est la seule expérience du lot qui produise à coup sûr un résultat
 exploitable, les autres étant des expériences de destruction.
+
+#### E6 — Le modèle bat-il une table de règles · ½ j
+
+**La question que posera tout jury qui connaît le domaine, et à laquelle le dépôt ne sait pas
+répondre aujourd'hui.**
+
+Le FDD par résidus est un domaine où la méthode de référence est une **table de règles sur les
+signes** : si le sous-refroidissement monte et la pression haute monte, c'est un encrassement de
+condenseur. C'est l'approche classique de cette littérature — celle que le projet cite en
+fondation.
+
+Or le projet utilise les résidus de Li & Braun, puis pose un Gradient Boosting dessus. **Il n'a
+jamais implémenté la méthode simple qu'il revendique comme base.**
+
+Tant que la comparaison n'est pas faite, la réponse à « votre modèle fait-il mieux qu'une règle
+écrite à la main ? » est *on ne sait pas* — et si un jury soupçonne que six règles
+thermodynamiques suffisent, tout le volet apprentissage devient décoratif.
+
+**La table existe déjà.** C'est la matrice des signes mesurés construite pour l'accord
+simulation/mesure : pour chaque panne, la direction de la surchauffe, du sous-refroidissement,
+du refoulement, du COP et des pressions. Un classifieur qui vote sur ces directions tient en une
+trentaine de lignes, sans entraînement.
+
+Évalué sur le même protocole leave-one-machine-out, les deux issues sont publiables :
+
+| Issue | Ce qu'on en tire |
+|---|---|
+| Les règles font nettement moins bien | Le ML gagne sa place, chiffres à l'appui plutôt que par postulat |
+| Les règles font aussi bien ou mieux | Résultat remarquable et honnête : sur ce problème, une table de signes issue de la physique égale un modèle appris |
+
+**Un bonus à ne pas manquer** : une règle regarde des directions, pas des valeurs — elle n'a
+donc **pas besoin de calibration saine**. Si elle tient à 0,45 sans calibration là où le modèle
+appris plafonne à 0,318, c'est un argument de déploiement très fort, et il renverse la
+conclusion du budget de calibration pour les pannes concernées.
+
+À faire juste après E5 : les deux se nourrissent. L'analyse par classe dit quelles pannes sont
+dures ; la table de règles dit si l'apprentissage sert à quelque chose sur celles-là.
 
 #### E1 — Hold-out sur le domaine de fonctionnement · ½ j
 
@@ -246,12 +284,12 @@ budget contraint, aucun ne bat le plus proche voisin.*
 ### Ordre recommandé
 
 ```
-E5  ->  E1  ->  A  ->  E2       en parallèle de  P4 -> P5 -> P6
+E5  ->  E6  ->  E1  ->  A  ->  E2      en parallèle de  P4 -> P5 -> P6
 ```
 
 **E5 d'abord** : demi-journée, aucun risque, et la seule qui produise à coup sûr un résultat
-positif exploitable. Puis **E1**, dont le résultat conditionne tout le discours sur le volet
-simulé. Puis **A**, la seule qui vise une amélioration. **E2** en dernier, la plus lourde.
+positif exploitable. Puis **E6**, qui répond à la question du domaine et se nourrit de E5. Puis
+**E1**, dont le résultat conditionne tout le discours sur le volet simulé. Puis **A**, la seule qui vise une amélioration. **E2** en dernier, la plus lourde.
 
 Deux de ces quatre expériences produiront vraisemblablement des résultats **négatifs** — E1 et
 E2. C'est leur intérêt : un résultat négatif mesuré et quantifié vaut mieux qu'un chiffre jamais
