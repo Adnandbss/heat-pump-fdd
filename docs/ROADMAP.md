@@ -153,6 +153,35 @@ trois, dont la plus facile :
 | **E2** | simulé | **mesuré** | Le simulateur décrit-il la réalité | **jamais fait** |
 | **E3** | mesuré | mesuré, même machine | La tâche est-elle apprenable sur du réel | fait — 0,95 |
 | **E4** | mesuré | mesuré, autre machine | Transfère-t-elle entre unités | fait — 0,602 / 0,318 |
+| **E5** | mesuré | mesuré, autre machine | **Quelles pannes** sont détectées, et lesquelles non | **jamais fait** |
+
+#### E5 — Quelles pannes sont réellement détectées · ½ j
+
+**Le résultat constructif le moins cher du projet, et il n'a jamais été fait.**
+
+Les deux chiffres publiés sur les essais mesurés sont :
+
+```
+accuracy 0,602        F1 macro 0,479
+```
+
+Cet écart de douze points signifie que **les classes ne sont pas détectées également**.
+Certaines pannes passent bien, d'autres très mal. Personne n'a regardé lesquelles.
+
+L'expérience : matrice de confusion et rapport par classe sur le protocole leave-one-machine-out
+déjà en place. Aucune donnée nouvelle, aucun modèle nouveau, aucun réentraînement.
+
+Ce que ça permet de dire, au lieu d'une moyenne :
+
+> Sur données mesurées, tel défaut est détecté à 0,8 et tel autre à 0,2 — le diagnostic par
+> résidus sépare bien telle famille de pannes, mal telle autre.
+
+C'est utile à un praticien, et ça oriente toute la suite : inutile de chercher une amélioration
+globale si une seule classe plombe la moyenne. Si deux classes sont systématiquement confondues,
+c'est une question de physique, pas d'algorithme — et c'est une conclusion en soi.
+
+À faire **en premier** : c'est la seule expérience du lot qui produise à coup sûr un résultat
+exploitable, les autres étant des expériences de destruction.
 
 #### E1 — Hold-out sur le domaine de fonctionnement · ½ j
 
@@ -217,17 +246,26 @@ budget contraint, aucun ne bat le plus proche voisin.*
 ### Ordre recommandé
 
 ```
-E1  ->  A  ->  E2        en parallèle de  P4 -> P5 -> P6
+E5  ->  E1  ->  A  ->  E2       en parallèle de  P4 -> P5 -> P6
 ```
 
-E1 d'abord : une demi-journée, et son résultat conditionne le discours sur tout le volet
-simulé. Puis A, la seule qui peut améliorer un chiffre. E2 en dernier, la plus lourde et la
-plus ambitieuse.
+**E5 d'abord** : demi-journée, aucun risque, et la seule qui produise à coup sûr un résultat
+positif exploitable. Puis **E1**, dont le résultat conditionne tout le discours sur le volet
+simulé. Puis **A**, la seule qui vise une amélioration. **E2** en dernier, la plus lourde.
+
+Deux de ces quatre expériences produiront vraisemblablement des résultats **négatifs** — E1 et
+E2. C'est leur intérêt : un résultat négatif mesuré et quantifié vaut mieux qu'un chiffre jamais
+confronté. Mais il faut le savoir avant de commencer, et ne pas les lancer en espérant un
+chiffre flatteur.
 
 ### Fin du grand 1
 
 Le grand 1 est terminé quand les six chantiers sont livrés, les trois expériences menées, et
 que chaque chiffre du dépôt est accompagné de son protocole.
+
+À ce stade, la contribution du projet n'est pas un détecteur mais **une méthodologie de
+validation** : comment établir ce que vaut un modèle FDD entraîné sur simulateur, et son
+application à un cas concret. C'est ce qui doit être annoncé, plutôt qu'une performance.
 
 ## GRAND 2 — Pronostic sur séries temporelles
 
