@@ -217,3 +217,65 @@ undercharge. Overcharge is found *better* with a transferred reference — its s
 compressor-work signature survives the machine change, and calibration is not what it needs.
 Indoor airflow and liquid line do not benefit. A calibration budget is only actionable if
 it names **which fault** one is looking for.
+
+## Does the learned model beat a sign table?
+
+The residual FDD literature's baseline is a **sign table**: subcooling up and high-side
+pressure up means condenser blockage. This project cites Li & Braun, builds the residuals,
+then puts gradient boosting on top — without ever implementing the table.
+
+Signs are estimated on the **training machine only**, same least-squares of fault level
+with `T_source` and `T_sink` as covariates as the simulation/measurement agreement. No
+threshold is searched on the test set. The voter scores `sum(sign(residual) × expected)`;
+`No_Fault` wins when every fault score is ≤ 0. A depth-3 tree sits between a written rule
+and the hundreds of trees in the boosting. Protocol otherwise unchanged: leave-one-machine-out,
+both directions, eight residuals, `GradientBoostingClassifier(random_state=42)`. Controls
+recovered exactly: calibrated **0.602 / 0.479**, transferred **0.318 / 0.290**.
+
+Notebook and figure: `EDA/EDA_NIST_rules.ipynb`, `docs/nist_rules_vs_gb.png`.
+
+| Method | Healthy reference | Accuracy | F1 macro |
+|---|---|---|---|
+| Gradient boosting | target kNN | **0.602** | **0.479** |
+| Depth-3 tree | target kNN | 0.558 | 0.422 |
+| Sign table | target kNN | 0.365 | 0.243 |
+| Gradient boosting | train kNN | 0.318 | 0.290 |
+| Depth-3 tree | train kNN | 0.287 | 0.230 |
+| Depth-3 tree | train-healthy global median | 0.340 | 0.306 |
+| Sign table | train kNN | 0.251 | 0.175 |
+| Sign table | train-healthy global median | 0.245 | 0.197 |
+| Majority class | — | 0.251 | — |
+
+**Gradient boosting earns its place on the average**, by about 24 accuracy points against
+the table when the healthy reference is calibrated. A single depth-3 tree is only four
+accuracy points and six F1 points behind the boosting — the hundreds of trees buy something,
+not a gulf.
+
+**Without a condition-matched healthy reference the table is worth nothing** (0.245 / 0.197):
+the majority class. A sign rule needs a deviation from a healthy cycle *at the equivalent
+condition*. That is what justifies Li & Braun, not the boosting. The hope that directions
+alone would hold near 0.45 with no calibration is rejected.
+
+**Transferred, the table falls back to the class mix** (0.251). Indoor-airflow signs invert
+from one machine to the other, so there is no universal table to extract from this campaign.
+A table frozen on both machines would leak the test unit; each fold only sees its own.
+
+### Per class — calibrated reference
+
+| Fault | GB | Depth-3 tree | Sign table |
+|---|---|---|---|
+| Undercharge | 0.832 | **0.905** | 0.594 |
+| No-fault | **0.741** | 0.655 | 0.113 |
+| Overcharge | **0.674** | 0.576 | 0.440 |
+| Condenser blockage | **0.299** | 0.183 | 0.072 |
+| Indoor airflow | **0.288** | 0.127 | 0.102 |
+| Liquid line | 0.040 | 0.087 | **0.136** |
+
+**Liquid line is the one fault where the table beats the model** (F1 0.136 against 0.040
+for the boosting, 0.087 for the tree). Still weak, but it is the class the boosting learned
+to ignore and the physics still names.
+
+**Undercharge does not need hundreds of trees.** The depth-3 tree (F1 0.91) beats even the
+boosting (0.83): a threshold on two or three residuals is enough. The learned model earns
+its keep mainly on **no-fault** and, to a lesser extent, overcharge — where a single
+direction does not split the classes.
