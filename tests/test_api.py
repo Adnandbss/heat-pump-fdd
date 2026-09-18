@@ -128,7 +128,10 @@ def test_ml_dashboard_payloads():
 
     catalog = client.get("/api/catalog")
     assert catalog.status_code == 200
-    assert len(catalog.json()["scenarios"]) >= 6
+    titles = [row["fault_type"] for row in catalog.json()["scenarios"]]
+    assert len(titles) == 7
+    assert "Refrigerant_Overcharge" in titles
+    assert "Compressor_Valve_Leak" not in titles
     assert "superheat" in catalog.json()["features"]
 
     models = client.get("/api/models")

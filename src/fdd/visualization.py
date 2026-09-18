@@ -40,7 +40,6 @@ CLASS_COLORS = {
     'Refrigerant_Overcharge': '#9B59B6',
     'Condenser_Fan_Fault': '#1ABC9C',
     'Evaporator_Fan_Fault': '#E91E63',
-    'Compressor_Valve_Leak': '#795548',
     # Anciennes classes compatibles
     'Condenser_Fault': '#E74C3C',
     'Evaporator_Fault': '#3498DB',

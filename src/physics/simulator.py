@@ -269,6 +269,11 @@ class HeatPumpSimulator:
             Ratio débit ventilateur évaporateur (1.0 = nominal)
         fan_cond_ratio : float
             Ratio débit ventilateur condenseur (1.0 = nominal)
+
+        Simulator debt: a compressor valve leak is not a knob here. It would
+        need ``volumetric_efficiency_loss`` (hot-gas recirculation: mass flow
+        down, discharge temperature up, capacity collapse, pressures roughly
+        normal). Do not fake it by mixing undercharge and evaporator fouling.
         
         Returns:
         --------

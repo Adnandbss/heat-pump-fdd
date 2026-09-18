@@ -13,19 +13,21 @@ needs_model = pytest.mark.skipif(
 )
 
 
-def test_fault_param_map_covers_the_six_demo_classes():
+def test_fault_param_map_covers_the_demo_classes():
     assert FAULT_PARAM_MAP["Normal"] == {}
     assert set(FAULT_PARAM_MAP) == {
         "Normal",
         "Condenser_Fouling",
         "Evaporator_Fouling",
         "Refrigerant_Undercharge",
+        "Refrigerant_Overcharge",
         "Condenser_Fan_Fault",
         "Evaporator_Fan_Fault",
     }
     assert FAULT_PARAM_MAP["Condenser_Fouling"] == {"condenser_fouling": 0.40}
     assert FAULT_PARAM_MAP["Condenser_Fan_Fault"] == {"fan_cond_ratio": 0.55}
     assert FAULT_PARAM_MAP["Refrigerant_Undercharge"] == {"refrigerant_charge": 0.80}
+    assert FAULT_PARAM_MAP["Refrigerant_Overcharge"] == {"refrigerant_charge": 1.10}
 
 
 def test_package_reexports_scenarios():

@@ -15,6 +15,7 @@ class FaultLabel(str, Enum):
     CONDENSER_FOULING = "Condenser_Fouling"
     EVAPORATOR_FOULING = "Evaporator_Fouling"
     REFRIGERANT_UNDERCHARGE = "Refrigerant_Undercharge"
+    REFRIGERANT_OVERCHARGE = "Refrigerant_Overcharge"
     CONDENSER_FAN_FAULT = "Condenser_Fan_Fault"
     EVAPORATOR_FAN_FAULT = "Evaporator_Fan_Fault"
 

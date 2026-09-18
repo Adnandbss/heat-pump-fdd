@@ -93,8 +93,8 @@ Two NIST datasets, two different answers. Which one you use decides what is poss
 | Indoor coil improper airflow | `fan_cond_ratio` *(heating: indoor coil **is** the condenser)* | ✅ |
 | Outdoor coil improper airflow | `fan_evap_ratio` | ✅ |
 | Refrigerant undercharge | `refrigerant_charge < 1.0` | ✅ |
-| Refrigerant overcharge | `refrigerant_charge > 1.0` | ⚠️ only the undercharge branch is implemented |
-| Compressor / four-way valve leakage | — | ❌ not modelled |
+| Refrigerant overcharge | `refrigerant_charge > 1.0` | ✅ |
+| Compressor / four-way valve leakage | — | ❌ not modelled (`volumetric_efficiency_loss` would be needed) |
 | Liquid line restriction | — | ❌ not modelled |
 | — | `condenser_fouling`, `evaporator_fouling` | ❌ no counterpart |
 

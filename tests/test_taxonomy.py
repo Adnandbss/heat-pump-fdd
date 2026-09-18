@@ -7,7 +7,7 @@ def test_scenarios_cover_every_mapped_fault():
     mapped = set(FAULT_PARAM_MAP)
     titled = {spec["fault_type"] for spec in SCENARIOS.values()}
     assert mapped == titled
-    assert len(SCENARIOS) == 6
+    assert len(SCENARIOS) == 7
 
 
 def test_scenario_params_match_the_fault_map():
