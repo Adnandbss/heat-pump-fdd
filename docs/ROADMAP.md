@@ -53,11 +53,11 @@ modèle :
 | Leave-one-machine-out | machine cible (calibrée) | **0,602** |
 | Leave-one-machine-out | machine d'entraînement (transférée) | **0,318** |
 
-⚠️ **Le 0,602 est lui-même conditionnel.** Une exploration préliminaire montre qu'il suppose de
-disposer d'une mesure saine aux conditions quasi identiques à celles du défaut — vrai dans la
-campagne NIST, répliquée par construction, faux sur une machine en service. En interdisant les
-voisins à moins de 0,5 °C, il tombe à **0,511**. À confirmer par X3, et à répercuter partout si
-confirmé.
+⚠️ **Le 0,602 est lui-même conditionnel.** Il suppose une mesure saine aux conditions quasi
+identiques à celles du défaut — vrai dans la campagne NIST, répliquée par construction, faux
+sur une machine en service. En interdisant les voisins à moins de 0,5 °C, il tombe à **0,482**
+(X3). README / dossier / `NIST_FINDINGS` / `results.csv` (`X0b`) le citent encore sans cet
+avertissement : PR séparée.
 
 Un split aléatoire mesure l'installation autant que le défaut. C'est le même problème que
 d'entraîner et tester depuis le même simulateur — mais ici il est **mesuré**.
@@ -171,7 +171,7 @@ toutes, **numérotées dans l'ordre d'exécution** — pas dans l'ordre où l'id
 | **X0** | simulé | simulé, hold-out | Un classifieur peut-il inverser le simulateur | fait — **91,9 % [90,4 – 93,1]** |
 | **X1** | mesuré | mesuré, autre machine | **Quelles pannes** sont détectées | **fait** |
 | **X2** | — | mesuré, autre machine | Le ML bat-il une **table de règles** | **fait** |
-| **X3** | mesuré | mesuré, autre machine | Quel **estimateur de référence saine** est le meilleur | à faire |
+| **X3** | mesuré | mesuré, autre machine | Quel **estimateur de référence saine** est le meilleur | **fait** |
 | **X4** | simulé | simulé, **conditions non vues** | Le 91,9 % survit-il hors des points appris | à faire |
 | **X5** | simulé | **mesuré** | Le simulateur décrit-il la réalité | à faire |
 
@@ -206,47 +206,28 @@ Le boosting gagne sa place : 0,602 / 0,479 contre 0,365 / 0,243 pour la table de
 Sans référence saine appariée, la table retombe sur la classe majoritaire (0,245). Détail
 et figure : `docs/NIST_FINDINGS.md`, `EDA/EDA_NIST_rules.ipynb`.
 
-#### X3 — Benchmark de l'estimateur de référence saine · 1,5 j
+#### X3 — Benchmark de l'estimateur de référence saine · **fait**
 
-*(fusionne les anciennes pistes « meilleure référence à petit n » et « benchmark étage 1 » —
-c'était la même expérience.)*
+Le 0,602 est un kNN k=5 médiane, machine cible. Contrôle reproduit exactement. Sans
+conditionner (médiane globale) : **0,337**. L'essentiel du gain est de comparer **à condition
+équivalente**, pas la soustraction.
 
-Le système a deux étages : un **estimateur** qui prédit ce que lirait une machine saine dans
-les conditions courantes, puis un **classifieur** qui travaille sur l'écart. L'étage 2 a
-été comparé à une table de signes (X2). L'étage 1 ne l'a été que partiellement.
+**La courbe `dmin → accuracy` est le résultat.** 28 % des essais défaillants ont un sain à
+moins de 0,1 °C. En interdisant les voisins à moins de 0,5 °C :
 
-Une exploration préliminaire a déjà produit trois résultats à confirmer proprement :
-
-**Le choix de l'estimateur pèse lourd.** Une moyenne globale des essais sains donne 0,358 contre
-0,602 pour un kNN tenant compte des conditions. **L'essentiel du gain de la méthode ne vient pas
-de la soustraction, mais du fait de comparer à condition équivalente.**
-
-**L'erreur de régression ne prédit pas la performance de classification.** Ajouter le point de
-rosée améliore nettement l'erreur d'estimation sur les essais sains, et fait *baisser*
-l'accuracy de 0,602 à 0,576. Toute variante doit être évaluée en bout de chaîne.
-
-**🔴 Et le chiffre publié dépend de la structure du plan d'expérience.** 29 % des essais
-défaillants ont un essai sain à moins de 0,1 °C : la campagne NIST est répliquée par
-construction. En interdisant les voisins à moins de 0,5 °C, ce qui simule une situation de
-terrain :
-
-| Estimateur | Répliques autorisées | Répliques interdites |
+| Estimateur | Répliques autorisées | dmin = 0,5 °C |
 |---|---|---|
-| kNN k=1 | 0,703 | 0,523 |
-| kNN k=5 — **publié** | 0,602 | **0,511** |
+| kNN k=1 | 0,650 | 0,501 |
+| kNN k=5 — **publié** | **0,602** | **0,482** |
 
-Un petit `k` semble gagner dix points ; le gain disparaît une fois les répliques exclues. **Et
-le 0,602 lui-même tombe à 0,511.** Le chiffre du projet suppose implicitement une mesure saine
-aux conditions quasi identiques à celles du défaut — vrai dans une campagne contrôlée, faux sur
-une machine en service.
+Le petit `k` ne gagne que grâce au plan d'essais. Le 0,602 de chambre tombe à **0,482** sur
+une machine en service. L'exploration disait 0,511 ; la mesure propre est 0,482.
 
-L'expérience à mener : grille complète d'estimateurs, seuil de distance **balayé** plutôt que
-fixé, évaluation en bout de chaîne, détail par panne.
+Point de rosée dans le kNN des deux étages : **0,602 → 0,576**. L'erreur de régression
+s'améliore ; la classification baisse. Juger l'étage 1 en bout de chaîne.
 
-Deux règles à y inscrire :
-- tout gain apporté par un petit `k` doit être retesté sans répliques, sinon on mesure le plan
-  d'expérience ;
-- l'erreur d'estimation ne sert que de présélection, jamais de conclusion.
+Le 0,602 **n'est pas remplacé** dans README / dossier / NIST_FINDINGS / `results.csv` (`X0b`)
+— PR séparée, listée dans `docs/NIST_FINDINGS.md`. Notebook : `EDA/EDA_NIST_reference_bench.ipynb`.
 
 #### X4 — Hold-out sur le domaine de fonctionnement · ½ j
 
@@ -289,8 +270,8 @@ G                                    indépendant — durcir les garde-fous
 **P0 est livré.** X4 peut maintenant être menée sans que la fuite d'étiquette traverse le
 hold-out. P5 (contrat de features) reste un prérequis *utile* de X4, plus un bloquant.
 
-**X3** ne porte que sur les essais mesurés NIST. Une exploration préliminaire suggère que le
-0,602 tombe à 0,511 sans les répliques du plan d'essais.
+**X3 est livré.** Sans les répliques du plan d'essais (dmin = 0,5 °C), le 0,602 tombe à
+**0,482**. Le chiffre de chambre n'est pas encore remplacé dans README / dossier — PR séparée.
 
 **G — durcir les garde-fous** (0,75 j), issu du §8 bis de l'audit :
 - un test qui compare les nombres des tableaux markdown à `results.csv` — sans lui, la « source
@@ -308,7 +289,7 @@ X4 et X5 produiront vraisemblablement des résultats **négatifs**, et c'est leu
 
 Chaque expérience menée jusqu'ici en a suggéré une nouvelle. C'est sain, et c'est sans fin.
 
-**Le périmètre du grand 1 est figé à X3–X5 et P4–P6.** Toute question soulevée par ces
+**Le périmètre du grand 1 est figé à X4–X5 et P4–P6.** Toute question soulevée par ces
 expériences part dans une liste « suite », pas dans le périmètre courant. Sans cette règle, le
 projet ne sera jamais livré.
 
@@ -344,7 +325,7 @@ Le pronostic n'est pas un modèle différent du diagnostic, c'est une **donnée*
 **Les chiffres.** Toute valeur mesurée s'écrit dans `outputs/results.csv` via `tools.results.log`,
 jamais seulement dans une sortie de notebook. Les colonnes `protocol` et `reference` sont
 obligatoires : **un chiffre sans son protocole n'est pas un résultat**, et ce projet a mesuré à
-quel point ça compte (0,95 contre 0,60 selon le découpage ; 0,602 contre 0,511 selon la
+quel point ça compte (0,95 contre 0,60 selon le découpage ; 0,602 contre 0,482 selon la
 structure du plan d'essais).
 
 La documentation cite ce fichier plutôt que de recopier les valeurs. Les deux contradictions
