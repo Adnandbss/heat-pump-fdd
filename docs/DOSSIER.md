@@ -1,296 +1,482 @@
 ---
-title: "Diagnostic de pannes sur pompe à chaleur"
-subtitle: "Un simulateur physique, une validation sur essais mesurés, et ce que coûte vraiment la détection"
+title: "Anatomie d'un système de diagnostic de pannes"
+subtitle: "De l'équation thermodynamique au tableau de bord — physique, apprentissage et architecture"
 date: "Septembre 2026"
 lang: fr
 ---
 
-# 1. Le problème, en vrai
+# 0. Le problème et la contrainte fondatrice
 
-Une pompe à chaleur qui tombe en panne d'un coup, cela arrive rarement. Ce qui arrive
-souvent, c'est qu'elle se dégrade sans prévenir. Le condenseur s'encrasse, une fuite lente
-vide une partie du fluide frigorigène, un ventilateur faiblit. La machine continue de
-chauffer. Elle consomme simplement de plus en plus pour le même service.
+Une pompe à chaleur tombe rarement en panne d'un coup. Elle se dégrade. Le condenseur
+s'encrasse, une fuite lente vide une partie du fluide, un ventilateur faiblit. La machine
+continue de chauffer, et consomme de plus en plus pour le même service. Le **COP** — la chaleur
+fournie divisée par l'électricité consommée — glisse de 4,0 à 3,2 en quelques mois. Personne ne
+le voit ; la facture monte de 25 %.
 
-Le **COP** — coefficient de performance, le rapport entre la chaleur fournie et l'électricité
-consommée — glisse de 4,0 à 3,2 en quelques mois. Personne ne le voit. La facture, elle,
-monte de 25 %.
-
-Le problème du technicien n'est pas de savoir *qu'il y a* un problème. C'est de savoir
-**lequel**. Or plusieurs pannes très différentes produisent des symptômes proches : un
-condenseur encrassé et un ventilateur de condenseur défaillant font tous les deux monter la
+Le technicien n'a pas besoin d'apprendre qu'il y a un problème. Il a besoin de savoir
+**lequel**. Et c'est difficile parce que des pannes très différentes se ressemblent : un
+condenseur encrassé et un ventilateur de condenseur défaillant font tous deux monter la
 pression haute et chuter le COP. L'un se règle avec un nettoyage, l'autre avec une pièce.
 
-Ce projet répond à cette question-là : à partir des grandeurs qu'un capteur peut lire,
-**nommer la panne**.
+## La contrainte qui commande tout le reste
 
-# 2. Diagnostic n'est pas prédiction
+Pour apprendre à nommer une panne, il faut des exemples étiquetés. Or ces données sont **rares
+et chères** : il faut délibérément encrasser un condenseur, retirer de la charge, brider un
+ventilateur, et instrumenter la machine pendant qu'on l'abîme. Peu de laboratoires le font.
 
-Deux problèmes sont régulièrement confondus.
+Ce projet répond par la simulation. Ce n'est pas un contournement, c'est **la réponse standard
+du domaine** — le NIST et l'ASHRAE procèdent de même, et la rareté des données de défaut est
+précisément ce qui motive leurs campagnes d'essais.
 
-| | Diagnostic (FDD) | Prédiction (PdM) |
-|---|---|---|
-| Question | Qu'est-ce qui ne va pas **maintenant** ? | Quand cela va-t-il casser ? |
-| Entrée | Un point de fonctionnement | Un historique daté |
-| Sortie | Une classe de panne | Un délai, une probabilité de survie |
-| Donnée nécessaire | Des essais avec défaut étiqueté | Des séries temporelles jusqu'à la défaillance |
+Mais ce choix crée une tension qu'il faut annoncer d'emblée : **si le même modèle fabrique les
+questions et les réponses, que mesure-t-on exactement ?** La seconde moitié de ce document ne
+traite que de cela.
 
-**Ce projet fait du diagnostic.** Le choix n'est pas idéologique, il est dicté par les
-données disponibles : les essais mesurés utilisés ici sont des points **stationnaires**,
-mesurés en chambre climatique avec un défaut délibérément imposé et maintenu. Il n'y a pas
-d'horloge, pas de dégradation progressive, pas de moment de casse.
+## Comment lire ce document
 
-Fabriquer un modèle de prédiction sur ces données reviendrait à inventer un axe du temps qui
-n'existe pas. Le projet s'y refuse explicitement. La prédiction est une piste future, qui
-suppose un **autre jeu de données** (section 14).
-
-> **Pour le jury.** Le diagnostic et la prédiction ne se distinguent pas par le modèle mais
-> par la donnée. Sans série temporelle allant jusqu'à la panne, un modèle de prédiction n'est
-> pas prudent : il est faux.
-
-# 3. Vue d'ensemble du système
-
-Le trajet d'une mesure jusqu'à un diagnostic affiché :
-
-```
-simulateur      features        générateur        classifieur      moteur        API          front
-R-410A      ->  24 grandeurs -> 5000 exemples -> GradientBoosting -> FDDEngine -> FastAPI -> React
-```
-
-Le code est organisé en trois couches, avec une règle d'import à sens unique :
-
-```
-studies/   ->   fdd/   ->   physics/
-```
-
-- **`physics/`** — le modèle thermodynamique. N'importe rien du projet.
-- **`fdd/`** — la méthode : contrat de grandeurs, entraînement, moteur de diagnostic.
-  Partagée par toutes les études.
-- **`studies/`** — une étude = un jeu de données, une taxonomie de pannes, un emplacement
-  d'artefacts. Seule couche autorisée à importer les deux autres.
-
-Cinq tests automatiques vérifient que cette règle n'est jamais violée. Les chemins de
-fichiers d'une étude sont centralisés dans un unique module `paths.py` par étude : aucun
-chemin n'est écrit en dur ailleurs.
-
-# 4. Le simulateur
-
-Faute de données de panne étiquetées en quantité, le projet **fabrique** ses exemples
-d'entraînement à partir des équations du cycle à compression de vapeur.
-
-Le fluide est le **R-410A**. Ses propriétés thermodynamiques viennent de la bibliothèque
-CoolProp, avec des corrélations de repli si elle est absente. Un cycle est calculé à partir
-de trois conditions :
-
-| Condition | Plage | Sens physique |
-|---|---|---|
-| `T_source` | -10 à 20 °C | Température de la source froide (air extérieur) |
-| `T_sink` | 30 à 55 °C | Température du puits chaud (eau de chauffage) |
-| `speed_ratio` | 0,3 à 1,0 | Régime du compresseur |
-
-Le point nominal du projet est **A7/W40** : air extérieur à 7 °C, eau à 40 °C.
-
-Un défaut n'est pas un bruit ajouté après coup sur les résultats. Il est injecté **dans la
-physique**, en amont, et toutes les grandeurs en découlent de façon cohérente :
-
-| Défaut injecté | Paramètre dégradé |
-|---|---|
-| Encrassement | Coefficient d'échange `UA` de l'échangeur concerné |
-| Ventilateur | Débit d'air, avec un exposant différent de l'encrassement |
-| Sous-charge | Densité et pression d'aspiration du fluide |
-
-C'est cette différence d'exposant qui permet de distinguer un encrassement d'une panne de
-ventilateur : les deux dégradent l'échange, mais par des chemins différents.
-
-Un bruit de mesure gaussien réaliste est ajouté en dernier, sur les grandeurs mesurables.
-
-## Dette connue du simulateur
-
-Quatre défauts de modélisation ont été identifiés en confrontant les signatures simulées aux
-essais mesurés. Ils sont documentés, non corrigés à ce jour, et planifiés.
-
-| Défaut | Conséquence |
-|---|---|
-| Surcharge de fluide non modélisée | Le type de panne existe dans le code mais ne produit aucun effet |
-| Sous-refroidissement inversé sur l'encrassement du condenseur | Une grandeur du modèle varie dans le mauvais sens |
-| Surchauffe et température de refoulement inversées sur le défaut de ventilateur d'évaporateur | Deux grandeurs dans le mauvais sens |
-| Limite de température de refoulement déclarée mais jamais appliquée | Des cycles à 319 °C, physiquement impossibles, dans le domaine d'entraînement |
-
-Ces défauts sont énoncés ici parce qu'ils ont été **mesurés**, et parce qu'un modèle dont on
-connaît les limites vaut mieux qu'un modèle dont on les ignore.
-
-# 5. Les 24 grandeurs
-
-Le classifieur ne voit pas un cycle. Il voit un vecteur de 24 nombres, défini une fois pour
-toutes dans le contrat `FEATURE_COLUMNS`.
-
-| # | Nom | Unité | Origine | Rôle |
-|---|---|---|---|---|
-| 1 | `T_ambient` | °C | Condition | Identique à `T_source` |
-| 2 | `T_setpoint` | °C | Condition | Identique à `T_sink` |
-| 3 | `compressor_speed_ratio` | - | Condition | Régime demandé |
-| 4 | `P_evap` | bar | Mesure | Pression d'évaporation |
-| 5 | `P_cond` | bar | Mesure | Pression de condensation |
-| 6 | `T_evap` | °C | Mesure | Température de saturation, côté froid |
-| 7 | `T_cond` | °C | Mesure | Température de saturation, côté chaud |
-| 8 | `T_suction` | °C | Mesure | Entrée compresseur |
-| 9 | `T_discharge` | °C | Mesure | Sortie compresseur |
-| 10 | `superheat` | K | Mesure | Surchauffe |
-| 11 | `subcooling` | K | Mesure | Sous-refroidissement |
-| 12 | `compression_ratio` | - | Dérivé | `P_cond / P_evap` |
-| 13 | `W_comp` | W | Mesure | Puissance absorbée |
-| 14 | `Q_cond` | W | Mesure | Puissance restituée |
-| 15 | `COP` | - | Dérivé | `Q_cond / W_comp` |
-| 16 | `delta_T_evap` | K | Dérivé | `T_source - T_evap` |
-| 17 | `delta_T_cond` | K | Dérivé | `T_cond - T_sink` |
-| 18 | `pressure_ratio` | - | Dérivé | `P_cond / P_evap` |
-| 19 | `capacity_ratio` | - | Dérivé | `Q_cond` rapporté au nominal |
-| 20 | `d_T_discharge` | K | **Résidu** | Écart au cycle sain |
-| 21 | `d_superheat` | K | **Résidu** | Écart au cycle sain |
-| 22 | `d_subcooling` | K | **Résidu** | Écart au cycle sain |
-| 23 | `d_COP` | - | **Résidu** | Écart au cycle sain |
-| 24 | `d_W_comp` | W | **Résidu** | Écart au cycle sain |
-
-**Deux définitions utiles.** La *surchauffe* est le nombre de degrés au-dessus de la
-température d'ébullition à la sortie de l'évaporateur : elle dit si le fluide est bien
-entièrement vaporisé. Le *sous-refroidissement* est le symétrique à la sortie du condenseur :
-il dit combien de liquide s'y accumule.
-
-**Une redondance.** Les grandeurs 12 et 18 sont le même nombre, vérifié à la précision
-machine sur tous les points de fonctionnement testés. Le modèle dispose donc de 23 entrées
-indépendantes, pas 24. La correction est planifiée.
-
-## Les cinq résidus
-
-Un **résidu** est une soustraction :
-
-```
-résidu = valeur observée - valeur qu'aurait une machine saine, dans les mêmes conditions
-```
-
-L'analogie est celle de la fièvre. Dire « 37,8 °C » ne veut rien dire sans savoir de qui l'on
-parle. Dire « 0,9 °C au-dessus de sa propre température habituelle » est un signal, quel que
-soit l'individu.
-
-C'est exactement le raisonnement. Une surchauffe de 12 K ne dit rien : elle dépend de la
-machine, de la saison, de la charge. Une surchauffe **1,7 K au-dessus de ce que cette
-machine-ci ferait en bonne santé, à cet instant-ci** est une signature de sous-charge.
-
-Cette approche porte un nom dans la littérature du domaine : la méthode des résidus de
-Li et Braun. Elle est au cœur du projet, et la section 11 montre qu'elle est ce qui fonctionne
-— avec une condition qui n'avait pas été anticipée.
-
-# 6. Les pannes traitées
-
-L'étude synthétique produit six classes :
-
-| Classe | Description |
-|---|---|
-| `Normal` | Fonctionnement sain |
-| `Condenser_Fouling` | Condenseur encrassé |
-| `Evaporator_Fouling` | Évaporateur encrassé |
-| `Refrigerant_Undercharge` | Fuite, charge insuffisante |
-| `Condenser_Fan_Fault` | Débit d'air condenseur réduit |
-| `Evaporator_Fan_Fault` | Débit d'air évaporateur réduit |
-
-Deux types de panne supplémentaires existent dans le code — surcharge de fluide et fuite de
-clapet de compresseur — avec une branche d'injection complète, mais ne sont **jamais
-générés**. Ce sont des classes fantômes. Leur sort est une décision assumée du projet, pas
-un oubli.
-
-Les essais mesurés utilisés en validation couvrent deux pannes que le simulateur ne produit
-pas : la **surcharge** et la **restriction de ligne liquide**.
-
-# 7. Le modèle
+Le système est parcouru module par module, dans l'ordre où circule une mesure. À chaque étape,
+trois questions :
 
 | | |
 |---|---|
-| Algorithme | Gradient Boosting, calibré en probabilité |
-| Alternative testée | Random Forest |
-| Entraînement | 5000 cycles simulés, 30 % en test |
-| Sélection | Recherche sur grille, validation croisée stratifiée |
+| **Physique** | Quel phénomène est modélisé, avec quelle équation |
+| **Apprentissage** | Quelle décision de modélisation cela impose |
+| **Ingénierie** | Pourquoi ce code vit ici et pas ailleurs |
 
-Le choix ne repose pas sur un empilement d'algorithmes. Sur des données simulées où les
-classes sont déjà nettement séparées, un modèle supplémentaire n'apporte rien de mesurable :
-Random Forest et le Gradient Boosting obtiennent tous deux 99,6 %. L'écart n'est pas significatif. Multiplier les
-modèles aurait donné une illusion de rigueur ; le travail utile était ailleurs, dans la
-validation.
+## Structure du dépôt
 
-**Une contrainte technique importante.** Le modèle entraîné est versionné dans le dépôt sous
-forme de fichier sérialisé. Ce format dépend de la version exacte de la bibliothèque
-d'apprentissage. La version est donc **épinglée à `scikit-learn==1.6.1`** dans les
-dépendances. Installer une autre version rend le modèle illisible, avec un message d'erreur
-qui ne ressemble en rien à un problème de version. Toute mise à jour impose un
-réentraînement.
+```
+heat-pump-fdd/
+|
++-- src/
+|   +-- physics/                 le modèle physique — n'importe rien du projet
+|   |   +-- simulator.py           cycle R-410A, injection des défauts
+|   |   +-- thermo_lab.py          balayages COP, enveloppes
+|   |   +-- thermodynamic_viz.py   diagrammes pression-enthalpie
+|   |
+|   +-- fdd/                     la méthode — partagée par toutes les études
+|   |   +-- features.py            contrat des 24 grandeurs, résidus
+|   |   +-- ml_models.py           entraînement, sélection de modèle
+|   |   +-- inference.py           FDDEngine : charger, diagnostiquer
+|   |   +-- visualization.py       figures d'entraînement
+|   |
+|   +-- studies/                 les jeux de données
+|       +-- synthetic/
+|           +-- generator.py       tirage, injection, assemblage
+|           +-- taxonomy.py        les classes de panne de cette étude
+|           +-- scenarios.py       la démo : simulate_cycle, live_trace
+|           +-- paths.py           source unique des chemins d'artefacts
+|
++-- api/            FastAPI — 4 routes d'inférence, 17 de tableau de bord
++-- web/            React — lit la liste des grandeurs depuis l'API
++-- tests/          43 tests, dont 5 gardes d'architecture
++-- EDA/            notebooks de confrontation aux essais mesurés
++-- docs/           documentation technique et ce dossier
+|
++-- outputs/synthetic/   jeu de données et figures, par étude
++-- models/synthetic/    modèle sérialisé et ses métadonnées
+```
 
-# 8. L'interface
+La règle d'import est à sens unique et vérifiée par des tests :
 
-L'API expose deux familles de routes, de nature différente :
+$$\texttt{studies/} \;\longrightarrow\; \texttt{fdd/} \;\longrightarrow\; \texttt{physics/}$$
 
-| Famille | Routes | Rôle |
+# 1. La physique — `src/physics/`
+
+## `simulator.py` — la source de vérité
+
+Ce module calcule un cycle à compression de vapeur au R-410A. Il est la racine de la
+dépendance : tout s'appuie sur lui, il ne s'appuie sur rien. Les propriétés du fluide viennent
+de CoolProp, avec des corrélations de repli.
+
+Trois entrées définissent un point de fonctionnement :
+
+| Entrée | Plage | Sens |
 |---|---|---|
-| Inférence | `/health`, `/predict`, `/simulate`, `/live` | Le diagnostic proprement dit |
-| Tableau de bord | 17 routes `/api/*` | Alimenter les vues du front |
+| $T_{source}$ | −10 à 20 °C | Air extérieur, côté froid |
+| $T_{sink}$ | 30 à 55 °C | Eau de chauffage, côté chaud |
+| $n$ | 0,3 à 1,0 | Régime du compresseur |
 
-Le contrat d'entrée de `/predict` est strict : il énumère les 24 grandeurs et **refuse tout
-champ inconnu**. C'est un choix défensif — une grandeur mal nommée est rejetée au lieu d'être
-silencieusement ignorée — mais cela signifie que modifier la liste des grandeurs est une
-**rupture de compatibilité**, à traiter comme telle.
+Le point nominal est **A7/W40** : air à 7 °C, eau à 40 °C.
 
-Le front, lui, est générique : il lit la liste des grandeurs depuis l'API plutôt que de la
-coder en dur. Il suivra une évolution du contrat sans modification.
+### Le modèle d'échangeur, et l'exposant qui fait tout
 
-# 9. Les données mesurées
+$$UA_{evap} = UA_{evap}^{nom}\,\bigl(1 - 0{,}50\,\varphi_{evap}\bigr)\; r_{evap}^{\,1{,}45}$$
 
-La validation s'appuie sur une campagne d'essais publique du NIST, menée sur des pompes à
-chaleur résidentielles en chambre climatique, avec défauts imposés.
+$$UA_{cond} = UA_{cond}^{nom}\,\bigl(1 - 0{,}50\,\varphi_{cond}\bigr)\; r_{cond}^{\,1{,}45}$$
+
+avec $UA_{evap}^{nom} = 500$ W/K et $UA_{cond}^{nom} = 600$ W/K ; $\varphi$ l'encrassement
+(0 = propre) et $r$ le débit d'air rapporté au nominal.
+
+**Physique.** $UA$ est le coefficient global d'échange : combien de chaleur passe par degré
+d'écart. L'encrassement dépose une couche isolante et le dégrade **linéairement**. Une perte de
+débit d'air le dégrade avec un **exposant 1,45**, parce que la convection côté air s'effondre
+plus vite que proportionnellement au débit.
+
+**Apprentissage. C'est le cœur du projet.** Les deux pannes dégradent la même grandeur, mais
+par deux lois différentes. C'est *cette* différence qui rend les classes séparables. Sans elle,
+il n'y a pas de problème de classification — seulement deux noms pour un même symptôme.
+
+L'écart de température aux bornes de l'échangeur, le *pincement*, en découle :
+
+$$\Delta_{evap} = 5 + 7\left(1 - \frac{UA_{evap}}{UA_{evap}^{nom}}\right)$$
+
+$$\Delta_{cond} = 5 + 7\left(1 - \frac{UA_{cond}}{UA_{cond}^{nom}}\right) + 8\,(1 - r_{cond})$$
+
+puis les températures de changement d'état :
+
+$$T_{evap} = T_{source} - \Delta_{evap} \qquad T_{cond} = T_{sink} + \Delta_{cond}$$
+
+**À retenir : le condenseur est du côté du puits chaud.** Cette convention deviendra un piège
+au moment de confronter le modèle à des essais mesurés en mode refroidissement, où c'est
+l'unité extérieure qui joue ce rôle.
+
+### Le compresseur
+
+Le rendement isentropique suit une corrélation de compresseur scroll, maximale autour d'un taux
+de compression $\tau = 3$ :
+
+$$\eta_{is} = 0{,}75 \cdot f(\tau) \cdot g(n), \qquad
+f(\tau) = \mathrm{borne}\bigl(1 - 0{,}05\,(\tau-3)^2,\; 0{,}4,\; 1\bigr), \qquad
+g(n) = 1 - 0{,}30\,(n - 0{,}7)^2$$
+
+$$\eta_{vol} = 1 - 0{,}05\left(\tau^{1/k} - 1\right), \qquad \tau = \frac{P_{cond}}{P_{evap}}$$
+
+**Lecture utile** : un défaut qui écarte $\tau$ de son optimum dégrade le COP **deux fois** —
+par la thermodynamique, et par la chute du rendement du compresseur.
+
+La température de refoulement suit une loi polytropique corrigée par ce rendement :
+
+$$T_{ref}^{\,ideal} = \bigl(T_{asp} + 273{,}15\bigr)\,\tau^{\frac{k-1}{k}} - 273{,}15
+\qquad
+T_{ref} = T_{asp} + \frac{T_{ref}^{\,ideal} - T_{asp}}{\eta_{is}}$$
+
+Un compresseur moins efficace transforme davantage de travail en chaleur : il refoule plus
+chaud. C'est pourquoi la température de refoulement est un indicateur de santé si sensible.
+
+### Puissances et COP
+
+$$Q_{cond} = \dot m\,(h_2 - h_3) \qquad
+W_{comp} = 1{,}10 \cdot \dot m\,\Delta h_{reel} \qquad
+COP = \frac{Q_{cond}}{W_{comp}}$$
+
+Le facteur 1,10 couvre les pertes mécaniques et électriques. Le détail des enthalpies est en
+annexe B.
+
+### Le défaut n'est pas du bruit
+
+Un défaut est un **paramètre physique dégradé en amont** — $\varphi_{cond}$, $r_{cond}$, la
+charge $c$ — et toutes les grandeurs en découlent de façon cohérente. Une ligne change dans
+l'appel, le cycle entier est recalculé.
+
+**Ingénierie.** C'est ce qui permet d'explorer un défaut de façon continue, à n'importe quelle
+sévérité et dans n'importe quelles conditions — ce qu'aucun jeu d'essais réels ne permet.
+
+### Ce que la confrontation aux mesures a révélé
+
+![Enveloppe de fonctionnement du compresseur simulé](../outputs/synthetic/compressor_envelope.png)
+
+Quatre défauts de modélisation, trouvés en comparant les signatures simulées à des essais
+mesurés, puis corrigés :
+
+| Défaut trouvé | Conséquence |
+|---|---|
+| Surcharge sans branche de calcul | Une classe déclarée qui ne produisait aucun effet |
+| Sous-refroidissement inversé sur l'encrassement condenseur | Une grandeur du vecteur variait à l'envers |
+| Surchauffe et refoulement inversés sur le ventilateur d'évaporateur | Deux grandeurs à l'envers |
+| Plafond de refoulement déclaré mais jamais appliqué | Des cycles à 319 °C dans les données d'apprentissage |
+
+Le dernier est le plus instructif : $T_{ref}^{max} = 130$ °C figurait dans le code, mais
+n'était utilisé que pour afficher une alerte — jamais pour borner la valeur. Une partie des
+exemples décrivait des machines qui ne peuvent pas exister.
+
+## `thermodynamic_viz.py` et `thermo_lab.py` — des vues, pas de la physique
+
+Diagrammes pression-enthalpie et balayages de COP. Ils vivent dans `physics/` parce qu'ils
+manipulent les mêmes propriétés du fluide, mais sont importés par l'API et **jamais par le
+pipeline d'apprentissage**. Une visualisation n'entre pas dans un vecteur de features.
+
+# 2. Du cycle au vecteur — `src/fdd/features.py`
+
+## Le problème de représentation
+
+Un résultat de cycle n'est pas un vecteur exploitable. Il faut décider **quoi** montrer au
+modèle — et ce choix pèse plus lourd que celui de l'algorithme.
+
+Le contrat compte 24 colonnes : 3 conditions, 16 grandeurs mesurées ou dérivées, 5 **résidus**.
+
+## Les résidus, ou l'analogie de la fièvre
+
+Dire « 37,8 °C » ne veut rien dire tant qu'on ignore de qui l'on parle. Dire « 0,9 °C au-dessus
+de sa température habituelle » est un signal, quel que soit l'individu.
+
+$$\tilde{x} = x_{observe} - \hat{x}_{sain}\bigl(T_{source},\, T_{sink},\, n\bigr)$$
+
+Une surchauffe de 12 K ne dit rien : elle dépend de la machine, de la saison, de la charge. Une
+surchauffe **1,7 K au-dessus de ce que cette machine-ci ferait en bonne santé, maintenant** est
+une signature de sous-charge.
+
+**Apprentissage.** C'est la méthode des résidus de Li et Braun : un modèle de référence prédit
+le comportement sain, le classifieur travaille sur l'écart. Le docstring du module la nomme.
+
+## La couture qui rend toute la validation possible
+
+```python
+def cycle_to_features(result, ..., baseline=None, ...):
+    if baseline is None:
+        baseline = healthy_cycle(T_source, T_sink, speed_ratio)   # <- simule
+```
+
+**Par défaut, le cycle sain de référence est calculé par le simulateur.** Les deux termes de la
+soustraction sortent de la même machine à calculer : c'est là qu'est la circularité annoncée en
+ouverture.
+
+Mais le paramètre `baseline` est exposé. Passer un cycle sain **mesuré** transforme les cinq
+résidus en écarts réels, sans modifier une ligne du reste du pipeline.
+
+**Ingénierie.** Une seule ligne de signature est ce qui a rendu possible toute la confrontation
+décrite en partie 7. C'est l'exemple le plus net, dans ce projet, de ce qu'un bon point
+d'extension fait gagner.
+
+## Une redondance
+
+$\texttt{compression\_ratio}$ et $\texttt{pressure\_ratio}$ sont **le même nombre**, vérifié à
+la précision machine sur tous les points testés. Le modèle dispose de 23 entrées indépendantes,
+pas 24.
+
+# 3. Fabriquer un jeu de données — `src/studies/synthetic/`
+
+## Pourquoi une couche « études » séparée
+
+Un jeu de données n'est pas un fichier. C'est un triplet : **des données, une taxonomie de
+pannes, un emplacement d'artefacts**. Le jour où une seconde source arrive, rien de la méthode
+ne doit bouger. C'est la justification du découpage architectural, et elle est vérifiable.
+
+| Module | Rôle |
+|---|---|
+| `generator.py` | Tirage des conditions, injection des défauts, assemblage |
+| `taxonomy.py` | Les classes de panne et leurs paramètres — propre à l'étude |
+| `scenarios.py` | La démo : `simulate_cycle`, `live_trace` — pas la méthode |
+| `paths.py` | Source unique des chemins, aucun chemin en dur ailleurs |
+
+Les conditions sont tirées uniformément dans le domaine, un défaut est choisi puis injecté à
+une sévérité tirée, et le cycle est recalculé.
+
+![Distribution des grandeurs dans le jeu synthétique](../outputs/synthetic/data_distribution.png)
+
+Six classes sont produites : sain, encrassement de condenseur, encrassement d'évaporateur,
+sous-charge, ventilateur de condenseur, ventilateur d'évaporateur. Deux autres — surcharge et
+fuite de clapet — sont **déclarées avec une branche d'injection mais jamais générées**. Ce sont
+des classes fantômes, et leur sort est une décision documentée plutôt que laissée en l'état.
+
+## Le bruit de mesure, et une incohérence qui compte
+
+Un bruit gaussien est ajouté aux grandeurs qu'un capteur mesure : 0,5 °C sur les températures,
+2 % sur les pressions, 3 % sur les puissances. Il ne modélise ni dérive de capteur, ni biais,
+ni régime transitoire.
+
+**Mais il est appliqué après le calcul des grandeurs dérivées, et celles-ci ne sont pas
+recalculées.** Mesuré sur les 5000 exemples : **aucune ligne** ne vérifie
+$\texttt{pressure\_ratio} = P_{cond}/P_{evap}$, ni $COP = Q_{cond}/W_{comp}$.
+
+La portée de ce défaut apparaît en regardant ce dont le modèle se sert réellement — voir la
+partie suivante.
+
+# 4. Le modèle — `src/fdd/ml_models.py` et `inference.py`
+
+## Le choix d'algorithme, et pourquoi il compte peu
+
+Gradient Boosting calibré en probabilité, sélectionné par recherche sur grille et validation
+croisée stratifiée.
+
+| Modèle | Accuracy | F1 macro |
+|---|---|---|
+| Gradient Boosting calibré | 99,6 % | 0,994 |
+| Forêt aléatoire | 99,6 % | 0,994 |
+
+**Pourquoi pas douze algorithmes.** Sur des données simulées où les classes sont déjà nettement
+séparées, un modèle de plus n'apporte rien de mesurable — les deux candidats sont à égalité.
+Empiler des algorithmes aurait donné une **illusion de rigueur**. Le travail utile était dans
+la validation.
+
+![Matrice de confusion, jeu simulé](../outputs/synthetic/confusion_matrix.png)
+
+La matrice de confusion montre une séparation quasi parfaite. C'est précisément ce résultat que
+la suite du document met en doute — non pas parce qu'il serait faux, mais parce qu'il mesure
+autre chose que ce qu'on croit.
+
+## Ce dont le modèle se sert réellement
+
+![Importance des variables](../outputs/synthetic/feature_importance.png)
+
+Cette figure est la plus instructive du jeu simulé, pour deux raisons.
+
+**D'abord, 18 des 24 grandeurs ont une importance quasi nulle.** Le modèle en utilise six. Le
+contrat de features est donc largement surdimensionné, ce qui prépare une simplification.
+
+**Ensuite, et c'est plus gênant : les trois grandeurs les plus importantes ne portent aucun
+bruit de mesure.**
+
+| Rang | Grandeur | Importance | Bruitée ? |
+|---|---|---|---|
+| 1 | `d_COP` | 0,300 | non — le COP n'est jamais bruité |
+| 2 | `delta_T_cond` | 0,293 | non — dérivée calculée avant bruitage |
+| 3 | `delta_T_evap` | 0,171 | non — idem |
+| 4 | `d_superheat` | 0,092 | oui |
+| 5 | `superheat` | 0,076 | oui |
+| 6 | `d_T_discharge` | 0,064 | oui |
+
+**76,4 % de l'importance du modèle repose sur des grandeurs exemptes de bruit**, alors que
+leurs composantes, elles, sont bruitées. Le modèle dispose donc simultanément d'une version
+propre et d'une version bruitée des mêmes quantités.
+
+Une part du 99,6 % provient ainsi d'une information qui n'existerait pas sur une machine
+réelle. Ce défaut est identifié, chiffré, et sa correction est planifiée — au même titre que
+les quatre défauts de physique de la partie 1.
+
+## `FDDEngine` — charger et diagnostiquer, rien d'autre
+
+Le moteur charge un modèle et attribue une classe à un vecteur. Il ne sait pas simuler un
+défaut : cela appartient à l'étude.
+
+Cette séparation n'a pas toujours existé. Le moteur contenait initialement le générateur de
+défauts, ce qui faisait dépendre la couche partagée d'une étude particulière et interdisait
+d'en ajouter une seconde. Le découplage a été fait **avant** tout déplacement de fichier, et
+cinq tests l'empêchent de revenir.
+
+## Le modèle versionné et le pin porteur
+
+Le modèle entraîné est **sérialisé et versionné dans le dépôt**, pour que le projet se clone et
+tourne sans réentraînement. Ce format dépend de la version exacte de la bibliothèque, épinglée
+à `scikit-learn==1.6.1`. Une autre version rend le modèle illisible, avec une erreur qui ne
+ressemble pas à un problème de version :
+
+```
+ModuleNotFoundError: No module named '_loss'
+```
+
+L'image Docker est protégée puisqu'elle installe depuis le fichier de dépendances ; un
+environnement local qui a dérivé ne l'est pas.
+
+# 5. Servir — `api/` et `web/`
+
+| Famille | Nombre | Rôle |
+|---|---|---|
+| Inférence | 4 | `/health`, `/predict`, `/simulate`, `/live` |
+| Tableau de bord | 17 | `/api/*` — alimenter les vues |
+
+Vingt-et-une routes dans un module de 582 lignes, pour deux responsabilités : la couture d'un
+découpage à venir est nette.
+
+![Le tableau de bord pendant une injection d'encrassement](live-fdd.png)
+
+**Le contrat d'entrée est strict.** `/predict` énumère les 24 grandeurs et refuse tout champ
+inconnu — une grandeur mal nommée est rejetée plutôt qu'ignorée. Cela fait de toute évolution
+du contrat une **rupture de compatibilité**.
+
+**Le front est générique** : il lit la liste des grandeurs depuis l'API. Il suivra une
+évolution sans modification.
+
+# 6. La règle qui tient l'ensemble
+
+$$\texttt{studies/} \;\longrightarrow\; \texttt{fdd/} \;\longrightarrow\; \texttt{physics/}$$
+
+`physics/` n'importe rien du projet ; `fdd/` peut importer `physics/` ; seule `studies/` peut
+importer les deux.
+
+**Ce que la règle interdit** : que la méthode dépende d'un jeu de données particulier.
+
+**Ce qui la maintient** : cinq tests qui échouent si le couplage revient — le moteur ne doit
+pas exposer d'interface de simulation, le module de features ne doit pas contenir de taxonomie
+d'étude, l'entraîneur ne doit pas importer de générateur.
+
+## Le récit du refactor
+
+L'ordre a compté plus que le contenu :
+
+1. **Découpler d'abord**, sans déplacer un fichier.
+2. **Déplacer ensuite**, sans changer une ligne de logique.
+3. **Ranger les artefacts par étude** en dernier.
+
+Inverser les deux premières étapes aurait noyé une décision d'architecture dans une dizaine de
+renommages.
+
+**L'équivalence de comportement a été vérifiée à chaque étape** en comparant les sorties avant
+et après — six types de défaut, leurs 24 grandeurs, la classe prédite, la confiance, une trace
+temporelle. Identiques octet pour octet.
+
+> **Pour le jury.** Un refactor ne se juge pas sur l'élégance du résultat mais sur la preuve
+> que rien n'a bougé. Ici la preuve est une comparaison binaire des sorties, pas une suite de
+> tests verte : les tests disent que le contrat tient, pas que les nombres sont les mêmes.
+
+# 7. Les données mesurées
+
+La validation s'appuie sur une campagne publique du NIST : des pompes à chaleur résidentielles
+en chambre climatique, avec défauts imposés et maintenus.
 
 | | |
 |---|---|
 | Essais | 7375 |
-| Grandeurs mesurées | 98 colonnes, côté air et côté fluide |
-| Machines | Deux, notées 14 et 16 SEER |
-| Retenus | 5386 essais à défaut unique, sur 6 classes |
+| Grandeurs | 98 colonnes, côté air et côté fluide |
+| Machines | Deux, de performances différentes |
+| Retenus | 5386 essais à défaut unique, 6 classes |
 | Mode | Refroidissement |
 
-Le **SEER** est un indice d'efficacité saisonnière : deux valeurs signifient simplement deux
-machines de performances différentes. Cette diversité est un atout, pas une nuisance : elle
-permet de tester si un modèle appris sur une machine fonctionne sur l'autre.
+Deux machines plutôt qu'une : c'est décisif, car cela permet de tester si un modèle appris sur
+l'une fonctionne sur l'autre.
 
-## Deux pièges de lecture
+![Les six classes reconstruites à partir des colonnes de niveau de défaut](figures/classes.png)
 
-**Les étiquettes de panne sont dans les données.** Cinq colonnes indiquent le niveau de
-défaut imposé. Elles constituent la réponse à trouver : les inclure parmi les grandeurs
-d'entrée reviendrait à donner le corrigé avec l'énoncé. Elles sont explicitement exclues, et
-un test le vérifie.
+Les classes ne sont pas données : elles sont **implicites**, réparties sur cinq colonnes de
+niveau où 100 % signifie nominal. Un défaut compte comme actif dès que son niveau s'écarte de
+plus de 2 % — seuil qui reproduit exactement les effectifs publiés, ce qui permet de l'inscrire
+en assertion dans le code.
 
-**Un capteur n'est pas instrumenté sur une des deux machines.** La colonne nommée « pression
-au port d'aspiration » contient en réalité la pression de refoulement sur la machine 16 SEER,
-soit 55 % des essais. Utilisée sans vérification, elle produit un rapport de pression égal à
-1,00 — physiquement impossible — sans lever la moindre erreur. Une autre colonne, cohérente
-sur les deux machines, est utilisée à la place.
+## Trois obstacles méthodologiques
 
-Les classeurs de données ne sont pas versionnés dans le dépôt en raison de leur taille. Les
-adresses de téléchargement et la table de correspondance complète figurent dans la
-documentation technique.
+**Le mode est inversé.** Les essais sont en refroidissement, le simulateur en chauffage. En
+refroidissement, c'est l'unité **extérieure** qui condense — l'inverse de la convention du
+simulateur. Apparier les pannes sans vérifier ce point conduit à comparer des sens opposés et à
+conclure que le modèle est faux alors que c'est l'appariement qui l'est.
 
-# 10. Comment on mesure une performance
+**Un capteur n'est pas instrumenté sur une des deux machines.**
 
-Un score n'a de sens qu'accompagné de son protocole.
+![La colonne d'aspiration piégée, et son remplacement](figures/capteur.png)
 
-**Validation croisée aléatoire.** On mélange tous les essais, on en cache une partie, on
-entraîne sur le reste. Simple, standard, et trompeur ici : les essais des deux machines se
-retrouvent des deux côtés. Le modèle peut apprendre à reconnaître *la machine* plutôt que
-*la panne*.
+La colonne nommée « pression au port d'aspiration » contient en réalité la pression de
+refoulement sur l'une des deux machines, soit 55 % des essais. Le rapport de pression y vaut
+exactement 1,00 — physiquement impossible — sans qu'aucune erreur ne soit levée. Le panneau de
+gauche montre le pic à 1,00 ; celui de droite, la colonne de remplacement, cohérente sur les
+deux machines.
 
-**Validation par machine (leave-one-machine-out).** On entraîne sur une machine, on teste sur
-l'autre, puis on inverse. Le modèle ne peut plus s'appuyer sur l'identité de l'installation.
+**Les domaines se recouvrent à 5,3 %.**
 
-L'analogie est celle d'un élève. Réviser sur les annales puis composer sur un sujet tiré des
-mêmes annales donne une bonne note. Composer sur un sujet d'un autre établissement mesure ce
-qu'il a réellement compris.
+![Conditions NIST et domaine d'entraînement du simulateur](figures/domaine.png)
 
-Résultats mesurés, quatre jeux de grandeurs, même algorithme, mêmes données :
+Le rectangle est le domaine sur lequel le simulateur a été entraîné ; les points sont les
+essais mesurés. Ils tombent presque entièrement à l'extérieur. **Comparer des valeurs absolues
+est donc exclu** ; seules les tendances sont comparables.
+
+Enfin, les colonnes de niveau de défaut sont la réponse à trouver : les inclure parmi les
+entrées reviendrait à distribuer le corrigé avec l'énoncé. Elles sont exclues, et un test le
+vérifie.
+
+# 8. Les protocoles de validation
+
+Un score n'a aucun sens sans son protocole.
+
+**Validation croisée aléatoire** : on mélange tous les essais, on en cache une partie. Standard,
+et trompeur ici, car les essais des deux machines se retrouvent des deux côtés — le modèle peut
+apprendre à reconnaître *l'installation* plutôt que *la panne*.
+
+**Validation par machine** (*leave-one-machine-out*) : on entraîne sur une machine, on teste
+sur l'autre, puis on inverse.
+
+L'analogie est celle d'un élève. Réviser les annales puis composer sur un sujet tiré des mêmes
+annales donne une bonne note. Composer sur le sujet d'un autre établissement mesure ce qu'il a
+compris.
+
+![Quatre jeux de grandeurs, deux protocoles](figures/features.png)
 
 | Jeu de grandeurs | CV aléatoire | Par machine |
 |---|---|---|
@@ -299,136 +485,367 @@ Résultats mesurés, quatre jeux de grandeurs, même algorithme, mêmes données
 | Résidus seuls | 0,937 | 0,602 |
 | Résidus et conditions | 0,945 | 0,594 |
 
-Référence basse, en prédisant toujours la classe la plus fréquente : **0,251**.
+Classe majoritaire : 0,251.
 
-Deux lectures. Le jeu qui obtient **le meilleur score en validation aléatoire n'est pas celui
-qui se transfère le mieux** : classer des modèles sur un tirage aléatoire aurait conduit à
-retenir la mauvaise conception. Et ajouter les grandeurs absolues aux résidus **dégrade** le
-transfert, parce que les valeurs absolues permettent au modèle de ré-identifier la machine.
+Deux lectures. **Le jeu qui gagne en validation aléatoire n'est pas celui qui transfère le
+mieux** : classer des conceptions sur un tirage aléatoire aurait fait retenir la mauvaise. Et
+**ajouter les grandeurs absolues aux résidus dégrade le transfert**, parce que les valeurs
+absolues permettent de ré-identifier la machine.
 
-> **Pour le jury.** Un écart de 0,95 à 0,60 entre deux protocoles, sur le même modèle et les
-> mêmes données, ne mesure pas le modèle. Il mesure le protocole. Tout score annoncé dans ce
-> projet est accompagné du sien.
+> **Pour le jury.** Un écart de 0,95 à 0,60 entre deux protocoles, même modèle et mêmes
+> données, ne mesure pas le modèle. Il mesure le protocole.
 
-# 11. Le résultat qui change le discours
+# 9. Les résultats, et le module que chacun met en cause
 
-Les résidus font passer la détection de 0,333 à 0,602. C'est la validation empirique, sur des
-mesures réelles, du choix de conception du projet.
+## L'accord des sens de variation met en cause `simulator.py`
 
-Mais une vérification ultérieure a montré que ce 0,602 reposait sur une hypothèse implicite :
-la référence saine — la « température habituelle » de l'analogie — était calculée à partir
+Le recouvrement de 5,3 % interdisant les valeurs absolues, on compare des **directions**. Pour
+chaque panne et chaque grandeur, on ajuste sur les essais mesurés :
+
+$$x = \beta_0 + \beta_1\,L + \beta_2\,T_{source} + \beta_3\,T_{sink}$$
+
+où $L$ est le niveau de défaut. Les deux derniers termes neutralisent les conditions d'essai,
+de sorte que $\beta_1$ isole l'effet de la panne. On compare $\mathrm{signe}(\beta_1)$ au signe
+de la pente obtenue en balayant le même paramètre dans le simulateur.
+
+| | Accord |
+|---|---|
+| Avant correction | **12 sur 16** |
+| Après correction des quatre défauts | **20 sur 22** |
+
+Le dénominateur augmente parce que la surcharge, jusque-là inerte, produit désormais des
+signaux exploitables.
+
+**Ce résultat a directement piloté une réécriture du code.** C'est l'intérêt d'une confrontation
+externe : elle ne note pas le modèle, elle indique quelle ligne corriger.
+
+## Le gain des résidus valide `features.py`
+
+Passer des grandeurs brutes aux résidus fait monter la détection de 0,333 à 0,602, pour 1,7
+point perdu en validation aléatoire. Le choix de conception du module de features est validé
+**sur des mesures réelles**, et non par argument théorique.
+
+## La dégradation des brutes met en cause `FEATURE_COLUMNS`
+
+Mélanger absolues et résidus fait retomber le transfert de 0,602 à 0,562. Or le contrat actuel
+contient précisément ce mélange. La mesure désigne une évolution à faire — que l'importance des
+variables de la partie 4 confirme par un autre chemin.
+
+## Le résultat qui réoriente le projet
+
+Une vérification ultérieure a montré que le 0,602 reposait sur une hypothèse implicite : la
+référence saine — la « température habituelle » de l'analogie — était calculée à partir
 d'essais sains **de la machine testée**.
 
-En rejouant l'expérience avec une référence saine issue uniquement de la machine
-d'entraînement, c'est-à-dire en simulant une machine réellement inconnue :
+![Plafond du modèle de référence sain](figures/reference.png)
 
-| Origine de la référence saine | Score | F1 macro |
+Reconstruite à partir de la seule machine d'entraînement, c'est-à-dire face à une machine
+réellement inconnue, la performance s'effondre. Et **aucune forme de modèle de référence ne
+lève ce plafond** : ni le polynôme d'ordre 2 avec point de rosée que le NIST décrit lui-même,
+ni une régression régularisée, ni une forêt aléatoire.
+
+| Origine de la référence saine | Accuracy | F1 macro |
 |---|---|---|
 | Essais sains de la machine cible | 0,602 | 0,479 |
-| Référence transférée depuis l'autre machine | 0,318 | 0,290 |
+| Référence transférée, plus proche voisin | **0,318** | 0,290 |
 | Polynôme d'ordre 2 avec point de rosée | 0,302 | 0,254 |
 | Forêt aléatoire avec point de rosée | 0,265 | 0,248 |
 
-Plusieurs formes de modèle de référence ont été essayées, y compris celle décrite par le NIST
-lui-même. **Aucune ne lève le plafond.** Le résultat n'est pas un échec : c'est une mesure.
+Ce n'est pas un échec : c'est une mesure.
 
-La conclusion réoriente le projet :
+> **Pour le jury.** L'écart entre 0,602 et 0,318 est le résultat principal de ce travail. Il ne
+> dit pas que la méthode échoue, il dit ce qu'elle exige : une calibration saine sur la machine
+> en service. Une méthode dont on connaît le prix est utilisable ; une méthode dont on ignore
+> la condition ne l'est pas.
 
-> Le diagnostic par résidus fonctionne, à condition de disposer d'une calibration saine sur
-> la machine en service. Il ne se transfère pas d'une pompe à chaleur inconnue vers une
-> autre.
+# 10. Le budget de calibration
 
-C'est une contrainte de déploiement industriel, pas une limite de l'algorithme. Elle a une
-conséquence pratique directe : avant de diagnostiquer une machine, il faut l'observer en
-bonne santé. La question devient : **combien de temps ?**
+Si le diagnostic exige d'avoir observé la machine en bonne santé, la question industrielle
+devient : **combien de temps ?**
 
-> **Pour le jury.** L'écart entre 0,602 et 0,318 est le résultat principal de ce travail. Il
-> ne dit pas que la méthode échoue : il dit ce qu'elle exige pour fonctionner. Une méthode
-> dont on connaît le prix est utilisable ; une méthode dont on ignore la condition ne l'est
-> pas.
+Protocole : validation par machine dans les deux sens ; la référence saine est construite sur
+$n$ essais sains tirés de la machine testée ; ces $n$ essais sont **retirés du jeu de test**,
+faute de quoi ils serviraient à la fois de calibration et d'évaluation ; vingt tirages par
+valeur de $n$, moyenne et intervalle.
 
-# 12. Budget de calibration — mesuré
+Les deux bornes servent de contrôle : $n = 0$ doit retomber sur 0,318 et $n = \text{tous}$ sur
+0,602. Les deux ont été retrouvées exactement.
 
-Combien d'essais sains de la machine cible faut-il pour passer de 0,318 à 0,602 ?
+![Budget de calibration](figures/calibration.png)
 
-Leave-one-machine-out, les deux sens, vingt tirages. Les `n` sains qui calibrent la référence
-sont **retirés du test**. Bornes retrouvées : n = 0 → 0,318 ; n = all → 0,602.
-
-| n essais sains (machine cible) | Accuracy | F1 macro |
+| $n$ essais sains | Accuracy | F1 macro |
 |---|---|---|
-| 0 (référence transférée) | 0,318 | 0,290 |
-| 5 | 0,314 | 0,289 |
+| 0 — référence transférée | 0,318 | 0,290 |
 | 10 | 0,377 | 0,324 |
-| 20 | 0,409 | 0,349 |
 | 50 | 0,456 | 0,380 |
-| tous (~625–727) | 0,602 | 0,479 |
+| tous | 0,602 | 0,479 |
 
-| Grandeur | Valeur |
-|---|---|
-| Essais sains nécessaires pour récupérer 90 % du gain | **tous les sains de la machine** |
+**Cinquante essais sains ne récupèrent qu'environ 49 % de l'écart.** Atteindre 90 % demande
+pratiquement l'ensemble. À faible $n$, l'intervalle est très large : un tirage malheureux fait
+pire que pas de calibration du tout. Répartir les essais sur le domaine de fonctionnement
+plutôt que les tirer au hasard aide surtout dans cette zone — les losanges de la figure.
 
-À n = 50 on n'a récupéré que **~49 %** de l'écart. Le seuil 0,574 n'est atteint qu'avec
-l'ensemble des essais sains. Une poignée de mesures de mise en service ne calibre pas :
-il faut couvrir le domaine de fonctionnement. Répartir les n points sur les températures
-aide surtout à petit n (n = 5 : 0,391 au lieu de 0,314).
+La lecture terrain est directe : **une poignée de mesures de mise en service ne constitue pas
+une calibration.** C'est la couverture du domaine qui compte — une contrainte de déploiement,
+non une limite de l'algorithme.
 
-Figure : `docs/calibration_budget.png`. Notebook : `EDA/EDA_NIST_calibration.ipynb`.
+# 11. Conclusion
 
-# 13. Ce que ce projet ne fait pas
+## Ce que le système fait
 
-Par honnêteté, et parce que chacune de ces limites a été vérifiée plutôt que supposée :
+Il modélise un cycle thermodynamique complet et en dérive des signatures de panne cohérentes ;
+il en fabrique un jeu d'apprentissage ; il diagnostique six classes ; il sert le tout par une
+API et un tableau de bord qui se clonent et tournent sans préparation. Son architecture en
+couches permet d'ajouter une source de données sans toucher à la méthode — démontré en
+pratique, pas seulement affirmé.
 
-- **Il ne détecte pas les pannes à 99 % sur le terrain.** Le 99,6 % mesure la séparabilité des
-  signatures à l'intérieur du modèle physique, sur données simulées.
-- **Il ne prédit pas les pannes futures.** Les essais mesurés sont stationnaires, sans axe du
-  temps.
-- **Il ne fonctionne pas sur une machine inconnue sans calibration.** C'est le résultat de la
-  section 11.
-- **Il ne compare pas ses grandeurs absolues aux essais mesurés.** Le simulateur travaille en
-  mode chauffage sur une machine air-eau, les essais en mode refroidissement sur une machine
-  air-air. Le recouvrement des domaines de fonctionnement est de **5,3 %**. Seules les
-  tendances sont comparables — et sur ce terrain, l'accord des sens de variation entre
-  simulation et mesure est de **12 sur 16**.
+Et surtout : il a été **confronté à des mesures indépendantes**, ce qui a produit quatre
+corrections de physique et un résultat que la simulation seule ne pouvait pas donner.
 
-# 14. Perspective
+## Ce qu'il ne fait pas
 
-Une troisième étude est envisagée, consacrée à la **prédiction de dégradation**. Elle est
-conditionnée à l'obtention d'un jeu de données adapté : des séries temporelles datées, allant
-jusqu'à une intervention ou une défaillance.
+- Il ne détecte pas les pannes à 99 % sur le terrain : ce chiffre mesure la séparabilité des
+  signatures à l'intérieur du modèle physique, et une partie en est même imputable à une
+  information non bruitée qui n'existerait pas sur une machine réelle.
+- Il ne fonctionne pas sur une machine inconnue sans calibration préalable.
+- Il ne prédit pas les pannes futures : les essais disponibles sont stationnaires, sans axe du
+  temps. Leur en inventer un produirait exactement le genre de chiffre que ce travail s'attache
+  à ne pas produire.
 
-Elle ne sera pas construite sur les essais actuels. Ceux-ci n'ont pas d'axe du temps, et leur
-en inventer un produirait exactement le type de résultat que ce projet s'attache à ne pas
-produire.
+## La formulation défendable
 
-L'architecture en études indépendantes est prévue pour cela : une nouvelle étude s'ajoute
-sans toucher aux précédentes, avec ses données, sa taxonomie et ses métriques propres.
-
-# 15. Reproduire
-
-```
-pip install -r requirements.txt
-uvicorn api.app:app --reload
-cd web && npm install && npm run dev
-```
-
-La suite de tests automatiques compte 43 tests et doit rester intégralement verte. Elle
-couvre les invariants thermodynamiques, le contrat de grandeurs, les règles d'architecture
-et les contrats de l'API.
-
-Les notebooks d'exploration des données mesurées sont dans le dépôt. Les classeurs de
-données, eux, doivent être téléchargés depuis la source publique indiquée dans la
-documentation technique.
+> Les signatures de défaut sont séparables à 99,6 % en validation croisée sur données simulées.
+> Confrontée à des essais mesurés indépendants, la méthode des résidus fait passer la détection
+> de 0,33 à 0,60 lorsque la référence saine est calibrée sur la machine cible — contre 0,32
+> sans cette calibration, et 0,95 en validation aléatoire, laquelle surestime largement. Le
+> coût de cette calibration a été mesuré : il faut couvrir le domaine de fonctionnement, pas
+> quelques points.
 
 ---
 
-## Les chiffres, en un tableau
+# Annexes
 
-| Mesure | Valeur | Ce qu'elle signifie |
+Les parties précédentes racontent le système. Celles-ci permettent de le vérifier. Toutes les
+équations sont transcrites de `src/physics/simulator.py`, sans reformulation.
+
+## A. Symboles
+
+| Symbole | Grandeur | Unité | Nominal |
+|---|---|---|---|
+| $T_{source}$ | Température de la source froide | °C | 7 |
+| $T_{sink}$ | Température du puits chaud | °C | 40 |
+| $n$ | Régime compresseur rapporté au nominal | — | 0,3 à 1,0 |
+| $\varphi_{evap},\ \varphi_{cond}$ | Encrassement (0 = propre, 1 = obstrué) | — | 0 |
+| $r_{evap},\ r_{cond}$ | Débit d'air rapporté au nominal | — | 1,0 |
+| $c$ | Charge de fluide rapportée au nominal | — | 1,0 |
+| $UA$ | Coefficient global d'échange | W/K | 500 / 600 |
+| $\tau$ | Taux de compression | — | environ 3 |
+| $k$ | Rapport des chaleurs massiques du R-410A | — | — |
+| $SH,\ SC$ | Surchauffe, sous-refroidissement | K | 6,0 et 4,5 |
+
+Les six paramètres $\varphi$, $r$ et $c$ sont les **entrées de défaut**. À leurs valeurs
+nominales, le cycle est sain.
+
+## B. Le modèle thermodynamique
+
+### B.1 Échangeurs
+
+$$UA_{evap} = 500\,\bigl(1 - 0{,}50\,\varphi_{evap}\bigr)\,r_{evap}^{\,1{,}45}
+\qquad
+UA_{cond} = 600\,\bigl(1 - 0{,}50\,\varphi_{cond}\bigr)\,r_{cond}^{\,1{,}45}$$
+
+$$\Delta_{evap} = 5 + 7\left(1 - \frac{UA_{evap}}{500}\right)
+\qquad
+\Delta_{cond} = 5 + 7\left(1 - \frac{UA_{cond}}{600}\right) + 8\,(1 - r_{cond})$$
+
+$$T_{evap} = \mathrm{borne}\bigl(T_{source} - \Delta_{evap},\; -25,\; 20\bigr)
+\qquad
+T_{cond} = \mathrm{borne}\bigl(T_{sink} + \Delta_{cond},\; 20,\; 65\bigr)$$
+
+Le terme symétrique $8\,(1 - r_{evap})$ côté évaporateur a été **retiré** : il faisait monter la
+température de refoulement avec la perte de débit, contre le sens mesuré.
+
+### B.2 Pressions et taux de compression
+
+$$P_{evap} = P_{sat}(T_{evap}) \qquad P_{cond} = P_{sat}(T_{cond})$$
+
+Les défauts de charge agissent sur ces pressions, puis les températures de saturation sont
+recalculées pour rester cohérentes :
+
+$$c < 1 : \quad P_{evap} \leftarrow P_{evap}\,(0{,}55 + 0{,}45\,c), \qquad T_{evap} \leftarrow T_{sat}(P_{evap})$$
+
+$$c > 1 : \quad P_{cond} \leftarrow P_{cond}\,\bigl(1 + 0{,}90\,(c-1)\bigr), \qquad T_{cond} \leftarrow T_{sat}(P_{cond})$$
+
+$$\tau = \frac{P_{cond}}{\max(P_{evap},\ 0{,}5)}$$
+
+Une sous-charge affame l'évaporateur et effondre la pression basse ; une surcharge engorge le
+condenseur et élève la pression haute. Les deux élargissent $\tau$, mais **par des extrémités
+opposées du cycle** — d'où des signatures distinctes.
+
+### B.3 Rendements du compresseur
+
+$$\eta_{is} = 0{,}75\,f(\tau)\,g(n), \qquad
+f(\tau) = \mathrm{borne}\bigl(1 - 0{,}05(\tau-3)^2,\,0{,}4,\,1\bigr), \qquad
+g(n) = 1 - 0{,}30\,(n-0{,}7)^2$$
+
+$$\eta_{vol} = 1 - C\left(\tau^{1/k} - 1\right), \qquad C = 0{,}05$$
+
+$C$ est le rapport de volumes morts. Le rendement isentropique est maximal autour de
+$\tau = 3$ et chute de part et d'autre.
+
+### B.4 Surchauffe et sous-refroidissement
+
+$$SH = 6{,}0\,\bigl(1 + 0{,}85\,\varphi_{evap}\bigr)\bigl(1 - 0{,}20\,(1 - r_{evap})\bigr)$$
+
+$$SC = 4{,}5\,\bigl(1 + 0{,}65\,\varphi_{cond}\bigr)\bigl(1 - 0{,}12\,(1 - r_{cond})\bigr)$$
+
+puis, selon la charge :
+
+$$c < 1 : \quad SH \leftarrow SH\,\bigl(1 + 1{,}4\,(1-c)\bigr), \qquad SC \leftarrow SC\,\max(c,\,0{,}25)$$
+
+$$c > 1 : \quad SH \leftarrow SH\,\max\bigl(1 - 1{,}4\,(c-1),\,0{,}25\bigr), \qquad SC \leftarrow SC\,\bigl(1 + 2{,}2\,(c-1)\bigr)$$
+
+$$SC \leftarrow \max(SC,\ 0{,}4)$$
+
+Lecture physique de chaque terme :
+
+| Terme | Effet | Pourquoi |
 |---|---|---|
-| Simulé, validation aléatoire | 99,6 % | Séparabilité dans le modèle physique |
-| Mesuré, validation aléatoire | 0,95 | Surestime : mélange les deux machines |
-| Mesuré, par machine, référence calibrée | 0,602 | Avec essais sains de la machine cible |
-| Mesuré, par machine, référence transférée | 0,318 | Sur une machine réellement inconnue |
-| Classe majoritaire | 0,251 | Référence basse |
-| Accord des sens de variation | 20 / 22 | Simulation contre mesure |
-| Recouvrement des domaines | 5,3 % | Interdit la comparaison des valeurs absolues |
+| $+0{,}85\,\varphi_{evap}$ sur $SH$ | Encrassement évaporateur : surchauffe **monte** | La zone diphasique s'allonge |
+| $-0{,}20\,(1-r_{evap})$ sur $SH$ | Moins d'air : surchauffe **baisse** | Moins de chaleur absorbée en fin d'évaporateur |
+| $+0{,}65\,\varphi_{cond}$ sur $SC$ | Obstruction condenseur : $SC$ **monte** | Le liquide s'accumule faute d'évacuer la chaleur |
+| $-0{,}12\,(1-r_{cond})$ sur $SC$ | Ventilateur condenseur : effet faible | La panne élève surtout $T_{cond}$ |
+| $\max(c,\,0{,}25)$ sur $SC$ | Sous-charge : $SC$ **s'effondre** | Plus assez de liquide à sous-refroidir |
+| $+2{,}2\,(c-1)$ sur $SC$ | Surcharge : le plus fort effet du modèle | Le liquide excédentaire s'empile |
+
+Les termes en gras sont ceux qui ont été **corrigés après confrontation aux mesures**. Le modèle
+initial les avait en sens inverse, ou absents.
+
+### B.5 Bornes du compresseur
+
+$$T_{asp} = T_{evap} + SH$$
+
+$$T_{ref}^{\,ideal} = \bigl(T_{asp} + 273{,}15\bigr)\,\tau^{\frac{k-1}{k}} - 273{,}15$$
+
+$$T_{ref} = T_{asp} + \frac{T_{ref}^{\,ideal} - T_{asp}}{\eta_{is}}
+            + 10\,(1 - r_{cond}) - 25\,(1 - r_{evap})$$
+
+$$T_{ref} \leftarrow \min\bigl(T_{ref},\ 130\bigr)$$
+
+Les deux termes correctifs sont **calibrés sur les essais mesurés**, non dérivés : la perte de
+débit au condenseur réchauffe le refoulement, celle à l'évaporateur refroidit l'aspiration. Ils
+sont énoncés comme des paramètres ajustés.
+
+Le plafond à 130 °C est l'enveloppe constructeur. Il était déclaré sans jamais être appliqué.
+
+### B.6 Débit, enthalpies, puissances
+
+$$\dot m = V_{sw}\,f_{nom}\,n\,\rho_{asp}\,\eta_{vol}
+\times \begin{cases}
+0{,}55 + 0{,}45\,c & c < 1\\[2pt]
+1 + 0{,}25\,(c-1) & c > 1\\[2pt]
+0{,}75 + 0{,}25\,r_{evap} & r_{evap} < 1
+\end{cases}$$
+
+$$h_1 = h_{vap}^{sat}(T_{evap}) + c_{p,vap}\,SH
+\qquad
+h_3 = h_{liq}^{sat}(T_{cond}) - 1{,}5\,SC
+\qquad
+h_4 = h_3$$
+
+$$\Delta h_{ideal} = c_{p,vap}\bigl(T_{ref}^{\,ideal} - T_{asp}\bigr)
+\qquad
+\Delta h_{reel} = \frac{\Delta h_{ideal}}{\eta_{is}}
+\qquad
+h_2 = h_1 + \Delta h_{reel}$$
+
+$$Q_{evap} = \dot m\,(h_1 - h_4)
+\qquad
+Q_{cond} = \dot m\,(h_2 - h_3)
+\qquad
+W_{comp} = 1{,}10\,\dot m\,\Delta h_{reel}
+\qquad
+COP = \frac{Q_{cond}}{W_{comp}}$$
+
+Le facteur 1,10 couvre les pertes mécaniques et électriques. La détente $h_4 = h_3$ est
+supposée isenthalpique, hypothèse standard pour un détendeur.
+
+### B.7 Bruit de mesure, et une incohérence connue
+
+Bruit gaussien : $\pm 0{,}5$ °C sur les températures, 2 % sur les pressions, 3 % sur les
+puissances. Il est appliqué **après** le calcul des grandeurs dérivées, qui ne sont pas
+recalculées.
+
+| Grandeur dérivée | Lignes cohérentes avec ses entrées |
+|---|---|
+| `pressure_ratio`, `compression_ratio` | 0 % |
+| `COP` | 0 % |
+| `delta_T_evap`, `delta_T_cond` | 0 % |
+
+Aucune ligne ne vérifie $\texttt{pressure\_ratio} = P_{cond}/P_{evap}$. Comme ces grandeurs
+portent **76,4 % de l'importance du modèle** (partie 4), une part du taux de réussite provient
+d'une information indisponible sur une machine réelle. Anomalie connue, non corrigée à ce jour,
+planifiée.
+
+## C. Méthodes de validation
+
+### C.1 Le résidu
+
+$$\tilde{x} = x_{observe} - \hat{x}_{sain}\bigl(T_{source},\,T_{sink},\,n\bigr)$$
+
+Cinq résidus entrent dans le vecteur : `d_T_discharge`, `d_superheat`, `d_subcooling`,
+`d_COP`, `d_W_comp`. La question décisive est l'origine de $\hat{x}_{sain}$ :
+
+| Origine | Ce que cela suppose | Score |
+|---|---|---|
+| Simulée | Le modèle physique est exact | non mesurable sur du réel |
+| Essais sains de la machine cible | La machine a été observée saine | 0,602 |
+| Essais sains d'une autre machine | Rien | 0,318 |
+
+### C.2 Le modèle de référence sain
+
+$$\hat{x}_{sain}(T_{source}, T_{sink}) = \mathrm{med}\Bigl\{x_i \;:\; i \in \mathcal{V}_k\Bigr\},
+\qquad k = \min(5,\,n)$$
+
+où $\mathcal{V}_k$ désigne les $k$ essais sains les plus proches dans le plan
+$(T_{source}, T_{sink})$. Des formes plus riches n'améliorent pas le transfert : polynôme
+d'ordre 2 avec point de rosée 0,302 ; forêt aléatoire 0,265 ; contre 0,318 pour le plus proche
+voisin. **Le plafond n'est pas une limite du modèle de référence, c'est une limite du transfert
+entre machines.**
+
+### C.3 Les deux protocoles
+
+| Protocole | Ce qu'il autorise le modèle à apprendre | Score |
+|---|---|---|
+| CV aléatoire | La panne **et** l'identité de la machine | 0,95 |
+| Leave-one-machine-out | La panne seule | 0,60 |
+
+### C.4 L'accord des sens de variation
+
+$$x = \beta_0 + \beta_1\,L + \beta_2\,T_{source} + \beta_3\,T_{sink}$$
+
+$L$ est le niveau de défaut ; $\beta_2$ et $\beta_3$ neutralisent les conditions d'essai. On
+compare $\mathrm{signe}(\beta_1)$ mesuré au signe de la pente simulée. Indicateur insensible au
+décalage de domaine, puisqu'il ne compare que des directions.
+
+Score avant correction : 12 sur 16. Après : **20 sur 22**.
+
+### C.5 Le budget de calibration
+
+Leave-one-machine-out dans les deux sens ; référence construite sur $n$ essais sains de la
+machine testée, **retirés du jeu de test** ; vingt tirages par valeur de $n$.
+
+Contrôles du protocole : $n = 0 \rightarrow 0{,}318$ et $n = \text{tous} \rightarrow 0{,}602$,
+retrouvés exactement.
+
+## D. Reproduire les chiffres
+
+| Chiffre | Où |
+|---|---|
+| 99,6 % simulé | `main_analysis.py` |
+| 0,95 / 0,602 / 0,318 | `EDA/EDA_NIST_model.ipynb`, `EDA_NIST_reference.ipynb` |
+| Accord des signes 20/22 | `EDA/EDA_NIST_model.ipynb` |
+| Budget de calibration | `EDA/EDA_NIST_calibration.ipynb` |
+
+Les classeurs NIST ne sont pas versionnés. Adresses de téléchargement et table de correspondance
+des 98 colonnes dans `docs/NIST_MAPPING.md`.
