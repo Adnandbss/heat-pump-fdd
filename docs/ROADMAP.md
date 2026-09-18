@@ -333,6 +333,32 @@ Le pronostic n'est pas un modèle différent du diagnostic, c'est une **donnée*
 
 ## Règles de travail
 
+**Les chiffres.** Toute valeur mesurée s'écrit dans `outputs/results.csv` via `tools.results.log`,
+jamais seulement dans une sortie de notebook. Les colonnes `protocol` et `reference` sont
+obligatoires : **un chiffre sans son protocole n'est pas un résultat**, et ce projet a mesuré à
+quel point ça compte (0,95 contre 0,60 selon le découpage ; 0,602 contre 0,511 selon la
+structure du plan d'essais).
+
+La documentation cite ce fichier plutôt que de recopier les valeurs. Les deux contradictions
+qu'il a fallu réparer — le dossier contre la feuille de route, puis le 0,602 annoncé sans sa
+condition — venaient toutes deux de la recopie manuelle.
+
+**Les figures.** Un notebook coûteux écrit ses résultats avant de tracer. La courbe de budget de
+calibration a dû être retracée ; sans le tableau resté par chance dans une sortie de cellule, il
+aurait fallu relancer 280 entraînements pour corriger une légende.
+
+**Les gardes automatiques.**
+
+| Test | Ce qu'il empêche |
+|---|---|
+| `tests/test_docs.py` | qu'un document cite un fichier disparu après un refactor |
+| `tests/test_docs.py` | qu'une performance soit annoncée sans nommer son protocole |
+| `tests/test_results_log.py` | qu'une mesure soit loggée sans protocole, ou deux fois avec deux valeurs |
+
+**Le dépôt.**
+
+
+
 
 1. Une PR = une idée, commit par commit.
 2. `pytest` vert avant et après chaque PR — 43 aujourd'hui.

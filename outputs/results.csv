@@ -1,0 +1,45 @@
+experiment,protocol,reference,features,model,label,metric,value,n,note
+X0,random-cv,simulated,24-col,gradient-boosting,__global__,accuracy,0.996,5000,hold-out 30% sur cycles simules
+X0,random-cv,simulated,24-col,gradient-boosting,__global__,f1,0.994,5000,
+X0b,LOMO,target-machine,raw,gradient-boosting,__global__,accuracy,0.333,5386,
+X0b,LOMO,target-machine,raw+residuals,gradient-boosting,__global__,accuracy,0.562,5386,
+X0b,LOMO,target-machine,residuals,gradient-boosting,__global__,accuracy,0.602,5386,
+X0b,LOMO,target-machine,residuals+conditions,gradient-boosting,__global__,accuracy,0.594,5386,
+X0b,majority-class,none,,baseline,__global__,accuracy,0.251,5386,reference basse
+X0b,random-cv,target-machine,raw,gradient-boosting,__global__,accuracy,0.954,5386,
+X0b,random-cv,target-machine,raw+residuals,gradient-boosting,__global__,accuracy,0.973,5386,
+X0b,random-cv,target-machine,residuals,gradient-boosting,__global__,accuracy,0.937,5386,
+X0b,random-cv,target-machine,residuals+conditions,gradient-boosting,__global__,accuracy,0.945,5386,
+X1,LOMO,target-machine,residuals,gradient-boosting,Cond_Blockage,f1,0.299,497,
+X1,LOMO,target-machine,residuals,gradient-boosting,Cond_Blockage,precision,0.611,497,
+X1,LOMO,target-machine,residuals,gradient-boosting,Cond_Blockage,recall,0.22,497,
+X1,LOMO,target-machine,residuals,gradient-boosting,Evap_Airflow,f1,0.288,774,
+X1,LOMO,target-machine,residuals,gradient-boosting,Evap_Airflow,precision,0.269,774,
+X1,LOMO,target-machine,residuals,gradient-boosting,Evap_Airflow,recall,0.313,774,
+X1,LOMO,target-machine,residuals,gradient-boosting,LiquidLine,f1,0.04,593,
+X1,LOMO,target-machine,residuals,gradient-boosting,LiquidLine,precision,0.206,593,
+X1,LOMO,target-machine,residuals,gradient-boosting,LiquidLine,recall,0.068,593,
+X1,LOMO,target-machine,residuals,gradient-boosting,No_Fault,f1,0.741,1352,
+X1,LOMO,target-machine,residuals,gradient-boosting,No_Fault,precision,0.722,1352,
+X1,LOMO,target-machine,residuals,gradient-boosting,No_Fault,recall,0.837,1352,
+X1,LOMO,target-machine,residuals,gradient-boosting,Overcharge,f1,0.674,942,
+X1,LOMO,target-machine,residuals,gradient-boosting,Overcharge,precision,0.735,942,
+X1,LOMO,target-machine,residuals,gradient-boosting,Overcharge,recall,0.775,942,
+X1,LOMO,target-machine,residuals,gradient-boosting,Undercharge,f1,0.832,1228,
+X1,LOMO,target-machine,residuals,gradient-boosting,Undercharge,precision,0.748,1228,
+X1,LOMO,target-machine,residuals,gradient-boosting,Undercharge,recall,0.961,1228,
+X1,LOMO,target-machine,residuals,gradient-boosting,__global__,f1,0.479,5386,macro
+X1,LOMO,training-machine,residuals,gradient-boosting,Cond_Blockage,f1,0.067,497,
+X1,LOMO,training-machine,residuals,gradient-boosting,Evap_Airflow,f1,0.269,774,
+X1,LOMO,training-machine,residuals,gradient-boosting,LiquidLine,f1,0.007,593,
+X1,LOMO,training-machine,residuals,gradient-boosting,No_Fault,f1,0.131,1352,
+X1,LOMO,training-machine,residuals,gradient-boosting,Overcharge,f1,0.786,942,
+X1,LOMO,training-machine,residuals,gradient-boosting,Undercharge,f1,0.481,1228,
+X1,LOMO,training-machine,residuals,gradient-boosting,__global__,accuracy,0.318,5386,
+X1,LOMO,training-machine,residuals,gradient-boosting,__global__,f1,0.29,5386,macro
+X3-prelim,LOMO,target-machine-global-mean,residuals,gradient-boosting,__global__,accuracy,0.358,5386,ignore les conditions
+X3-prelim,LOMO,target-machine-global-median,residuals,gradient-boosting,__global__,accuracy,0.372,5386,ignore les conditions
+X3-prelim,LOMO,target-machine-knn1,residuals,gradient-boosting,__global__,accuracy,0.703,5386,profite des repliques du plan d'essais
+X3-prelim,LOMO,target-machine-knn1-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.523,5386,repliques exclues
+X3-prelim,LOMO,target-machine-knn5-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.511,5386,repliques exclues
+X3-prelim,LOMO,target-machine-knn5-median,residuals,gradient-boosting,__global__,accuracy,0.602,5386,
