@@ -142,3 +142,78 @@ grows. Field reading: a handful of commissioning tests is not a calibration; cov
 operating season is.
 
 Notebook and figure: `EDA/EDA_NIST_calibration.ipynb`, `docs/calibration_budget.png`.
+
+That 0.318 → 0.602 is **not a uniform gain**. Which faults it actually buys is the next section.
+
+## Which faults are actually detected
+
+0.602 accuracy against 0.479 F1 macro — twelve points. The six classes are not detected
+equally. Protocol unchanged from the calibration notebook: leave-one-machine-out, both
+directions, residuals only, `GradientBoostingClassifier(random_state=42)`. Controls recovered
+exactly (mean of the two folds): calibrated **0.602 / 0.479**, transferred **0.318 / 0.290**.
+Counts: no-fault 1352, undercharge 1228, overcharge 942, indoor airflow 774, liquid line 593,
+condenser blockage 497. Precision, recall and F1 below are means of the two directions;
+the two confusion matrices are **not** added together.
+
+Notebook and figures: `EDA/EDA_NIST_perclass.ipynb`,
+`docs/nist_perclass_confusion.png`, `docs/nist_perclass_calibration.png`.
+
+### Per class — calibrated reference (n = all)
+
+| Fault | Precision | Recall | F1 | n |
+|---|---|---|---|---|
+| Undercharge | 0.748 | 0.961 | **0.832** | 1228 |
+| No-fault | 0.722 | 0.837 | 0.741 | 1352 |
+| Overcharge | 0.735 | 0.775 | 0.674 | 942 |
+| Condenser blockage | 0.611 | 0.220 | 0.299 | 497 |
+| Indoor airflow | 0.269 | 0.313 | 0.288 | 774 |
+| Liquid line | 0.206 | 0.068 | **0.040** | 593 |
+
+**Undercharge is the only fault a technician can trust.** F1 0.83 (0.91 on the 14 SEER unit,
+0.76 on the 16). Precision and recall are both high in both directions.
+
+**Liquid line is not detected.** F1 0.04. On the 16 SEER unit: 8 true positives out of 492
+(recall 0.016). On the 14: recall 0.12 with precision 0.03 — the model just sprays the label.
+
+**Indoor airflow is barely detected** (F1 0.29), **condenser blockage barely either**
+(F1 0.30, recall 0.22). No-fault looks healthy only once the reference is calibrated
+(see below). Overcharge is the odd one: it is already found without calibration.
+
+### What confuses with what — physics, not the algorithm
+
+The two machines have different mixes (856 undercharges / 114 overcharges on the 14 SEER,
+372 / 828 on the 16), so the matrices must stay separate.
+
+On the 14 SEER unit, **146 of 278 indoor-airflow tests are called liquid-line**, and
+**129 of 344 condenser-blockage tests are called liquid-line** as well. Starving the
+evaporator of air and restricting the liquid line both drop suction pressure and capacity;
+blocking the condenser and overcharging both stack liquid on the high side and raise
+subcooling. Those pairs share a physical signature. The residual vector does not split them.
+
+On the 16 SEER unit the dominant leak is the other way: **304 of 828 overcharge tests are
+called indoor airflow**, and **262 of 496 airflow tests are called no-fault**. Same
+neighbourhood, different machine.
+
+### The two leave-one-machine-out directions do not agree everywhere
+
+No-fault recall is 0.69 one way and 0.99 the other. Overcharge precision is 0.47 one way
+and 1.00 the other. Transferred to the 16 SEER unit, condenser blockage and liquid line are
+**never predicted**. When a class fails in one direction only, that is a property of that
+machine, not of the fault.
+
+### Calibration does not help every fault
+
+| Fault | F1 transferred | F1 calibrated | ΔF1 |
+|---|---|---|---|
+| No-fault | 0.131 | 0.741 | **+0.610** |
+| Undercharge | 0.481 | 0.832 | +0.351 |
+| Condenser blockage | 0.067 | 0.299 | +0.232 |
+| Indoor airflow | 0.269 | 0.288 | +0.018 |
+| Liquid line | 0.007 | 0.040 | +0.034 |
+| Overcharge | **0.786** | 0.674 | **−0.111** |
+
+Almost all of 0.318 → 0.602 is **learning to recognise a healthy machine**, plus
+undercharge. Overcharge is found *better* with a transferred reference — its subcooling /
+compressor-work signature survives the machine change, and calibration is not what it needs.
+Indoor airflow and liquid line do not benefit. A calibration budget is only actionable if
+it names **which fault** one is looking for.

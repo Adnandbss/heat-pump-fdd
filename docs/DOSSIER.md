@@ -589,7 +589,74 @@ La lecture terrain est directe : **une poignée de mesures de mise en service ne
 une calibration.** C'est la couverture du domaine qui compte — une contrainte de déploiement,
 non une limite de l'algorithme.
 
-# 11. Conclusion
+# 11. Quelles pannes sont réellement détectées
+
+Une moyenne de 0,602 pour un F1 macro de 0,479 : douze points d'écart, donc des classes très
+inégalement diagnostiquées. Le détail change entièrement ce que le système permet d'affirmer.
+
+## Par classe, référence calibrée
+
+| Panne | Précision | Rappel | F1 | n |
+|---|---|---|---|---|
+| **Sous-charge** | 0,748 | 0,961 | **0,832** | 1228 |
+| Sans défaut | 0,722 | 0,837 | 0,741 | 1352 |
+| **Surcharge** | 0,735 | 0,775 | **0,674** | 942 |
+| Obstruction condenseur | 0,611 | 0,220 | 0,299 | 497 |
+| Débit intérieur | 0,269 | 0,313 | 0,288 | 774 |
+| **Ligne liquide** | 0,206 | 0,068 | **0,040** | 593 |
+
+**Les défauts de charge portent tout le résultat.** La sous-charge est cohérente dans les deux
+sens de transfert — 0,91 et 0,76 — donc ce n'est pas l'artefact d'une machine particulière.
+
+**La restriction de ligne liquide n'est jamais détectée** : huit vrais positifs sur 492 essais
+dans un sens. C'est aussi, et ce n'est pas un hasard, la seule panne du jeu mesuré que le
+simulateur ne modélise pas.
+
+## Avec quoi les échecs se confondent
+
+![Matrices de confusion, les deux sens de transfert séparés](nist_perclass_confusion.png)
+
+Les deux machines n'ont pas le même mélange de pannes — 856 sous-charges contre 114 surcharges
+sur l'une, 372 contre 828 sur l'autre — de sorte que les matrices ne peuvent pas être
+additionnées.
+
+La confusion dominante est physique, pas algorithmique : **le défaut de débit d'air et la
+restriction de ligne liquide s'échangent massivement**. Les deux affament l'évaporateur, donc
+abaissent la pression d'aspiration et la capacité. Sur les grandeurs mesurées, ils se
+ressemblent — aucun algorithme ne séparera ce que les capteurs ne distinguent pas.
+
+## La calibration n'est pas un gain uniforme
+
+![Effet de la calibration, panne par panne](nist_perclass_calibration.png)
+
+| Panne | Sans calibration | Avec calibration | Écart |
+|---|---|---|---|
+| Sans défaut | 0,131 | 0,741 | **+0,610** |
+| Sous-charge | 0,481 | 0,832 | +0,351 |
+| Obstruction condenseur | 0,067 | 0,299 | +0,232 |
+| Ligne liquide | 0,007 | 0,040 | +0,034 |
+| Débit intérieur | 0,269 | 0,288 | +0,018 |
+| **Surcharge** | **0,786** | 0,674 | **−0,111** |
+
+Deux enseignements.
+
+**La calibration sert d'abord à reconnaître l'état sain** : +0,61 sur cette seule classe. C'est
+cohérent — sans référence correcte, le modèle juge tout anormal. Sur une machine, il ne prononce
+« sans défaut » que dans 2 % des cas.
+
+**Et la surcharge est mieux détectée sans calibration qu'avec** : 0,786 sur une machine
+totalement inconnue, cohérent dans les deux sens de transfert. Sa signature — le
+sous-refroidissement qui s'envole — est assez marquée pour se passer de référence locale.
+
+Le budget de calibration n'est donc pas un chiffre unique. **Il dépend de la panne cherchée, et
+pour l'une d'elles il est nul.**
+
+> **Pour le jury.** C'est ici que le projet devient utilisable. Non parce que les chiffres sont
+> bons, mais parce qu'ils sont assez détaillés pour dire à un praticien ce sur quoi il peut
+> compter : les défauts de charge, sur une machine jamais vue, dont l'un sans installation
+> préalable.
+
+# 12. Conclusion
 
 ## Ce que le système fait
 
