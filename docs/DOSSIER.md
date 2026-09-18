@@ -563,7 +563,7 @@ Ce n'est pas un échec : c'est une mesure.
 > la condition ne l'est pas.
 >
 > Le 0,602 porte lui-même une condition supplémentaire, mesurée depuis et détaillée en
-> **section 12** : il suppose une mesure saine à la condition même du défaut. Sur une machine en
+> **section 13** : il suppose une mesure saine à la condition même du défaut. Sur une machine en
 > service, la valeur réaliste est entre 0,43 et 0,52.
 
 # 10. Le budget de calibration
@@ -664,7 +664,70 @@ pour l'une d'elles il est nul.**
 > compter : les défauts de charge, sur une machine jamais vue, dont l'un sans installation
 > préalable.
 
-# 12. Ce que le 0,602 suppose vraiment
+# 12. L'apprentissage est-il seulement nécessaire ?
+
+Le diagnostic par résidus est un domaine où la méthode de référence est une **table de règles
+sur les signes** : si le sous-refroidissement monte et la pression haute monte, c'est une
+obstruction de condenseur. Ce projet reprend les résidus de cette méthode, puis pose un modèle
+appris dessus. La question s'impose donc : **le modèle appris apporte-t-il quelque chose ?**
+
+## La comparaison, à protocole identique
+
+Trois candidats, même validation par machine, mêmes essais mesurés :
+
+| Méthode | accuracy | F1 macro |
+|---|---|---|
+| **Gradient Boosting, référence calibrée** | **0,602** | **0,479** |
+| Arbre de décision de profondeur 3 | 0,558 | 0,422 |
+| Table de règles, référence calibrée | 0,365 | 0,243 |
+| Gradient Boosting, référence transférée | 0,318 | 0,290 |
+| Table de règles, sans aucune référence | 0,245 | 0,197 |
+
+*(classe majoritaire : 0,251)*
+
+**L'apprentissage gagne de 24 points sur la table de règles.** Six règles thermodynamiques ne
+suffisent pas, et ce n'est plus un postulat mais une mesure.
+
+## Mais la complexité, elle, ne se justifie pas
+
+Un arbre de décision de **profondeur 3** obtient 0,558 contre 0,602 — quatre points et demi
+d'écart, pour un modèle qui tient sur une feuille et se lit comme de la thermodynamique :
+
+```
+d_subcooling <= -1.24
+  ├─ d_W_od <= 83.6   → sous-charge
+  └─ d_W_od >  83.6   → obstruction condenseur
+d_subcooling >  -1.24
+  ├─ d_P_cond <= 0.23                        → sans défaut
+  ├─ d_P_cond <= 1.43                        → débit intérieur
+  └─ d_P_cond >  1.43 ─ d_subcooling <= 4.52 → obstruction condenseur
+                     └ d_subcooling >  4.52  → surcharge
+```
+
+Sous-refroidissement qui chute : sous-charge. Qui monte avec la pression haute : surcharge.
+C'est exactement la physique de la section 1, retrouvée par apprentissage.
+
+**Et cet arbre dépasse l'ensemble sur la sous-charge** — 0,905 contre 0,832, la panne la mieux
+détectée du jeu. Un ensemble de centaines d'arbres achète quatre points sur un modèle qu'un
+technicien peut vérifier ligne à ligne.
+
+## Deux résultats de détail
+
+**Les règles gagnent à un seul endroit** : la restriction de ligne liquide, 0,136 contre 0,040.
+Trois fois mieux que le modèle appris sur la panne qu'il ne trouve jamais. Les deux restent
+mauvais en absolu, mais c'est le genre d'écart qu'une moyenne masque.
+
+**Et une hypothèse est tombée.** On espérait qu'une table de règles, regardant des directions et
+non des valeurs, puisse diagnostiquer **sans aucune calibration** — ce qui aurait donné un outil
+déployable sur machine inconnue sans installation préalable. Mesuré : **0,245**, soit en dessous
+de la classe majoritaire. Sans référence locale, les signes seuls ne portent pas l'information.
+
+> **Pour le jury.** La question « votre modèle fait-il mieux qu'une règle écrite à la main ? »
+> a une réponse chiffrée : oui, de 24 points. La question suivante — « avez-vous besoin de
+> toute cette complexité ? » — a une réponse moins flatteuse : un arbre de profondeur 3 en
+> récupère 93 %. Pour un déploiement terrain, c'est probablement lui le bon livrable.
+
+# 13. Ce que le 0,602 suppose vraiment
 
 Les sections précédentes annoncent 0,602 lorsque la référence saine est calibrée sur la machine
 cible. Un benchmark de l'estimateur de référence a mesuré ce que ce chiffre suppose — et la
@@ -730,7 +793,7 @@ la densité des mesures saines disponibles.
 > de malchance — c'est la démonstration que le protocole, et non le modèle, est ce qui porte le
 > résultat.
 
-# 13. Conclusion
+# 14. Conclusion
 
 ## Ce que le système fait
 
