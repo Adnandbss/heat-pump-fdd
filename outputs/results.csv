@@ -38,6 +38,511 @@ X1,LOMO,training-machine,residuals,gradient-boosting,Overcharge,f1,0.786,942,
 X1,LOMO,training-machine,residuals,gradient-boosting,Undercharge,f1,0.481,1228,
 X1,LOMO,training-machine,residuals,gradient-boosting,__global__,accuracy,0.318,5386,
 X1,LOMO,training-machine,residuals,gradient-boosting,__global__,f1,0.29,5386,macro
+X3,LOMO,global-mean-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.327777,5386,fold-mean; F1=0.296; mae_h=38.3878
+X3,LOMO,global-mean-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.295964,5386,macro; mean of two LOMO folds
+X3,LOMO,global-mean-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.327908,5386,fold-mean; F1=0.296; mae_h=38.6743
+X3,LOMO,global-mean-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.296012,5386,macro; mean of two LOMO folds
+X3,LOMO,global-mean-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.327494,5386,fold-mean; F1=0.295; mae_h=38.8923
+X3,LOMO,global-mean-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.295492,5386,macro; mean of two LOMO folds
+X3,LOMO,global-mean-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.325863,5386,fold-mean; F1=0.295; mae_h=39.1104
+X3,LOMO,global-mean-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.294778,5386,macro; mean of two LOMO folds
+X3,LOMO,global-mean-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.325319,5386,fold-mean; F1=0.295; mae_h=39.5560
+X3,LOMO,global-mean-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.295061,5386,macro; mean of two LOMO folds
+X3,LOMO,global-mean-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.322356,5386,fold-mean; F1=0.292; mae_h=40.5646
+X3,LOMO,global-mean-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.292463,5386,macro; mean of two LOMO folds
+X3,LOMO,global-mean-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.327777,5386,fold-mean; F1=0.296; mae_h=38.3878
+X3,LOMO,global-mean-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.295964,5386,macro; mean of two LOMO folds
+X3,LOMO,global-mean-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.328114,5386,fold-mean; F1=0.296; mae_h=38.5600
+X3,LOMO,global-mean-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.296127,5386,macro; mean of two LOMO folds
+X3,LOMO,global-mean-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.328076,5386,fold-mean; F1=0.296; mae_h=38.6219
+X3,LOMO,global-mean-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.296143,5386,macro; mean of two LOMO folds
+X3,LOMO,global-mean-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.328076,5386,fold-mean; F1=0.296; mae_h=38.6842
+X3,LOMO,global-mean-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.296048,5386,macro; mean of two LOMO folds
+X3,LOMO,global-mean-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.326407,5386,fold-mean; F1=0.295; mae_h=38.8334
+X3,LOMO,global-mean-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.29486,5386,macro; mean of two LOMO folds
+X3,LOMO,global-mean-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.32427,5386,fold-mean; F1=0.294; mae_h=39.2696
+X3,LOMO,global-mean-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.293584,5386,macro; mean of two LOMO folds
+X3,LOMO,global-median-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.336549,5386,fold-mean; F1=0.308; mae_h=37.9115
+X3,LOMO,global-median-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.308138,5386,macro; mean of two LOMO folds
+X3,LOMO,global-median-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.335744,5386,fold-mean; F1=0.308; mae_h=38.0802
+X3,LOMO,global-median-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.307788,5386,macro; mean of two LOMO folds
+X3,LOMO,global-median-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.334825,5386,fold-mean; F1=0.308; mae_h=38.2830
+X3,LOMO,global-median-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.3076,5386,macro; mean of two LOMO folds
+X3,LOMO,global-median-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.336174,5386,fold-mean; F1=0.310; mae_h=38.4797
+X3,LOMO,global-median-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.309504,5386,macro; mean of two LOMO folds
+X3,LOMO,global-median-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.336696,5386,fold-mean; F1=0.310; mae_h=38.9065
+X3,LOMO,global-median-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.309783,5386,macro; mean of two LOMO folds
+X3,LOMO,global-median-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.323434,5386,fold-mean; F1=0.302; mae_h=39.8980
+X3,LOMO,global-median-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.301963,5386,macro; mean of two LOMO folds
+X3,LOMO,global-median-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.336549,5386,fold-mean; F1=0.308; mae_h=37.9115
+X3,LOMO,global-median-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.308138,5386,macro; mean of two LOMO folds
+X3,LOMO,global-median-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.334901,5386,fold-mean; F1=0.307; mae_h=38.0010
+X3,LOMO,global-median-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.307278,5386,macro; mean of two LOMO folds
+X3,LOMO,global-median-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.333852,5386,fold-mean; F1=0.307; mae_h=38.0410
+X3,LOMO,global-median-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.306567,5386,macro; mean of two LOMO folds
+X3,LOMO,global-median-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.333102,5386,fold-mean; F1=0.306; mae_h=38.0823
+X3,LOMO,global-median-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.305917,5386,macro; mean of two LOMO folds
+X3,LOMO,global-median-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.333308,5386,fold-mean; F1=0.306; mae_h=38.2057
+X3,LOMO,global-median-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.306389,5386,macro; mean of two LOMO folds
+X3,LOMO,global-median-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.333847,5386,fold-mean; F1=0.308; mae_h=38.6782
+X3,LOMO,global-median-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.30836,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-dist-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.650109,5386,fold-mean; F1=0.505; mae_h=0.0000
+X3,LOMO,knn-k1-mean-dist-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.505323,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-dist-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.54051,5386,fold-mean; F1=0.442; mae_h=5.6489
+X3,LOMO,knn-k1-mean-dist-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.442365,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-dist-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.503759,5386,fold-mean; F1=0.420; mae_h=7.9559
+X3,LOMO,knn-k1-mean-dist-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.419931,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-dist-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.501057,5386,fold-mean; F1=0.424; mae_h=8.6375
+X3,LOMO,knn-k1-mean-dist-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.42366,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-dist-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.449618,5386,fold-mean; F1=0.372; mae_h=9.2356
+X3,LOMO,knn-k1-mean-dist-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.372283,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-dist-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.426958,5386,fold-mean; F1=0.350; mae_h=13.8068
+X3,LOMO,knn-k1-mean-dist-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.34979,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-dist-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.635156,5386,fold-mean; F1=0.486; mae_h=0.0000
+X3,LOMO,knn-k1-mean-dist-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.486166,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-dist-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.550411,5386,fold-mean; F1=0.443; mae_h=5.1041
+X3,LOMO,knn-k1-mean-dist-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.443348,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-dist-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.513248,5386,fold-mean; F1=0.417; mae_h=7.4914
+X3,LOMO,knn-k1-mean-dist-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.416532,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-dist-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.508707,5386,fold-mean; F1=0.416; mae_h=6.9887
+X3,LOMO,knn-k1-mean-dist-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.4158,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-dist-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.482933,5386,fold-mean; F1=0.388; mae_h=8.5733
+X3,LOMO,knn-k1-mean-dist-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.388011,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-dist-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.438733,5386,fold-mean; F1=0.358; mae_h=11.9979
+X3,LOMO,knn-k1-mean-dist-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.358311,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-unif-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.650109,5386,fold-mean; F1=0.505; mae_h=0.0000
+X3,LOMO,knn-k1-mean-unif-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.505323,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.54051,5386,fold-mean; F1=0.442; mae_h=5.6489
+X3,LOMO,knn-k1-mean-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.442365,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.503759,5386,fold-mean; F1=0.420; mae_h=7.9559
+X3,LOMO,knn-k1-mean-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.419931,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.501057,5386,fold-mean; F1=0.424; mae_h=8.6375
+X3,LOMO,knn-k1-mean-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.42366,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-unif-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.449618,5386,fold-mean; F1=0.372; mae_h=9.2356
+X3,LOMO,knn-k1-mean-unif-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.372283,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-unif-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.426958,5386,fold-mean; F1=0.350; mae_h=13.8068
+X3,LOMO,knn-k1-mean-unif-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.34979,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.635156,5386,fold-mean; F1=0.486; mae_h=0.0000
+X3,LOMO,knn-k1-mean-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.486166,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.550411,5386,fold-mean; F1=0.443; mae_h=5.1041
+X3,LOMO,knn-k1-mean-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.443348,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.513248,5386,fold-mean; F1=0.417; mae_h=7.4914
+X3,LOMO,knn-k1-mean-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.416532,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.508707,5386,fold-mean; F1=0.416; mae_h=6.9887
+X3,LOMO,knn-k1-mean-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.4158,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.482933,5386,fold-mean; F1=0.388; mae_h=8.5733
+X3,LOMO,knn-k1-mean-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.388011,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-mean-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.438733,5386,fold-mean; F1=0.358; mae_h=11.9979
+X3,LOMO,knn-k1-mean-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.358311,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-median-unif-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.650109,5386,fold-mean; F1=0.505; mae_h=0.0000
+X3,LOMO,knn-k1-median-unif-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.505323,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-median-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.54051,5386,fold-mean; F1=0.442; mae_h=5.6489
+X3,LOMO,knn-k1-median-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.442365,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-median-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.503759,5386,fold-mean; F1=0.420; mae_h=7.9559
+X3,LOMO,knn-k1-median-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.419931,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-median-unif-TT-dmin0.5,residuals,gradient-boosting,Cond_Blockage,f1,0.348083,497,
+X3,LOMO,knn-k1-median-unif-TT-dmin0.5,residuals,gradient-boosting,Evap_Airflow,f1,0.255668,774,
+X3,LOMO,knn-k1-median-unif-TT-dmin0.5,residuals,gradient-boosting,LiquidLine,f1,0.0470793,593,
+X3,LOMO,knn-k1-median-unif-TT-dmin0.5,residuals,gradient-boosting,No_Fault,f1,0.465886,1352,
+X3,LOMO,knn-k1-median-unif-TT-dmin0.5,residuals,gradient-boosting,Overcharge,f1,0.671498,942,
+X3,LOMO,knn-k1-median-unif-TT-dmin0.5,residuals,gradient-boosting,Undercharge,f1,0.852244,1228,
+X3,LOMO,knn-k1-median-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.501057,5386,fold-mean; F1=0.424; mae_h=8.6375
+X3,LOMO,knn-k1-median-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.42366,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-median-unif-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.449618,5386,fold-mean; F1=0.372; mae_h=9.2356
+X3,LOMO,knn-k1-median-unif-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.372283,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-median-unif-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.426958,5386,fold-mean; F1=0.350; mae_h=13.8068
+X3,LOMO,knn-k1-median-unif-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.34979,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-median-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.635156,5386,fold-mean; F1=0.486; mae_h=0.0000
+X3,LOMO,knn-k1-median-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.486166,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-median-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.550411,5386,fold-mean; F1=0.443; mae_h=5.1041
+X3,LOMO,knn-k1-median-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.443348,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-median-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.513248,5386,fold-mean; F1=0.417; mae_h=7.4914
+X3,LOMO,knn-k1-median-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.416532,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-median-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.508707,5386,fold-mean; F1=0.416; mae_h=6.9887
+X3,LOMO,knn-k1-median-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.4158,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-median-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.482933,5386,fold-mean; F1=0.388; mae_h=8.5733
+X3,LOMO,knn-k1-median-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.388011,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k1-median-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.438733,5386,fold-mean; F1=0.358; mae_h=11.9979
+X3,LOMO,knn-k1-median-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.358311,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-dist-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.66013,5386,fold-mean; F1=0.519; mae_h=0.0003
+X3,LOMO,knn-k10-mean-dist-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.518508,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-dist-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.512031,5386,fold-mean; F1=0.427; mae_h=6.2077
+X3,LOMO,knn-k10-mean-dist-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.42691,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-dist-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.496914,5386,fold-mean; F1=0.414; mae_h=7.8365
+X3,LOMO,knn-k10-mean-dist-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.413833,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-dist-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.485462,5386,fold-mean; F1=0.409; mae_h=7.7819
+X3,LOMO,knn-k10-mean-dist-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.409272,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-dist-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.454483,5386,fold-mean; F1=0.382; mae_h=8.4048
+X3,LOMO,knn-k10-mean-dist-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.381631,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-dist-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.455506,5386,fold-mean; F1=0.370; mae_h=11.9387
+X3,LOMO,knn-k10-mean-dist-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.369595,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-dist-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.652038,5386,fold-mean; F1=0.513; mae_h=0.0001
+X3,LOMO,knn-k10-mean-dist-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.512877,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-dist-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.536437,5386,fold-mean; F1=0.446; mae_h=5.8762
+X3,LOMO,knn-k10-mean-dist-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.446419,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-dist-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.51397,5386,fold-mean; F1=0.427; mae_h=7.5260
+X3,LOMO,knn-k10-mean-dist-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.426768,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-dist-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.50509,5386,fold-mean; F1=0.425; mae_h=7.7902
+X3,LOMO,knn-k10-mean-dist-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.424786,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-dist-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.475895,5386,fold-mean; F1=0.401; mae_h=8.4275
+X3,LOMO,knn-k10-mean-dist-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.401011,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-dist-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.460808,5386,fold-mean; F1=0.388; mae_h=10.2387
+X3,LOMO,knn-k10-mean-dist-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.388196,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-unif-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.521302,5386,fold-mean; F1=0.437; mae_h=5.2374
+X3,LOMO,knn-k10-mean-unif-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.437307,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.499084,5386,fold-mean; F1=0.416; mae_h=7.0857
+X3,LOMO,knn-k10-mean-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.416097,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.493276,5386,fold-mean; F1=0.414; mae_h=8.1531
+X3,LOMO,knn-k10-mean-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.414272,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.486599,5386,fold-mean; F1=0.410; mae_h=7.8989
+X3,LOMO,knn-k10-mean-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.410085,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-unif-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.456881,5386,fold-mean; F1=0.384; mae_h=8.5446
+X3,LOMO,knn-k10-mean-unif-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.383843,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-unif-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.457403,5386,fold-mean; F1=0.371; mae_h=12.0360
+X3,LOMO,knn-k10-mean-unif-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.370939,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.531642,5386,fold-mean; F1=0.440; mae_h=5.1014
+X3,LOMO,knn-k10-mean-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.439754,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.510218,5386,fold-mean; F1=0.422; mae_h=7.2504
+X3,LOMO,knn-k10-mean-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.422281,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.50216,5386,fold-mean; F1=0.415; mae_h=8.0963
+X3,LOMO,knn-k10-mean-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.415117,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.495922,5386,fold-mean; F1=0.413; mae_h=8.2410
+X3,LOMO,knn-k10-mean-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.413475,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.477434,5386,fold-mean; F1=0.401; mae_h=8.7571
+X3,LOMO,knn-k10-mean-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.401197,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-mean-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.463417,5386,fold-mean; F1=0.388; mae_h=10.2868
+X3,LOMO,knn-k10-mean-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.388092,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-median-unif-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.561972,5386,fold-mean; F1=0.468; mae_h=4.1553
+X3,LOMO,knn-k10-median-unif-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.467636,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-median-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.506538,5386,fold-mean; F1=0.427; mae_h=6.8536
+X3,LOMO,knn-k10-median-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.42696,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-median-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.490693,5386,fold-mean; F1=0.410; mae_h=8.2615
+X3,LOMO,knn-k10-median-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.410053,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-median-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.482183,5386,fold-mean; F1=0.409; mae_h=8.2443
+X3,LOMO,knn-k10-median-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.408849,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-median-unif-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.459349,5386,fold-mean; F1=0.390; mae_h=8.5445
+X3,LOMO,knn-k10-median-unif-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.389514,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-median-unif-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.443739,5386,fold-mean; F1=0.361; mae_h=12.3905
+X3,LOMO,knn-k10-median-unif-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.360527,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-median-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.561259,5386,fold-mean; F1=0.456; mae_h=3.1943
+X3,LOMO,knn-k10-median-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.456311,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-median-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.502666,5386,fold-mean; F1=0.416; mae_h=7.5284
+X3,LOMO,knn-k10-median-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.416427,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-median-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.492906,5386,fold-mean; F1=0.405; mae_h=8.6886
+X3,LOMO,knn-k10-median-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.405067,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-median-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.483553,5386,fold-mean; F1=0.407; mae_h=8.1978
+X3,LOMO,knn-k10-median-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.406532,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-median-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.463831,5386,fold-mean; F1=0.393; mae_h=8.7370
+X3,LOMO,knn-k10-median-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.392995,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k10-median-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.451799,5386,fold-mean; F1=0.377; mae_h=10.2542
+X3,LOMO,knn-k10-median-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.376933,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-dist-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.654964,5386,fold-mean; F1=0.520; mae_h=0.0005
+X3,LOMO,knn-k20-mean-dist-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.520324,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-dist-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.501764,5386,fold-mean; F1=0.421; mae_h=6.4990
+X3,LOMO,knn-k20-mean-dist-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.421086,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-dist-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.493194,5386,fold-mean; F1=0.410; mae_h=7.7198
+X3,LOMO,knn-k20-mean-dist-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.410165,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-dist-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.487419,5386,fold-mean; F1=0.406; mae_h=7.7070
+X3,LOMO,knn-k20-mean-dist-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.405773,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-dist-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.460519,5386,fold-mean; F1=0.388; mae_h=8.7829
+X3,LOMO,knn-k20-mean-dist-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.388321,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-dist-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.44054,5386,fold-mean; F1=0.353; mae_h=12.0959
+X3,LOMO,knn-k20-mean-dist-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.352535,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-dist-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.641331,5386,fold-mean; F1=0.501; mae_h=0.0001
+X3,LOMO,knn-k20-mean-dist-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.501259,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-dist-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.509223,5386,fold-mean; F1=0.424; mae_h=6.3672
+X3,LOMO,knn-k20-mean-dist-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.423594,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-dist-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.497212,5386,fold-mean; F1=0.414; mae_h=7.7944
+X3,LOMO,knn-k20-mean-dist-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.413916,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-dist-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.494232,5386,fold-mean; F1=0.419; mae_h=8.0986
+X3,LOMO,knn-k20-mean-dist-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.419104,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-dist-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.473096,5386,fold-mean; F1=0.402; mae_h=8.9678
+X3,LOMO,knn-k20-mean-dist-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.402076,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-dist-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.460578,5386,fold-mean; F1=0.382; mae_h=10.0137
+X3,LOMO,knn-k20-mean-dist-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.3817,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-unif-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.498681,5386,fold-mean; F1=0.415; mae_h=6.4958
+X3,LOMO,knn-k20-mean-unif-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.414514,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.488229,5386,fold-mean; F1=0.409; mae_h=7.6322
+X3,LOMO,knn-k20-mean-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.40913,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.484472,5386,fold-mean; F1=0.403; mae_h=8.0274
+X3,LOMO,knn-k20-mean-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.403164,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.479769,5386,fold-mean; F1=0.401; mae_h=7.9683
+X3,LOMO,knn-k20-mean-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.400585,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-unif-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.453923,5386,fold-mean; F1=0.380; mae_h=9.2430
+X3,LOMO,knn-k20-mean-unif-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.379583,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-unif-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.439877,5386,fold-mean; F1=0.352; mae_h=12.2343
+X3,LOMO,knn-k20-mean-unif-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.351741,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.4983,5386,fold-mean; F1=0.415; mae_h=7.0176
+X3,LOMO,knn-k20-mean-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.414709,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.484483,5386,fold-mean; F1=0.405; mae_h=8.1546
+X3,LOMO,knn-k20-mean-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.40465,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.48296,5386,fold-mean; F1=0.403; mae_h=8.5784
+X3,LOMO,knn-k20-mean-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.402518,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.479099,5386,fold-mean; F1=0.406; mae_h=8.7441
+X3,LOMO,knn-k20-mean-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.405842,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.464548,5386,fold-mean; F1=0.392; mae_h=9.4472
+X3,LOMO,knn-k20-mean-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.392143,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-mean-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.462661,5386,fold-mean; F1=0.381; mae_h=10.1589
+X3,LOMO,knn-k20-mean-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.380725,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-median-unif-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.523307,5386,fold-mean; F1=0.438; mae_h=5.3409
+X3,LOMO,knn-k20-median-unif-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.438129,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-median-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.486021,5386,fold-mean; F1=0.412; mae_h=6.5993
+X3,LOMO,knn-k20-median-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.412216,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-median-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.477245,5386,fold-mean; F1=0.403; mae_h=7.1264
+X3,LOMO,knn-k20-median-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.402899,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-median-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.469447,5386,fold-mean; F1=0.399; mae_h=7.2924
+X3,LOMO,knn-k20-median-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.398705,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-median-unif-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.4424,5386,fold-mean; F1=0.371; mae_h=8.7294
+X3,LOMO,knn-k20-median-unif-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.3709,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-median-unif-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.438361,5386,fold-mean; F1=0.349; mae_h=12.1865
+X3,LOMO,knn-k20-median-unif-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.349202,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-median-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.515901,5386,fold-mean; F1=0.427; mae_h=5.6349
+X3,LOMO,knn-k20-median-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.426967,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-median-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.484043,5386,fold-mean; F1=0.403; mae_h=6.9794
+X3,LOMO,knn-k20-median-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.402724,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-median-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.479654,5386,fold-mean; F1=0.400; mae_h=7.4673
+X3,LOMO,knn-k20-median-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.399783,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-median-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.480051,5386,fold-mean; F1=0.403; mae_h=7.7513
+X3,LOMO,knn-k20-median-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.403449,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-median-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.465065,5386,fold-mean; F1=0.391; mae_h=8.5558
+X3,LOMO,knn-k20-median-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.391414,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k20-median-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.464223,5386,fold-mean; F1=0.386; mae_h=9.8409
+X3,LOMO,knn-k20-median-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.385939,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-dist-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.651892,5386,fold-mean; F1=0.507; mae_h=0.0001
+X3,LOMO,knn-k3-mean-dist-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.506673,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-dist-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.529478,5386,fold-mean; F1=0.442; mae_h=5.7676
+X3,LOMO,knn-k3-mean-dist-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.441644,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-dist-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.505712,5386,fold-mean; F1=0.419; mae_h=8.0229
+X3,LOMO,knn-k3-mean-dist-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.419014,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-dist-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.494298,5386,fold-mean; F1=0.413; mae_h=8.4741
+X3,LOMO,knn-k3-mean-dist-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.41339,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-dist-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.458741,5386,fold-mean; F1=0.385; mae_h=8.7681
+X3,LOMO,knn-k3-mean-dist-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.384882,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-dist-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.438986,5386,fold-mean; F1=0.359; mae_h=12.4072
+X3,LOMO,knn-k3-mean-dist-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.35919,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-dist-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.644872,5386,fold-mean; F1=0.499; mae_h=0.0000
+X3,LOMO,knn-k3-mean-dist-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.499115,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-dist-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.549835,5386,fold-mean; F1=0.449; mae_h=5.4134
+X3,LOMO,knn-k3-mean-dist-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.448939,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-dist-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.515118,5386,fold-mean; F1=0.421; mae_h=7.3807
+X3,LOMO,knn-k3-mean-dist-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.421048,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-dist-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.509246,5386,fold-mean; F1=0.419; mae_h=6.8742
+X3,LOMO,knn-k3-mean-dist-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.41893,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-dist-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.491834,5386,fold-mean; F1=0.401; mae_h=8.1117
+X3,LOMO,knn-k3-mean-dist-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.400705,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-dist-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.451788,5386,fold-mean; F1=0.373; mae_h=11.1417
+X3,LOMO,knn-k3-mean-dist-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.373327,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-unif-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.590061,5386,fold-mean; F1=0.478; mae_h=1.5135
+X3,LOMO,knn-k3-mean-unif-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.478158,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.51737,5386,fold-mean; F1=0.433; mae_h=6.0888
+X3,LOMO,knn-k3-mean-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.433042,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.501167,5386,fold-mean; F1=0.414; mae_h=8.2419
+X3,LOMO,knn-k3-mean-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.414348,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.493211,5386,fold-mean; F1=0.413; mae_h=8.5142
+X3,LOMO,knn-k3-mean-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.413307,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-unif-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.458703,5386,fold-mean; F1=0.385; mae_h=8.7797
+X3,LOMO,knn-k3-mean-unif-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.384909,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-unif-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.439774,5386,fold-mean; F1=0.360; mae_h=12.4011
+X3,LOMO,knn-k3-mean-unif-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.360118,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.607682,5386,fold-mean; F1=0.482; mae_h=1.2514
+X3,LOMO,knn-k3-mean-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.482343,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.530778,5386,fold-mean; F1=0.436; mae_h=6.0280
+X3,LOMO,knn-k3-mean-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.436335,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.507571,5386,fold-mean; F1=0.415; mae_h=7.5517
+X3,LOMO,knn-k3-mean-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.415154,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.503547,5386,fold-mean; F1=0.414; mae_h=6.9967
+X3,LOMO,knn-k3-mean-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.413947,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.488762,5386,fold-mean; F1=0.399; mae_h=8.2335
+X3,LOMO,knn-k3-mean-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.398611,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-mean-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.452445,5386,fold-mean; F1=0.374; mae_h=11.1374
+X3,LOMO,knn-k3-mean-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.374345,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-median-unif-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.634542,5386,fold-mean; F1=0.495; mae_h=0.7926
+X3,LOMO,knn-k3-median-unif-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.495356,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-median-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.527841,5386,fold-mean; F1=0.438; mae_h=5.9355
+X3,LOMO,knn-k3-median-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.437651,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-median-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.506473,5386,fold-mean; F1=0.424; mae_h=8.4712
+X3,LOMO,knn-k3-median-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.424159,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-median-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.486027,5386,fold-mean; F1=0.409; mae_h=8.9208
+X3,LOMO,knn-k3-median-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.408725,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-median-unif-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.449471,5386,fold-mean; F1=0.373; mae_h=9.4312
+X3,LOMO,knn-k3-median-unif-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.37305,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-median-unif-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.427513,5386,fold-mean; F1=0.351; mae_h=13.8877
+X3,LOMO,knn-k3-median-unif-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.350941,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-median-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.635341,5386,fold-mean; F1=0.489; mae_h=0.3518
+X3,LOMO,knn-k3-median-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.489021,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-median-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.531653,5386,fold-mean; F1=0.432; mae_h=6.3355
+X3,LOMO,knn-k3-median-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.432363,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-median-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.506228,5386,fold-mean; F1=0.411; mae_h=8.0740
+X3,LOMO,knn-k3-median-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.410904,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-median-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.504129,5386,fold-mean; F1=0.413; mae_h=7.3953
+X3,LOMO,knn-k3-median-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.413319,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-median-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.482281,5386,fold-mean; F1=0.390; mae_h=8.6784
+X3,LOMO,knn-k3-median-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.389905,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k3-median-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.443687,5386,fold-mean; F1=0.362; mae_h=12.1402
+X3,LOMO,knn-k3-median-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.361683,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-dist-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.652849,5386,fold-mean; F1=0.507; mae_h=0.0002
+X3,LOMO,knn-k5-mean-dist-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.506593,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-dist-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.518495,5386,fold-mean; F1=0.429; mae_h=5.9669
+X3,LOMO,knn-k5-mean-dist-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.429003,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-dist-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.501074,5386,fold-mean; F1=0.414; mae_h=7.8329
+X3,LOMO,knn-k5-mean-dist-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.413806,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-dist-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.488088,5386,fold-mean; F1=0.408; mae_h=8.1022
+X3,LOMO,knn-k5-mean-dist-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.407713,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-dist-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.455228,5386,fold-mean; F1=0.378; mae_h=8.5636
+X3,LOMO,knn-k5-mean-dist-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.377912,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-dist-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.446272,5386,fold-mean; F1=0.367; mae_h=12.0491
+X3,LOMO,knn-k5-mean-dist-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.366972,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-dist-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.653866,5386,fold-mean; F1=0.509; mae_h=0.0001
+X3,LOMO,knn-k5-mean-dist-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.509068,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-dist-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.546758,5386,fold-mean; F1=0.451; mae_h=5.5124
+X3,LOMO,knn-k5-mean-dist-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.451267,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-dist-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.52092,5386,fold-mean; F1=0.429; mae_h=7.3707
+X3,LOMO,knn-k5-mean-dist-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.428555,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-dist-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.513612,5386,fold-mean; F1=0.426; mae_h=7.4831
+X3,LOMO,knn-k5-mean-dist-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.426061,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-dist-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.491883,5386,fold-mean; F1=0.407; mae_h=8.2603
+X3,LOMO,knn-k5-mean-dist-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.406561,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-dist-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.457279,5386,fold-mean; F1=0.378; mae_h=10.6848
+X3,LOMO,knn-k5-mean-dist-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.378338,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-unif-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.55435,5386,fold-mean; F1=0.453; mae_h=2.9909
+X3,LOMO,knn-k5-mean-unif-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.453229,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.499171,5386,fold-mean; F1=0.412; mae_h=6.5978
+X3,LOMO,knn-k5-mean-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.411567,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.495147,5386,fold-mean; F1=0.408; mae_h=8.0340
+X3,LOMO,knn-k5-mean-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.408068,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.485277,5386,fold-mean; F1=0.406; mae_h=8.1257
+X3,LOMO,knn-k5-mean-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.405632,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-unif-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.457501,5386,fold-mean; F1=0.381; mae_h=8.5807
+X3,LOMO,knn-k5-mean-unif-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.380921,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-unif-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.440943,5386,fold-mean; F1=0.362; mae_h=12.0510
+X3,LOMO,knn-k5-mean-unif-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.36169,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.585064,5386,fold-mean; F1=0.478; mae_h=2.7363
+X3,LOMO,knn-k5-mean-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.477822,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.526678,5386,fold-mean; F1=0.438; mae_h=6.2652
+X3,LOMO,knn-k5-mean-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.438041,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.518359,5386,fold-mean; F1=0.429; mae_h=7.5298
+X3,LOMO,knn-k5-mean-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.428829,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.513813,5386,fold-mean; F1=0.427; mae_h=7.6849
+X3,LOMO,knn-k5-mean-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.427045,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.48644,5386,fold-mean; F1=0.402; mae_h=8.4355
+X3,LOMO,knn-k5-mean-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.401889,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-mean-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.457485,5386,fold-mean; F1=0.378; mae_h=10.6840
+X3,LOMO,knn-k5-mean-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.37819,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-median-unif-TT-dmin0,residuals,gradient-boosting,Cond_Blockage,f1,0.286576,497,
+X3,LOMO,knn-k5-median-unif-TT-dmin0,residuals,gradient-boosting,Evap_Airflow,f1,0.302995,774,
+X3,LOMO,knn-k5-median-unif-TT-dmin0,residuals,gradient-boosting,LiquidLine,f1,0.0401606,593,
+X3,LOMO,knn-k5-median-unif-TT-dmin0,residuals,gradient-boosting,No_Fault,f1,0.735178,1352,
+X3,LOMO,knn-k5-median-unif-TT-dmin0,residuals,gradient-boosting,Overcharge,f1,0.694698,942,
+X3,LOMO,knn-k5-median-unif-TT-dmin0,residuals,gradient-boosting,Undercharge,f1,0.854007,1228,
+X3,LOMO,knn-k5-median-unif-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.602479,5386,fold-mean; F1=0.479; mae_h=2.1491
+X3,LOMO,knn-k5-median-unif-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.479125,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-median-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.518625,5386,fold-mean; F1=0.431; mae_h=6.8620
+X3,LOMO,knn-k5-median-unif-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.430925,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-median-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.499111,5386,fold-mean; F1=0.408; mae_h=9.1371
+X3,LOMO,knn-k5-median-unif-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.408399,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-median-unif-TT-dmin0.5,residuals,gradient-boosting,Cond_Blockage,f1,0.293333,497,
+X3,LOMO,knn-k5-median-unif-TT-dmin0.5,residuals,gradient-boosting,Evap_Airflow,f1,0.244541,774,
+X3,LOMO,knn-k5-median-unif-TT-dmin0.5,residuals,gradient-boosting,LiquidLine,f1,0.0423012,593,
+X3,LOMO,knn-k5-median-unif-TT-dmin0.5,residuals,gradient-boosting,No_Fault,f1,0.434389,1352,
+X3,LOMO,knn-k5-median-unif-TT-dmin0.5,residuals,gradient-boosting,Overcharge,f1,0.661048,942,
+X3,LOMO,knn-k5-median-unif-TT-dmin0.5,residuals,gradient-boosting,Undercharge,f1,0.841419,1228,
+X3,LOMO,knn-k5-median-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.482363,5386,fold-mean; F1=0.400; mae_h=8.9438
+X3,LOMO,knn-k5-median-unif-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.400392,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-median-unif-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.451972,5386,fold-mean; F1=0.374; mae_h=9.1883
+X3,LOMO,knn-k5-median-unif-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.374245,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-median-unif-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.433968,5386,fold-mean; F1=0.354; mae_h=13.3800
+X3,LOMO,knn-k5-median-unif-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.35405,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-median-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.600173,5386,fold-mean; F1=0.477; mae_h=2.2060
+X3,LOMO,knn-k5-median-unif-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.476566,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-median-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.529527,5386,fold-mean; F1=0.435; mae_h=6.4794
+X3,LOMO,knn-k5-median-unif-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.435191,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-median-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.50923,5386,fold-mean; F1=0.418; mae_h=7.8526
+X3,LOMO,knn-k5-median-unif-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.417815,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-median-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.502438,5386,fold-mean; F1=0.413; mae_h=7.7635
+X3,LOMO,knn-k5-median-unif-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.412946,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-median-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.480209,5386,fold-mean; F1=0.392; mae_h=8.8809
+X3,LOMO,knn-k5-median-unif-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.391883,5386,macro; mean of two LOMO folds
+X3,LOMO,knn-k5-median-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.449972,5386,fold-mean; F1=0.376; mae_h=11.5046
+X3,LOMO,knn-k5-median-unif-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.376009,5386,macro; mean of two LOMO folds
+X3,LOMO,knn5-median-TTdew-train+test-dmin0,residuals,gradient-boosting,__global__,accuracy,0.576,5386,dew in stage-1 train and test; acc 0.602→0.576
+X3,LOMO,knn5-median-TTdew-train+test-dmin0,residuals,gradient-boosting,__global__,f1,0.464,5386,macro; dew in both stages
+X3,LOMO,lin-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.459576,5386,fold-mean; F1=0.369; mae_h=6.4498
+X3,LOMO,lin-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.368534,5386,macro; mean of two LOMO folds
+X3,LOMO,lin-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.458885,5386,fold-mean; F1=0.368; mae_h=6.5533
+X3,LOMO,lin-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.367612,5386,macro; mean of two LOMO folds
+X3,LOMO,lin-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.459842,5386,fold-mean; F1=0.369; mae_h=6.6159
+X3,LOMO,lin-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.369366,5386,macro; mean of two LOMO folds
+X3,LOMO,lin-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.459565,5386,fold-mean; F1=0.371; mae_h=6.6481
+X3,LOMO,lin-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.371069,5386,macro; mean of two LOMO folds
+X3,LOMO,lin-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.459978,5386,fold-mean; F1=0.371; mae_h=6.7524
+X3,LOMO,lin-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.370885,5386,macro; mean of two LOMO folds
+X3,LOMO,lin-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.461158,5386,fold-mean; F1=0.374; mae_h=7.0001
+X3,LOMO,lin-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.373911,5386,macro; mean of two LOMO folds
+X3,LOMO,lin-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.479641,5386,fold-mean; F1=0.395; mae_h=6.4445
+X3,LOMO,lin-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.394668,5386,macro; mean of two LOMO folds
+X3,LOMO,lin-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.478891,5386,fold-mean; F1=0.394; mae_h=6.5422
+X3,LOMO,lin-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.394079,5386,macro; mean of two LOMO folds
+X3,LOMO,lin-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.478553,5386,fold-mean; F1=0.394; mae_h=6.5863
+X3,LOMO,lin-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.393913,5386,macro; mean of two LOMO folds
+X3,LOMO,lin-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.477183,5386,fold-mean; F1=0.393; mae_h=6.6140
+X3,LOMO,lin-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.392653,5386,macro; mean of two LOMO folds
+X3,LOMO,lin-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.479304,5386,fold-mean; F1=0.395; mae_h=6.6564
+X3,LOMO,lin-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.395269,5386,macro; mean of two LOMO folds
+X3,LOMO,lin-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.481647,5386,fold-mean; F1=0.399; mae_h=6.7656
+X3,LOMO,lin-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.398707,5386,macro; mean of two LOMO folds
+X3,LOMO,poly2-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.460256,5386,fold-mean; F1=0.374; mae_h=5.5245
+X3,LOMO,poly2-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.373914,5386,macro; mean of two LOMO folds
+X3,LOMO,poly2-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.460762,5386,fold-mean; F1=0.374; mae_h=5.6725
+X3,LOMO,poly2-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.374155,5386,macro; mean of two LOMO folds
+X3,LOMO,poly2-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.460518,5386,fold-mean; F1=0.375; mae_h=5.7381
+X3,LOMO,poly2-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.374802,5386,macro; mean of two LOMO folds
+X3,LOMO,poly2-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.458157,5386,fold-mean; F1=0.373; mae_h=5.7619
+X3,LOMO,poly2-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.372651,5386,macro; mean of two LOMO folds
+X3,LOMO,poly2-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.459038,5386,fold-mean; F1=0.373; mae_h=5.8788
+X3,LOMO,poly2-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.373053,5386,macro; mean of two LOMO folds
+X3,LOMO,poly2-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.458941,5386,fold-mean; F1=0.371; mae_h=6.0822
+X3,LOMO,poly2-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.37091,5386,macro; mean of two LOMO folds
+X3,LOMO,poly2-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.47416,5386,fold-mean; F1=0.391; mae_h=5.5111
+X3,LOMO,poly2-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.39054,5386,macro; mean of two LOMO folds
+X3,LOMO,poly2-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.471273,5386,fold-mean; F1=0.388; mae_h=5.7034
+X3,LOMO,poly2-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.387619,5386,macro; mean of two LOMO folds
+X3,LOMO,poly2-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.471066,5386,fold-mean; F1=0.387; mae_h=5.7640
+X3,LOMO,poly2-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.387245,5386,macro; mean of two LOMO folds
+X3,LOMO,poly2-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.471104,5386,fold-mean; F1=0.388; mae_h=5.7917
+X3,LOMO,poly2-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.387834,5386,macro; mean of two LOMO folds
+X3,LOMO,poly2-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.471707,5386,fold-mean; F1=0.388; mae_h=5.9611
+X3,LOMO,poly2-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.387833,5386,macro; mean of two LOMO folds
+X3,LOMO,poly2-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.471463,5386,fold-mean; F1=0.386; mae_h=6.0927
+X3,LOMO,poly2-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.386117,5386,macro; mean of two LOMO folds
+X3,LOMO,rf-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.512705,5386,fold-mean; F1=0.428; mae_h=2.9464
+X3,LOMO,rf-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.427966,5386,macro; mean of two LOMO folds
+X3,LOMO,rf-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.504701,5386,fold-mean; F1=0.421; mae_h=2.6849
+X3,LOMO,rf-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.420716,5386,macro; mean of two LOMO folds
+X3,LOMO,ridge-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.460501,5386,fold-mean; F1=0.374; mae_h=5.5239
+X3,LOMO,ridge-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.374199,5386,macro; mean of two LOMO folds
+X3,LOMO,ridge-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.461719,5386,fold-mean; F1=0.375; mae_h=5.6715
+X3,LOMO,ridge-TT-dmin0.1,residuals,gradient-boosting,__global__,f1,0.37495,5386,macro; mean of two LOMO folds
+X3,LOMO,ridge-TT-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.460724,5386,fold-mean; F1=0.374; mae_h=5.7370
+X3,LOMO,ridge-TT-dmin0.25,residuals,gradient-boosting,__global__,f1,0.374443,5386,macro; mean of two LOMO folds
+X3,LOMO,ridge-TT-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.459076,5386,fold-mean; F1=0.373; mae_h=5.7605
+X3,LOMO,ridge-TT-dmin0.5,residuals,gradient-boosting,__global__,f1,0.373151,5386,macro; mean of two LOMO folds
+X3,LOMO,ridge-TT-dmin1,residuals,gradient-boosting,__global__,accuracy,0.458946,5386,fold-mean; F1=0.373; mae_h=5.8771
+X3,LOMO,ridge-TT-dmin1,residuals,gradient-boosting,__global__,f1,0.37327,5386,macro; mean of two LOMO folds
+X3,LOMO,ridge-TT-dmin2,residuals,gradient-boosting,__global__,accuracy,0.458734,5386,fold-mean; F1=0.371; mae_h=6.0793
+X3,LOMO,ridge-TT-dmin2,residuals,gradient-boosting,__global__,f1,0.370806,5386,macro; mean of two LOMO folds
+X3,LOMO,ridge-TTdew-dmin0,residuals,gradient-boosting,__global__,accuracy,0.476433,5386,fold-mean; F1=0.393; mae_h=5.5113
+X3,LOMO,ridge-TTdew-dmin0,residuals,gradient-boosting,__global__,f1,0.392907,5386,macro; mean of two LOMO folds
+X3,LOMO,ridge-TTdew-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.472811,5386,fold-mean; F1=0.389; mae_h=5.7030
+X3,LOMO,ridge-TTdew-dmin0.1,residuals,gradient-boosting,__global__,f1,0.389109,5386,macro; mean of two LOMO folds
+X3,LOMO,ridge-TTdew-dmin0.25,residuals,gradient-boosting,__global__,accuracy,0.471985,5386,fold-mean; F1=0.388; mae_h=5.7633
+X3,LOMO,ridge-TTdew-dmin0.25,residuals,gradient-boosting,__global__,f1,0.388128,5386,macro; mean of two LOMO folds
+X3,LOMO,ridge-TTdew-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.472192,5386,fold-mean; F1=0.389; mae_h=5.7909
+X3,LOMO,ridge-TTdew-dmin0.5,residuals,gradient-boosting,__global__,f1,0.388782,5386,macro; mean of two LOMO folds
+X3,LOMO,ridge-TTdew-dmin1,residuals,gradient-boosting,__global__,accuracy,0.47255,5386,fold-mean; F1=0.388; mae_h=5.9593
+X3,LOMO,ridge-TTdew-dmin1,residuals,gradient-boosting,__global__,f1,0.388311,5386,macro; mean of two LOMO folds
+X3,LOMO,ridge-TTdew-dmin2,residuals,gradient-boosting,__global__,accuracy,0.473132,5386,fold-mean; F1=0.388; mae_h=6.0903
+X3,LOMO,ridge-TTdew-dmin2,residuals,gradient-boosting,__global__,f1,0.387807,5386,macro; mean of two LOMO folds
+X3,LOMO,sklearn-KNeighborsRegressor-mean-k5-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.55435,5386,"sklearn mean, not project median; trap control"
 X3-prelim,LOMO,target-machine-global-mean,residuals,gradient-boosting,__global__,accuracy,0.358,5386,ignore les conditions
 X3-prelim,LOMO,target-machine-global-median,residuals,gradient-boosting,__global__,accuracy,0.372,5386,ignore les conditions
 X3-prelim,LOMO,target-machine-knn1,residuals,gradient-boosting,__global__,accuracy,0.703,5386,profite des repliques du plan d'essais
