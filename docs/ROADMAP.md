@@ -51,6 +51,12 @@ modèle :
 | Leave-one-machine-out | machine cible (calibrée) | **0,602** |
 | Leave-one-machine-out | machine d'entraînement (transférée) | **0,318** |
 
+⚠️ **Le 0,602 est lui-même conditionnel.** Une exploration préliminaire montre qu'il suppose de
+disposer d'une mesure saine aux conditions quasi identiques à celles du défaut — vrai dans la
+campagne NIST, répliquée par construction, faux sur une machine en service. En interdisant les
+voisins à moins de 0,5 °C, il tombe à **0,511**. À confirmer par X3, et à répercuter partout si
+confirmé.
+
 Un split aléatoire mesure l'installation autant que le défaut. C'est le même problème que
 d'entraîner et tester depuis le même simulateur — mais ici il est **mesuré**.
 
@@ -81,6 +87,9 @@ Deux désaccords restent : `W_comp` sous-charge, `COP` surcharge. La classe
 **A. Comment annoncer la performance.** C'est le point le plus urgent, et le seul qu'un jury
 démontera en une question. Le 99,6 % actuel mesure la séparabilité des signatures dans le
 modèle physique, pas une détection sur machine réelle. Proposition :
+
+⚠️ **Cette formulation est provisoire** : elle cite 0,602 sans mentionner que ce chiffre suppose
+une référence saine aux conditions du défaut. À figer **après X3**, pas avant.
 
 > Signatures de défauts séparables à 99,6 % en validation croisée sur données simulées.
 > Méthode par résidus confrontée aux essais NIST : 0,602 lorsque la référence saine est
@@ -138,110 +147,127 @@ de données adapté existe.
 | P5 | Contrat de features : résidus + conditions, et le bruit des dérivées (décision C bis) | à faire |
 | P6 | Découper `api/app.py` — 4 routes d'inférence contre 17 de tableau de bord | à faire |
 
-### 1B. Les expériences qui manquent
+### 1B. Les expériences
 
-**C'est la partie que le projet n'a jamais faite**, et c'est elle qui produit des résultats
-plutôt que des corrections.
+Le projet n'avait mené que la plus facile des expériences possibles. Cette section les nomme
+toutes, **numérotées dans l'ordre d'exécution** — pas dans l'ordre où l'idée est venue.
 
-« Détecter une panne » n'est pas une expérience, c'en est cinq. Le projet n'en a mené que
-trois, dont la plus facile :
+« Détecter une panne » n'est pas une expérience, c'en est plusieurs :
 
 | | Entraîné sur | Testé sur | Ce que ça mesure | État |
 |---|---|---|---|---|
-| **E0** | simulé | simulé, tirage aléatoire | Un classifieur peut-il inverser le simulateur | fait — 99,6 % |
-| **E1** | simulé | simulé, **conditions non vues** | Généralise-t-il hors des points appris | **jamais fait** |
-| **E2** | simulé | **mesuré** | Le simulateur décrit-il la réalité | **jamais fait** |
-| **E3** | mesuré | mesuré, même machine | La tâche est-elle apprenable sur du réel | fait — 0,95 |
-| **E4** | mesuré | mesuré, autre machine | Transfère-t-elle entre unités | fait — 0,602 / 0,318 |
-| **E5** | mesuré | mesuré, autre machine | **Quelles pannes** sont détectées, et lesquelles non | **jamais fait** |
-| **E6** | — | mesuré, autre machine | **Le ML bat-il une table de règles** issue de la physique | **jamais fait** |
+| **X0** | simulé | simulé, tirage aléatoire | Un classifieur peut-il inverser le simulateur | fait — 99,6 % |
+| **X1** | mesuré | mesuré, autre machine | **Quelles pannes** sont détectées | **fait** |
+| **X2** | — | mesuré, autre machine | Le ML bat-il une **table de règles** | à faire |
+| **X3** | mesuré | mesuré, autre machine | Quel **estimateur de référence saine** est le meilleur | à faire |
+| **X4** | simulé | simulé, **conditions non vues** | Le 99,6 % survit-il hors des points appris | à faire |
+| **X5** | simulé | **mesuré** | Le simulateur décrit-il la réalité | à faire |
 
-#### E5 — Quelles pannes sont réellement détectées · ½ j
+#### X1 — Quelles pannes sont réellement détectées · fait
 
-**Le résultat constructif le moins cher du projet, et il n'a jamais été fait.**
+Le 0,602 moyen cachait un système très inégal :
 
-Les deux chiffres publiés sur les essais mesurés sont :
-
-```
-accuracy 0,602        F1 macro 0,479
-```
-
-Cet écart de douze points signifie que **les classes ne sont pas détectées également**.
-Certaines pannes passent bien, d'autres très mal. Personne n'a regardé lesquelles.
-
-L'expérience : matrice de confusion et rapport par classe sur le protocole leave-one-machine-out
-déjà en place. Aucune donnée nouvelle, aucun modèle nouveau, aucun réentraînement.
-
-Ce que ça permet de dire, au lieu d'une moyenne :
-
-> Sur données mesurées, tel défaut est détecté à 0,8 et tel autre à 0,2 — le diagnostic par
-> résidus sépare bien telle famille de pannes, mal telle autre.
-
-C'est utile à un praticien, et ça oriente toute la suite : inutile de chercher une amélioration
-globale si une seule classe plombe la moyenne. Si deux classes sont systématiquement confondues,
-c'est une question de physique, pas d'algorithme — et c'est une conclusion en soi.
-
-À faire **en premier** : c'est la seule expérience du lot qui produise à coup sûr un résultat
-exploitable, les autres étant des expériences de destruction.
-
-#### E6 — Le modèle bat-il une table de règles · ½ j
-
-**La question que posera tout jury qui connaît le domaine, et à laquelle le dépôt ne sait pas
-répondre aujourd'hui.**
-
-Le FDD par résidus est un domaine où la méthode de référence est une **table de règles sur les
-signes** : si le sous-refroidissement monte et la pression haute monte, c'est un encrassement de
-condenseur. C'est l'approche classique de cette littérature — celle que le projet cite en
-fondation.
-
-Or le projet utilise les résidus de Li & Braun, puis pose un Gradient Boosting dessus. **Il n'a
-jamais implémenté la méthode simple qu'il revendique comme base.**
-
-Tant que la comparaison n'est pas faite, la réponse à « votre modèle fait-il mieux qu'une règle
-écrite à la main ? » est *on ne sait pas* — et si un jury soupçonne que six règles
-thermodynamiques suffisent, tout le volet apprentissage devient décoratif.
-
-**La table existe déjà.** C'est la matrice des signes mesurés construite pour l'accord
-simulation/mesure : pour chaque panne, la direction de la surchauffe, du sous-refroidissement,
-du refoulement, du COP et des pressions. Un classifieur qui vote sur ces directions tient en une
-trentaine de lignes, sans entraînement.
-
-Évalué sur le même protocole leave-one-machine-out, les deux issues sont publiables :
-
-| Issue | Ce qu'on en tire |
+| Panne | F1, référence calibrée |
 |---|---|
-| Les règles font nettement moins bien | Le ML gagne sa place, chiffres à l'appui plutôt que par postulat |
-| Les règles font aussi bien ou mieux | Résultat remarquable et honnête : sur ce problème, une table de signes issue de la physique égale un modèle appris |
+| Sous-charge | **0,832** |
+| Sans défaut | 0,741 |
+| Surcharge | **0,674** |
+| Obstruction condenseur | 0,299 |
+| Débit intérieur | 0,288 |
+| Ligne liquide | **0,040** |
 
-**Un bonus à ne pas manquer** : une règle regarde des directions, pas des valeurs — elle n'a
-donc **pas besoin de calibration saine**. Si elle tient à 0,45 sans calibration là où le modèle
-appris plafonne à 0,318, c'est un argument de déploiement très fort, et il renverse la
-conclusion du budget de calibration pour les pannes concernées.
+**Les défauts de charge portent tout le résultat.** La ligne liquide n'est jamais détectée —
+huit vrais positifs sur 492 essais dans un sens — et c'est aussi la seule panne que le
+simulateur ne modélise pas. Débit d'air et ligne liquide se confondent massivement : les deux
+affament l'évaporateur, donc se ressemblent sur les grandeurs mesurées.
 
-À faire juste après E5 : les deux se nourrissent. L'analyse par classe dit quelles pannes sont
-dures ; la table de règles dit si l'apprentissage sert à quelque chose sur celles-là.
+Et **la surcharge est mieux détectée sans calibration qu'avec** (0,786 contre 0,674), cohérent
+dans les deux sens de transfert. Le budget de calibration dépend donc de la panne cherchée, et
+pour l'une d'elles il est nul.
 
-#### E1 — Hold-out sur le domaine de fonctionnement · ½ j
+Notebook : `EDA/EDA_NIST_perclass.ipynb`.
 
-Même jeu de données, **découpage différent** : au lieu d'un tirage aléatoire sur les 5000
-exemples, retirer une région entière du domaine — par exemple tout ce qui dépasse
-`T_sink > 48 °C` — entraîner sur le reste, tester dessus.
+#### X2 — Le modèle bat-il une table de règles · ½ j
 
-C'est exactement le geste qui a tout révélé sur les données NIST, appliqué cette fois au jeu
-simulé. **Si le score s'effondre, le 99,6 % est en partie de la mémorisation de points de
-fonctionnement, pas de la reconnaissance de signature.**
+**La question que posera tout jury qui connaît le domaine.**
 
-Aucune donnée nouvelle, aucun modèle nouveau. Le résultat conditionne tout le discours sur le
-volet simulé, et il peut le détruire — c'est son intérêt.
+Le FDD par résidus est un domaine où la méthode de référence est une table de règles sur les
+signes : sous-refroidissement qui monte et pression haute qui monte, c'est une obstruction de
+condenseur. Le projet cite cette méthode en fondation **sans l'avoir jamais implémentée** — il
+utilise ses résidus, puis pose un Gradient Boosting dessus.
 
-#### E2 — Simulé aux conditions NIST, testé sur le réel · 2 j
+La table existe déjà : c'est la matrice des signes mesurés construite pour l'accord
+simulation/mesure. Un classifieur qui vote sur ces directions tient en une trentaine de lignes,
+sans entraînement.
 
-Le recouvrement de domaine de 5,3 % a longtemps été présenté comme un obstacle. **C'en est un
-de sampling, pas de physique** : il découle des plages de tirage choisies pour l'entraînement,
-pas d'une limite du simulateur.
+Trois évaluations, à protocole identique : règles avec référence calibrée, règles avec référence
+transférée, et **règles sans aucune référence** — cette dernière n'ayant pas d'équivalent côté
+modèle appris, puisqu'une règle regarde des directions et non des valeurs.
 
-Vérification faite, le simulateur tourne aux conditions NIST et produit des valeurs
-plausibles — mais qui ne collent pas :
+Les deux issues sont publiables : soit le modèle appris gagne sa place avec des chiffres, soit
+une table de signes issue de la physique l'égale, ce qui est un résultat peu commun.
+
+À ajouter au périmètre : un **arbre de décision de profondeur 3**, qui situe le curseur entre la
+règle écrite à la main et l'ensemble de centaines d'arbres. Si l'écart est de cinq points, la
+complexité ne s'achète pas cher.
+
+#### X3 — Benchmark de l'estimateur de référence saine · 1,5 j
+
+*(fusionne les anciennes pistes « meilleure référence à petit n » et « benchmark étage 1 » —
+c'était la même expérience.)*
+
+Le système a deux étages : un **estimateur** qui prédit ce que lirait une machine saine dans
+les conditions courantes, puis un **classifieur** qui travaille sur l'écart. L'étage 2 n'a
+jamais été comparé à quoi que ce soit — c'est X2. L'étage 1 ne l'a été que partiellement.
+
+Une exploration préliminaire a déjà produit trois résultats à confirmer proprement :
+
+**Le choix de l'estimateur pèse lourd.** Une moyenne globale des essais sains donne 0,358 contre
+0,602 pour un kNN tenant compte des conditions. **L'essentiel du gain de la méthode ne vient pas
+de la soustraction, mais du fait de comparer à condition équivalente.**
+
+**L'erreur de régression ne prédit pas la performance de classification.** Ajouter le point de
+rosée améliore nettement l'erreur d'estimation sur les essais sains, et fait *baisser*
+l'accuracy de 0,602 à 0,576. Toute variante doit être évaluée en bout de chaîne.
+
+**🔴 Et le chiffre publié dépend de la structure du plan d'expérience.** 29 % des essais
+défaillants ont un essai sain à moins de 0,1 °C : la campagne NIST est répliquée par
+construction. En interdisant les voisins à moins de 0,5 °C, ce qui simule une situation de
+terrain :
+
+| Estimateur | Répliques autorisées | Répliques interdites |
+|---|---|---|
+| kNN k=1 | 0,703 | 0,523 |
+| kNN k=5 — **publié** | 0,602 | **0,511** |
+
+Un petit `k` semble gagner dix points ; le gain disparaît une fois les répliques exclues. **Et
+le 0,602 lui-même tombe à 0,511.** Le chiffre du projet suppose implicitement une mesure saine
+aux conditions quasi identiques à celles du défaut — vrai dans une campagne contrôlée, faux sur
+une machine en service.
+
+L'expérience à mener : grille complète d'estimateurs, seuil de distance **balayé** plutôt que
+fixé, évaluation en bout de chaîne, détail par panne.
+
+Deux règles à y inscrire :
+- tout gain apporté par un petit `k` doit être retesté sans répliques, sinon on mesure le plan
+  d'expérience ;
+- l'erreur d'estimation ne sert que de présélection, jamais de conclusion.
+
+#### X4 — Hold-out sur le domaine de fonctionnement · ½ j
+
+Même jeu simulé, **découpage différent** : au lieu d'un tirage aléatoire sur les 5000 exemples,
+retirer une région entière du domaine — par exemple `T_sink > 48 °C` — entraîner sur le reste,
+tester dessus.
+
+C'est le geste qui a tout révélé sur les données mesurées, appliqué cette fois au jeu simulé.
+**Si le score s'effondre, le 99,6 % est en partie de la mémorisation de points de
+fonctionnement.** Aucune donnée ni modèle nouveau.
+
+#### X5 — Simulé aux conditions NIST, testé sur le réel · 2 j
+
+Le recouvrement de domaine de 5,3 % est **un obstacle de sampling, pas de physique** : il
+découle des plages de tirage choisies, pas d'une limite du simulateur. Vérification faite,
+celui-ci tourne aux conditions NIST et produit des valeurs plausibles — mais qui ne collent pas :
 
 | Conditions | `P_evap` | `P_cond` | τ | COP |
 |---|---|---|---|---|
@@ -249,52 +275,34 @@ plausibles — mais qui ne collent pas :
 | **Mesuré NIST, sain** | **10,5 bar** | **25,7 bar** | **2,37** | **3,41** |
 
 Aspiration surestimée de 35 %, taux de compression sous-estimé de 28 %, COP optimiste de 27 %.
-**Le simulateur est systématiquement optimiste** — aucune des expériences précédentes ne
-pouvait le dire.
+**Le simulateur est systématiquement optimiste.**
 
 L'expérience : élargir les plages d'échantillonnage, régénérer un jeu simulé aux conditions
-NIST, entraîner dessus, tester sur les essais réels. Quatre classes se correspondent —
-obstruction condenseur, débit intérieur, sous-charge, surcharge.
-
-C'est **la seule expérience qui teste si le simulateur décrit la réalité**, et donc la seule
-qui donne une valeur au volet simulé au-delà de la démonstration.
-
-#### A — Meilleure référence saine à budget contraint · 1 j
-
-La seule piste qui vise une **amélioration** plutôt qu'une mesure.
-
-Dans le protocole du budget de calibration, la référence saine est toujours un kNN, y compris
-à `n = 1` ou `n = 5`. Or un kNN sur cinq points ne sait pas interpoler, il recopie le voisin le
-plus proche — d'où les intervalles énormes à petit `n`, où un tirage malheureux fait pire que
-pas de calibration du tout.
-
-Un modèle paramétrique — le polynôme d'ordre 2 du NIST, ou une forme guidée par la physique du
-pincement — devrait le dominer précisément là où les données sont rares.
-
-**Ce qui n'a jamais été testé** : l'exploration des modèles de référence a comparé kNN,
-polynôme et forêt aléatoire **à `n = tous`**. Jamais à `n = 10` ou `n = 50`.
-
-Enjeu : si un polynôme atteint 80 % du gain avec 50 essais là où le kNN plafonne à 49 %, la
-conclusion publiable passe de « il faut couvrir tout le domaine » à **« 50 essais bien
-exploités suffisent »**. C'est un résultat industriel directement actionnable.
-
-Et si ça échoue, la conclusion reste publiable : *quatre estimateurs de référence comparés à
-budget contraint, aucun ne bat le plus proche voisin.*
+NIST, entraîner dessus, tester sur les essais réels. Quatre classes se correspondent. C'est la
+seule expérience qui teste si le simulateur décrit la réalité.
 
 ### Ordre recommandé
 
 ```
-E5  ->  E6  ->  E1  ->  A  ->  E2      en parallèle de  P4 -> P5 -> P6
+X2  ->  X3  ->  X4  ->  X5        en parallèle de  P4 -> P5 -> P6
 ```
 
-**E5 d'abord** : demi-journée, aucun risque, et la seule qui produise à coup sûr un résultat
-positif exploitable. Puis **E6**, qui répond à la question du domaine et se nourrit de E5. Puis
-**E1**, dont le résultat conditionne tout le discours sur le volet simulé. Puis **A**, la seule qui vise une amélioration. **E2** en dernier, la plus lourde.
+**X2 d'abord** : demi-journée, répond à l'objection du domaine, et se nourrit de X1 qui dit
+quelles pannes sont dures. Puis **X3**, la seule qui vise une amélioration — et qui doit
+confirmer ou infirmer que le 0,602 tombe à 0,511 sans répliques. Puis **X4**, dont le résultat
+conditionne tout le discours sur le volet simulé. **X5** en dernier, la plus lourde.
 
-Deux de ces quatre expériences produiront vraisemblablement des résultats **négatifs** — E1 et
-E2. C'est leur intérêt : un résultat négatif mesuré et quantifié vaut mieux qu'un chiffre jamais
-confronté. Mais il faut le savoir avant de commencer, et ne pas les lancer en espérant un
-chiffre flatteur.
+X4 et X5 produiront vraisemblablement des résultats **négatifs**. C'est leur intérêt : un
+résultat négatif mesuré vaut mieux qu'un chiffre jamais confronté. Mais il faut le savoir avant
+de les lancer, et ne pas en espérer un chiffre flatteur.
+
+### Règle d'arrêt
+
+Chaque expérience menée jusqu'ici en a suggéré une nouvelle. C'est sain, et c'est sans fin.
+
+**Le périmètre du grand 1 est figé à X2–X5 et P4–P6.** Toute question soulevée par ces
+expériences part dans une liste « suite », pas dans le périmètre courant. Sans cette règle, le
+projet ne sera jamais livré.
 
 ### Fin du grand 1
 
