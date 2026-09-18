@@ -5,7 +5,7 @@ modules are on that path.
 
 ```
 physics/simulator.py → fdd/features.py → studies/synthetic/generator.py → fdd/ml_models.py → fdd/inference.py → api/app.py → web/
-     R410A cycle         24 features          labelled samples              GradientBoosting     FDDEngine        FastAPI      React
+     R410A cycle         24 features          labelled samples              sklearn.Pipeline     FDDEngine        FastAPI      React
 ```
 
 ## Layers
@@ -77,7 +77,7 @@ A split along that seam is the natural next refactor.
 | `tests/test_packages.py`, `tests/test_ml_models.py` | layering guards |
 | `tests/test_api.py` | route contracts, schema rejection (skipped without a model) |
 
-42 tests today.
+70 tests today.
 
 ## Training data
 
@@ -87,7 +87,8 @@ The training set is **entirely synthetic**. No measured data feeds the model.
 points uniformly from `T_source ∈ (-10, 20) °C`, `T_sink ∈ (30, 55) °C`,
 `speed_ratio ∈ (0.3, 1.0)`, injects a fault by degrading physical parameters in
 `simulator.py` (heat-exchanger `UA`, airflow ratio, refrigerant charge), then adds Gaussian
-measurement noise. The result is written to `outputs/synthetic/dataset.csv` — 5000 rows,
+measurement noise and **recomputes derived quantities** (`COP`, ratios, pinches, residuals)
+from the noisy sensors. The result is written to `outputs/synthetic/dataset.csv` — 5000 rows,
 2000 `Normal` and 3000 faulted across 5 fault classes — and that CSV is what both the
 trainer and the dashboard routes read.
 
@@ -113,8 +114,9 @@ bias.
 
 ## External validation: published NIST datasets
 
-Validation against measured data has not been done. The relevant experiments are public
-and free — NIST publications are US government work.
+Validation against measured data **has been done** (leave-one-machine-out on the NIST 14/16
+SEER campaign). Method and numbers: [NIST_FINDINGS](NIST_FINDINGS.md). The relevant
+experiments are public and free — NIST publications are US government work.
 
 | Source | Mode | Faults imposed | Relevance |
 |---|---|---|---|
@@ -137,8 +139,8 @@ Two traps when using it:
 
 ## Gotcha: the committed model is a pickle
 
-`models/synthetic/classifier.joblib` is a pickled scikit-learn `GradientBoosting` estimator
-tracked in git, so **the `scikit-learn==1.6.1` pin in `requirements.txt` is load-bearing**.
+`models/synthetic/classifier.joblib` is a pickled scikit-learn `Pipeline` (`StandardScaler`
++ Random Forest) tracked in git, so **the `scikit-learn==1.6.1` pin in `requirements.txt` is load-bearing**.
 
 Installing a different minor version makes the model fail to unpickle, and every test that
 touches `FDDEngine` fails with an error that looks nothing like a version problem:

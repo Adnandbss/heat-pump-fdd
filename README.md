@@ -1,6 +1,6 @@
 # Heat Pump Fault Detection & Diagnostics
 
-Closed-loop FDD for a vapour-compression heat pump: CoolProp R410A cycle → 24 features (including residuals vs a healthy cycle) → calibrated Gradient Boosting → FastAPI + React dashboard.
+Closed-loop FDD for a vapour-compression heat pump: CoolProp R410A cycle → 24 features (including residuals vs a healthy cycle) → Random Forest (`sklearn.Pipeline`) → FastAPI + React dashboard.
 
 Built as a **portfolio product**, not a lab notebook: a recruiter can clone, run, and watch the model switch from `Normal` to `Condenser_Fouling` when condenser fouling is injected.
 
@@ -36,7 +36,7 @@ Fouling, fan faults and refrigerant leaks all hurt COP, but the signatures overl
 
 - Simulates physically consistent R410A cycles (CoolProp).
 - Decouples condenser **fouling** (pinch / subcooling) from **fan** faults (airflow, compressor work, discharge temperature).
-- Serves a calibrated classifier so Diagnosis / Live FDD show readable probabilities.
+- Serves a classifier so Diagnosis / Live FDD show readable probabilities.
 
 **For PM interviews:** the unit of value is a decision — fault class + confidence — not a notebook metric.  
 **For ML interviews:** the interesting part is the physics features and class overlap, not stacking more estimators. Scores below are on **synthetic** data.
@@ -47,7 +47,7 @@ Fouling, fan faults and refrigerant leaks all hurt COP, but the signatures overl
 flowchart LR
     sim[HeatPumpSimulator]
     feat[24 features]
-    model[GradientBoosting.joblib]
+    model[classifier.joblib]
     api[FastAPI]
     web[React Vite]
 
@@ -58,7 +58,7 @@ flowchart LR
 |---|---|
 | `src/physics/simulator.py` | Cycle model, CoolProp R410A, fault physics |
 | `src/studies/synthetic/generator.py` | 5000 labelled operating points |
-| `src/fdd/ml_models.py` | Random Forest + tuned / calibrated Gradient Boosting |
+| `src/fdd/ml_models.py` | Random Forest (shipped) + tuned / calibrated Gradient Boosting |
 | `src/fdd/inference.py` | Load the model and diagnose a feature vector |
 | `src/service.py` | Streamlit client: API first, local fallback |
 | `api/app.py` | `GET /health`, `POST /predict`, `POST /simulate`, `POST /live`, `GET /api/*` |
@@ -79,14 +79,25 @@ flowchart LR
 
 ## Results
 
-Hold-out on 5000 CoolProp cycles (24 features, 30% test, Gradient Boosting + GridSearch + probability calibration):
+Hold-out on 5000 CoolProp cycles (24 features). Split: 2625 train / 875 val / 1500 test
+(52.5 / 17.5 / 30 %). Scaler and classifier live in a `sklearn.Pipeline`. The model is
+**selected on val**, never on test. Interval: 95 % Wilson on the 1500-row test set.
 
-| Model | Accuracy | F1 macro |
-|---|---|---|
-| Gradient Boosting (calibrated) | 99.6% | 0.994 |
-| Random Forest | 99.6% | 0.994 |
+| Model | Test accuracy | 95 % CI | Test F1 | Val F1 |
+|---|---|---|---|---|
+| **Random Forest (shipped)** | **91.9 %** | 90.4 – 93.1 | 0.918 | 0.916 |
+| Gradient Boosting (calibrated) | 91.9 % | 90.4 – 93.2 | 0.915 | 0.914 |
 
-Per-class F1: `Normal` 1.00, `Condenser_Fouling` 1.00, `Condenser_Fan_Fault` 1.00, `Refrigerant_Undercharge` 0.98, `Evaporator_Fouling` 0.99, `Evaporator_Fan_Fault` 0.99.
+The two models are tied on val (ΔF1 = 0.002). Random Forest is shipped: cheaper inference,
+readable importances. 5-fold CV on **train only**: F1 0.914 ± 0.009.
+
+Per-class F1 (test): `Condenser_Fan_Fault` 1.00, `Evaporator_Fan_Fault` 0.97, `Normal` 0.94,
+`Refrigerant_Undercharge` 0.88, `Evaporator_Fouling` 0.87, `Condenser_Fouling` 0.85.
+
+The previous 99.6 % was invalid: `d_COP` equalled the detection label (`== 0` on all 2000
+fault-free rows, and on no other class). Derived quantities are now recomputed from the
+noisy sensors; `d_COP` importance falls from 0.30 to 0.034. Logged in
+`outputs/results.csv` (`X0` / `holdout-test`).
 
 These numbers measure **how cleanly the simulator separates faults**, not field-labelled HVAC data. The demo still has to show that fouling is not predicted as a fan fault.
 
@@ -101,7 +112,7 @@ The residual design was checked against the NIST *FDD Heat Pump Cooling* campaig
 
 Every residual row above uses a healthy reference calibrated on the **target** machine. Rebuilt from the training machine only — a genuinely unknown unit — residuals-only drops to **0.318** (F1 macro 0.290), against 0.251 for the majority class. A second-order polynomial with indoor dew point, the form NIST itself uses, reaches 0.302; a random forest 0.265. No reference model tried lifts that ceiling.
 
-Two things follow. **Residuals nearly double detection when the healthy reference is calibrated on the target machine** (0.333 → 0.602). And **a random split scores 0.95 where an honest one scores 0.60** — so any accuracy figure here, including the 99.6% above, has to name its validation protocol.
+Two things follow. **Residuals nearly double detection when the healthy reference is calibrated on the target machine** (0.333 → 0.602). And **a random split scores 0.95 where an honest one scores 0.60** — so any accuracy figure here, including the 91.9 % above, has to name its validation protocol.
 
 ### What calibration costs
 

@@ -269,41 +269,49 @@ sous-charge, ventilateur de condenseur, ventilateur d'évaporateur. Deux autres 
 fuite de clapet — sont **déclarées avec une branche d'injection mais jamais générées**. Ce sont
 des classes fantômes, et leur sort est une décision documentée plutôt que laissée en l'état.
 
-## Le bruit de mesure, et une incohérence qui compte
+## Le bruit de mesure
 
 Un bruit gaussien est ajouté aux grandeurs qu'un capteur mesure : 0,5 °C sur les températures,
 2 % sur les pressions, 3 % sur les puissances. Il ne modélise ni dérive de capteur, ni biais,
 ni régime transitoire.
 
-**Mais il est appliqué après le calcul des grandeurs dérivées, et celles-ci ne sont pas
-recalculées.** Mesuré sur les 5000 exemples : **aucune ligne** ne vérifie
-$\texttt{pressure\_ratio} = P_{cond}/P_{evap}$, ni $COP = Q_{cond}/W_{comp}$.
+**Les grandeurs dérivées sont recalculées après ce bruit**, et la référence saine des résidus
+`d_*` est bruitée indépendamment. Sur les 5000 exemples, chaque ligne vérifie
+$\texttt{pressure\_ratio} = P_{cond}/P_{evap}$ et $COP = Q_{cond}/W_{comp}$.
 
-La portée de ce défaut apparaît en regardant ce dont le modèle se sert réellement — voir la
-partie suivante.
+Avant cette correction, `d_COP` n'était bruité d'aucun côté : il valait exactement 0 pour les
+2000 essais sains, et pour eux seuls. Un arbre à une feuille séparait défaut de sain à 100 %.
+C'était l'étiquette de détection en clair dans le vecteur d'entrée. Le 99,6 % publié alors
+était invalide. Le chiffre honnête, après fermeture des quatre fuites du pipeline, est
+**91,9 % [90,4 – 93,1]** (hold-out, sélection sur val).
+
+La portée de ce qui reste dans le modèle — partie suivante.
 
 # 4. Le modèle — `src/fdd/ml_models.py` et `inference.py`
 
 ## Le choix d'algorithme, et pourquoi il compte peu
 
-Gradient Boosting calibré en probabilité, sélectionné par recherche sur grille et validation
-croisée stratifiée.
+Forêt aléatoire, sélectionnée sur le jeu de validation. Gradient Boosting calibré en
+probabilité, à égalité sur val (ΔF1 = 0,002) — départagé sur l'inférence et
+l'interprétabilité. Scaler et classifieur dans un `sklearn.Pipeline`. Split 2625 / 875 /
+1500 (train / val / test). Le test ne sert jamais à choisir.
 
-| Modèle | Accuracy | F1 macro |
-|---|---|---|
-| Gradient Boosting calibré | 99,6 % | 0,994 |
-| Forêt aléatoire | 99,6 % | 0,994 |
+| Modèle | Accuracy test | IC 95 % | F1 test | F1 val |
+|---|---|---|---|---|
+| **Forêt aléatoire (livré)** | **91,9 %** | 90,4 – 93,1 | 0,918 | 0,916 |
+| Gradient Boosting calibré | 91,9 % | 90,4 – 93,2 | 0,915 | 0,914 |
 
-**Pourquoi pas douze algorithmes.** Sur des données simulées où les classes sont déjà nettement
-séparées, un modèle de plus n'apporte rien de mesurable — les deux candidats sont à égalité.
-Empiler des algorithmes aurait donné une **illusion de rigueur**. Le travail utile était dans
-la validation.
+Validation croisée 5 plis **sur le train seulement** : F1 0,914 ± 0,009.
+
+**Pourquoi pas douze algorithmes.** Les deux candidats sont à égalité. Empiler des algorithmes
+aurait donné une **illusion de rigueur**. Le travail utile était dans le protocole : ne pas
+choisir sur le test, publier un intervalle.
 
 ![Matrice de confusion, jeu simulé](../outputs/synthetic/confusion_matrix.png)
 
-La matrice de confusion montre une séparation quasi parfaite. C'est précisément ce résultat que
-la suite du document met en doute — non pas parce qu'il serait faux, mais parce qu'il mesure
-autre chose que ce qu'on croit.
+La matrice de confusion n'est plus quasi parfaite. Les ventilateurs restent séparés (F1 1,00 et
+0,97) ; les deux encrassements se confondent encore (0,85 et 0,87). C'est de la physique, pas
+une fuite.
 
 ## Ce dont le modèle se sert réellement
 
@@ -312,27 +320,23 @@ autre chose que ce qu'on croit.
 Cette figure est la plus instructive du jeu simulé, pour deux raisons.
 
 **D'abord, 18 des 24 grandeurs ont une importance quasi nulle.** Le modèle en utilise six. Le
-contrat de features est donc largement surdimensionné, ce qui prépare une simplification.
+contrat de features est donc largement surdimensionné, ce qui prépare une simplification (P5).
 
-**Ensuite, et c'est plus gênant : les trois grandeurs les plus importantes ne portent aucun
-bruit de mesure.**
+**Ensuite, `d_COP` n'est plus le pilier de la décision.**
 
-| Rang | Grandeur | Importance | Bruitée ? |
-|---|---|---|---|
-| 1 | `d_COP` | 0,300 | non — le COP n'est jamais bruité |
-| 2 | `delta_T_cond` | 0,293 | non — dérivée calculée avant bruitage |
-| 3 | `delta_T_evap` | 0,171 | non — idem |
-| 4 | `d_superheat` | 0,092 | oui |
-| 5 | `superheat` | 0,076 | oui |
-| 6 | `d_T_discharge` | 0,064 | oui |
+| Rang | Grandeur | Importance |
+|---|---|---|
+| 1 | `delta_T_evap` | 0,149 |
+| 2 | `delta_T_cond` | 0,147 |
+| 3 | `d_T_discharge` | 0,130 |
+| 4 | `superheat` | 0,118 |
+| 5 | `subcooling` | 0,085 |
+| 6 | `d_W_comp` | 0,075 |
+| 9 | `d_COP` | **0,034** |
 
-**76,4 % de l'importance du modèle repose sur des grandeurs exemptes de bruit**, alors que
-leurs composantes, elles, sont bruitées. Le modèle dispose donc simultanément d'une version
-propre et d'une version bruitée des mêmes quantités.
-
-Une part du 99,6 % provient ainsi d'une information qui n'existerait pas sur une machine
-réelle. Ce défaut est identifié, chiffré, et sa correction est planifiée — au même titre que
-les quatre défauts de physique de la partie 1.
+Avant correction, `d_COP` + `delta_T_cond` + `delta_T_evap` portaient 76 % de l'importance, et
+les trois étaient exempts de bruit. Après recalcul des dérivées, `d_COP` tombe à 3,4 %. Les
+pinches restent utiles — ils sont désormais cohérents avec les températures bruitées.
 
 ## `FDDEngine` — charger et diagnostiquer, rien d'autre
 
@@ -671,9 +675,9 @@ corrections de physique et un résultat que la simulation seule ne pouvait pas d
 
 ## Ce qu'il ne fait pas
 
-- Il ne détecte pas les pannes à 99 % sur le terrain : ce chiffre mesure la séparabilité des
-  signatures à l'intérieur du modèle physique, et une partie en est même imputable à une
-  information non bruitée qui n'existerait pas sur une machine réelle.
+- Il ne détecte pas les pannes à 99 % sur le terrain : 91,9 % [90,4 – 93,1] mesure la
+  séparabilité des signatures à l'intérieur du modèle physique, en hold-out, après fermeture
+  d'une fuite d'étiquette qui affichait 99,6 %.
 - Il ne fonctionne pas sur une machine inconnue sans calibration préalable.
 - Il ne prédit pas les pannes futures : les essais disponibles sont stationnaires, sans axe du
   temps. Leur en inventer un produirait exactement le genre de chiffre que ce travail s'attache
@@ -681,12 +685,12 @@ corrections de physique et un résultat que la simulation seule ne pouvait pas d
 
 ## La formulation défendable
 
-> Les signatures de défaut sont séparables à 99,6 % en validation croisée sur données simulées.
-> Confrontée à des essais mesurés indépendants, la méthode des résidus fait passer la détection
-> de 0,33 à 0,60 lorsque la référence saine est calibrée sur la machine cible — contre 0,32
-> sans cette calibration, et 0,95 en validation aléatoire, laquelle surestime largement. Le
-> coût de cette calibration a été mesuré : il faut couvrir le domaine de fonctionnement, pas
-> quelques points.
+> Les signatures de défaut sont séparables à 91,9 % [90,4 – 93,1] en hold-out sur données
+> simulées (sélection sur val, `Pipeline` sklearn). Confrontée à des essais mesurés
+> indépendants, la méthode des résidus fait passer la détection de 0,33 à 0,60 lorsque la
+> référence saine est calibrée sur la machine cible — contre 0,32 sans cette calibration, et
+> 0,95 en validation aléatoire, laquelle surestime largement. Le coût de cette calibration a
+> été mesuré : il faut couvrir le domaine de fonctionnement, pas quelques points.
 
 ---
 
@@ -837,22 +841,22 @@ COP = \frac{Q_{cond}}{W_{comp}}$$
 Le facteur 1,10 couvre les pertes mécaniques et électriques. La détente $h_4 = h_3$ est
 supposée isenthalpique, hypothèse standard pour un détendeur.
 
-### B.7 Bruit de mesure, et une incohérence connue
+### B.7 Bruit de mesure
 
 Bruit gaussien : $\pm 0{,}5$ °C sur les températures, 2 % sur les pressions, 3 % sur les
-puissances. Il est appliqué **après** le calcul des grandeurs dérivées, qui ne sont pas
-recalculées.
+puissances. Il est appliqué aux capteurs, **puis** les grandeurs dérivées sont recalculées, et
+la référence saine des `d_*` est bruitée indépendamment.
 
 | Grandeur dérivée | Lignes cohérentes avec ses entrées |
 |---|---|
-| `pressure_ratio`, `compression_ratio` | 0 % |
-| `COP` | 0 % |
-| `delta_T_evap`, `delta_T_cond` | 0 % |
+| `pressure_ratio`, `compression_ratio` | 100 % |
+| `COP` | 100 % |
+| `delta_T_evap`, `delta_T_cond` | 100 % |
 
-Aucune ligne ne vérifie $\texttt{pressure\_ratio} = P_{cond}/P_{evap}$. Comme ces grandeurs
-portent **76,4 % de l'importance du modèle** (partie 4), une part du taux de réussite provient
-d'une information indisponible sur une machine réelle. Anomalie connue, non corrigée à ce jour,
-planifiée.
+Avant cette correction, `d_COP` valait exactement zéro pour les 2000 essais sains et pour eux
+seuls. Trois autres fuites (normalisation avant la CV, CV sur le jeu complet, sélection sur le
+test) sont fermées par un `Pipeline` sklearn, une CV sur le train, et un split train / val /
+test. Gardes dans `tests/test_pipeline_integrity.py`.
 
 ## C. Méthodes de validation
 
@@ -909,7 +913,7 @@ retrouvés exactement.
 
 | Chiffre | Où |
 |---|---|
-| 99,6 % simulé | `main_analysis.py` |
+| 91,9 % [90,4 – 93,1] simulé | `main_analysis.py`, `outputs/results.csv` (X0 / holdout-test) |
 | 0,95 / 0,602 / 0,318 | `EDA/EDA_NIST_model.ipynb`, `EDA_NIST_reference.ipynb` |
 | Accord des signes 20/22 | `EDA/EDA_NIST_model.ipynb` |
 | Budget de calibration | `EDA/EDA_NIST_calibration.ipynb` |
