@@ -231,3 +231,96 @@ def test_feature_vector_and_diagnosis_schemas():
     from pydantic import ValidationError
     with pytest.raises(ValidationError):
         FeatureVector.model_validate(leaked)
+
+
+class _ToyEngine:
+    class_names = ["Normal", "Condenser_Fouling"]
+    feature_names = ["COP"]
+    metadata = {"model_name": "toy", "f1": 1.0, "accuracy": 1.0}
+    classifier = type("C", (), {"model_type": "toy"})()
+
+
+def test_create_app_does_not_load_the_joblib(tmp_path):
+    from api.main import create_app
+    from api.settings import Settings
+
+    app = create_app(
+        Settings(
+            classifier_path=tmp_path / "absent.joblib",
+            metadata_path=tmp_path / "absent.json",
+            dataset_path=tmp_path / "absent.csv",
+        )
+    )
+    assert app.title == "Heat Pump FDD API"
+    assert getattr(app.state, "engine", "unset") == "unset"
+
+
+def test_health_runs_without_the_shipped_joblib(tmp_path):
+    from api.deps import get_engine
+    from api.main import create_app
+    from api.settings import Settings
+
+    app = create_app(
+        Settings(
+            classifier_path=tmp_path / "absent.joblib",
+            metadata_path=tmp_path / "absent.json",
+            dataset_path=tmp_path / "absent.csv",
+        )
+    )
+    app.dependency_overrides[get_engine] = lambda: _ToyEngine()
+    with TestClient(app) as client:
+        response = client.get("/health")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["model"] == "toy"
+    assert body["classes"] == ["Normal", "Condenser_Fouling"]
+
+
+def test_dataset_cache_invalidates_when_file_mtime_changes(tmp_path):
+    import time
+
+    from api.deps import get_engine
+    from api.main import create_app
+    from api.settings import Settings
+
+    csv = tmp_path / "dataset.csv"
+    header = "fault_type,COP,P_cond,P_evap,T_discharge,superheat,subcooling\n"
+    csv.write_text(header + "Normal,3.0,20,8,70,6,5\n")
+
+    app = create_app(
+        Settings(
+            classifier_path=tmp_path / "absent.joblib",
+            metadata_path=tmp_path / "absent.json",
+            dataset_path=csv,
+        )
+    )
+    app.dependency_overrides[get_engine] = lambda: _ToyEngine()
+    with TestClient(app) as client:
+        first = client.get("/api/dataset")
+        assert first.status_code == 200
+        assert first.json()["n_samples"] == 1
+        time.sleep(0.05)
+        csv.write_text(header + "Normal,3.0,20,8,70,6,5\nNormal,2.5,21,8,71,6,5\n")
+        second = client.get("/api/dataset")
+    assert second.status_code == 200
+    assert second.json()["n_samples"] == 2
+
+
+def test_openapi_declares_tags_and_operation_ids():
+    from api.app import app
+
+    spec = TestClient(app).get("/openapi.json").json()
+    assert {tag["name"] for tag in spec["tags"]} >= {"inference", "dashboard", "thermo"}
+    missing = []
+    for path, methods in spec["paths"].items():
+        for method, op in methods.items():
+            if method.startswith("x-"):
+                continue
+            if not op.get("operationId"):
+                missing.append(f"{method.upper()} {path}: no operationId")
+            if not op.get("tags"):
+                missing.append(f"{method.upper()} {path}: no tags")
+    assert not missing, missing
+    assert spec["paths"]["/health"]["get"]["operationId"] == "getHealth"
+    assert spec["paths"]["/predict"]["post"]["operationId"] == "predictFault"
