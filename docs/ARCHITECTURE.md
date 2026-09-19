@@ -4,7 +4,7 @@ How a reading goes from the simulated cycle to a fault label on the dashboard, a
 modules are on that path.
 
 ```
-physics/simulator.py → fdd/features.py → studies/synthetic/generator.py → fdd/ml_models.py → fdd/inference.py → api/app.py → web/
+physics/simulator.py → fdd/features.py → studies/synthetic/generator.py → fdd/ml_models.py → fdd/inference.py → api/main.py → web/
      R410A cycle         23 features          labelled samples              sklearn.Pipeline     FDDEngine        FastAPI      React
 ```
 
@@ -24,16 +24,21 @@ and the package guards in `test_packages.py`).
 | Module | Exports | Pulled in by |
 |---|---|---|
 | `src/physics/simulator.py` | `HeatPumpSimulator`, `CycleResults`, `RefrigerantProperties`, `HAS_COOLPROP` | `features`, `generator`, `scenarios` |
-| `src/physics/thermo_lab.py` | P-h / COP lab helpers | `api/app.py` |
-| `src/physics/thermodynamic_viz.py` | `ThermodynamicVisualizer`, `R410A`, `HAS_COOLPROP` | `api/app.py`, `thermo_lab` |
-| `src/fdd/features.py` | `FEATURE_COLUMNS` (23), `cycle_to_features`, `healthy_cycle` | `generator`, `scenarios`, `api/app.py` |
+| `src/physics/thermo_lab.py` | P-h / COP lab helpers | `api/routers/thermo.py` |
+| `src/physics/thermodynamic_viz.py` | `ThermodynamicVisualizer`, `R410A`, `HAS_COOLPROP` | `api/routers/thermo.py`, `thermo_lab` |
+| `src/fdd/features.py` | `FEATURE_COLUMNS` (23), `cycle_to_features`, `healthy_cycle` | `generator`, `scenarios`, `api/routers/dashboard.py` |
 | `src/fdd/ml_models.py` | `FDDClassifier`, `FDDPipeline` | `inference`, `main_analysis.py` |
-| `src/fdd/inference.py` | `FDDEngine` — load a model, diagnose a vector | `api/app.py` |
+| `src/fdd/inference.py` | `FDDEngine` — load a model, diagnose a vector | `api/deps.py` |
 | `src/studies/synthetic/generator.py` | `FaultDataGenerator`, `FaultType` | `scenarios` |
-| `src/studies/synthetic/scenarios.py` | `SyntheticScenarios` — `simulate_cycle`, `live_trace` | `api/app.py` |
-| `src/studies/synthetic/taxonomy.py` | `FAULT_PARAM_MAP`, `SCENARIOS` | `api/app.py` |
-| `src/studies/synthetic/paths.py` | `STUDY`, `DATASET_PATH`, `CLASSIFIER_PATH`, … | `api/app.py`, `inference`, `scripts/` |
-| `api/schemas.py` | Pydantic request/response contracts | `api/app.py` |
+| `src/studies/synthetic/scenarios.py` | `SyntheticScenarios` — `simulate_cycle`, `live_trace` | `api/deps.py` |
+| `src/studies/synthetic/taxonomy.py` | `FAULT_PARAM_MAP`, `SCENARIOS` | `api/routers/dashboard.py` |
+| `src/studies/synthetic/paths.py` | `STUDY`, `DATASET_PATH`, `CLASSIFIER_PATH`, … | `api/settings.py`, `inference`, `scripts/` |
+| `api/main.py` | `create_app()`, lifespan, CORS, exception handlers | `api/app.py` |
+| `api/settings.py` | `FDD_*` study, artefact paths, CORS origins | `api/main.py`, `api/deps.py` |
+| `api/deps.py` | `get_engine`, `get_scenarios`, mtime-keyed caches | routers |
+| `api/errors.py` | `ArtifactMissing` → 404, `UnknownFeature` / `InvalidFeatureVector` → 422 | `api/main.py` |
+| `api/schemas/inference.py` | Predict / simulate / live contracts | `api/routers/inference.py` |
+| `api/schemas/dashboard.py` | Dashboard and thermo contracts | `api/routers/dashboard.py`, `api/routers/thermo.py` |
 
 `FDDEngine` only diagnoses. Building a faulted cycle for the demo belongs to
 `SyntheticScenarios`, which wraps an engine — the same seam as the API surface below.
@@ -48,19 +53,24 @@ came from (`study`, `mode`, `source`, `taxonomy`).
 `src/fdd/visualization.py` (training-time plots), `main_analysis.py` (training entry point),
 `scripts/`.
 
-Removing any of these would not affect `api/app.py` or the React app. None of them is covered
+Removing any of these would not affect `api/main.py` or the React app. None of them is covered
 by a test, so **`pytest` stays green even if they are broken** — check them by hand
 (`python -c "import dashboard"`) after any move.
 
 ## API surface
 
-`api/app.py` serves two distinct concerns from one module:
+`create_app()` in `api/main.py` wires three routers. `api/app.py` is the ASGI entry
+(`uvicorn api.app:app`) and does not load the classifier at import.
 
-- **Inference** — `POST /predict`, `POST /simulate`, `POST /live`, `GET /health`
-- **Dashboard** — 17 `GET /api/*` routes (stats, overview, catalog, dataset, explore,
-  thermo, advanced) that exist to feed the React views
+- **Inference** (`api/routers/inference.py`) — `POST /predict`, `POST /simulate`, `POST /live`, `GET /health`
+- **Dashboard** (`api/routers/dashboard.py`) — stats, overview, catalog, dataset, explore, advanced
+- **Thermo** (`api/routers/thermo.py`) — P-h, COP, sweeps, ASHRAE
 
-A split along that seam is the natural next refactor.
+The engine is created in the lifespan (or lazily on first request) and injected with
+`Depends`. Dataset / class-count / saturation caches key on the source file mtime so a
+regenerated `outputs/<study>/dataset.csv` is served without restarting the process.
+Study, artefact paths, and CORS origins come from `Settings` (`FDD_STUDY`, `FDD_CORS_ORIGINS`,
+optional `FDD_*_PATH`).
 
 ## Tests
 
@@ -75,9 +85,7 @@ A split along that seam is the natural next refactor.
 | `tests/test_taxonomy.py` | `FAULT_PARAM_MAP` / `SCENARIOS` stay aligned |
 | `tests/test_paths.py` | artefact layout per study |
 | `tests/test_packages.py`, `tests/test_ml_models.py` | layering guards |
-| `tests/test_api.py` | route contracts, schema rejection (skipped without a model) |
-
-78 tests today.
+| `tests/test_api.py` | route contracts, schema rejection, toy-engine override, mtime cache |
 
 ## Training data
 
@@ -113,6 +121,11 @@ The 23 features include residuals against a healthy cycle (`d_COP`, `d_superheat
 `d_subcooling`, `d_T_discharge`, `d_W_comp`). That is the design choice that makes transfer
 to measured data plausible, since residuals cancel part of the unit- and sensor-specific
 bias.
+
+`GET /api/thermo/cop` plots a “Carnot” envelope that is not the heating-mode COP. The
+numerator is a fixed 20 °C source (as if that were the hot reservoir) and `T_amb` is the
+other side, then clipped. Heating Carnot is \(T_\mathrm{sink}/(T_\mathrm{sink}-T_\mathrm{source})\).
+The route is left as-is; fixing it is a separate change.
 
 ## External validation: published NIST datasets
 

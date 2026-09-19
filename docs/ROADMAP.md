@@ -183,7 +183,7 @@ metadata).
 | P3 | Quatre défauts de physique corrigés, accord des signes 12/16 → 20/22 | fait |
 | P4 | Décision D : produire la surcharge, trancher la fuite de clapet | **fait** |
 | P5 | Contrat de features : doublon retiré, résidus seuls mesurés et **rejetés** | **fait** |
-| P6 | Découper `api/app.py` — 4 routes d'inférence contre 17 de tableau de bord | à faire |
+| P6 | Découper `api/app.py` — 4 routes d'inférence contre 17 de tableau de bord | **fait** |
 
 ### 1B. Les expériences
 
