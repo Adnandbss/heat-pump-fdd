@@ -24,7 +24,7 @@ ChallengeStatus = Literal["On Going", "Complete"]
 
 
 class FeatureVector(BaseModel):
-    """24-d Li–Braun residual vector consumed by the classifier."""
+    """23-d cycle vector consumed by the classifier (P5: pressure_ratio dropped)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -45,7 +45,6 @@ class FeatureVector(BaseModel):
     COP: float
     delta_T_evap: float
     delta_T_cond: float
-    pressure_ratio: float
     capacity_ratio: float
     d_T_discharge: float
     d_superheat: float

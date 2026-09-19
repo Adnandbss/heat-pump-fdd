@@ -14,7 +14,8 @@ def test_moved_modules_import_from_their_layers():
     from src.physics.simulator import HeatPumpSimulator
     from src.studies.synthetic.generator import FaultDataGenerator
 
-    assert len(FEATURE_COLUMNS) == 24
+    assert len(FEATURE_COLUMNS) == 23
+    assert "pressure_ratio" not in FEATURE_COLUMNS
     assert FDDClassifier is not None
     assert HeatPumpSimulator is not None
     assert FaultDataGenerator is not None

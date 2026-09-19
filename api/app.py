@@ -82,7 +82,7 @@ from src.studies.synthetic.taxonomy import FAULT_PARAM_MAP, SCENARIOS
 app = FastAPI(
     title="Heat Pump FDD API",
     description="Diagnose vapour-compression heat-pump faults from cycle features or simulated conditions.",
-    version="1.0.0",
+    version="2.0.0",
 )
 app.add_middleware(
     CORSMiddleware,

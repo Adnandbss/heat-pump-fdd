@@ -51,6 +51,19 @@ def test_bounded_metrics_are_in_range():
             assert 0.0 <= v <= 1.0, f"{r['metric']} out of range: {r}"
 
 
+def test_p5_logged_four_contracts_on_two_protocols():
+    """The P5 decision is the comparative table — it must be in results.csv."""
+    rows = [
+        r for r in _rows()
+        if r["experiment"] == "P5" and r["metric"] == "accuracy" and r["label"] == "__global__"
+    ]
+    protocols = {r["protocol"] for r in rows}
+    features = {r["features"] for r in rows}
+    assert protocols >= {"holdout-test", "holdout-domain-Tset>48"}
+    assert features >= {"23-col", "residuals+conditions", "residuals", "23-col-minus-dead"}
+    assert len(rows) >= 8
+
+
 def test_log_replaces_atomically(tmp_path, monkeypatch):
     from tools import results as results_mod
 

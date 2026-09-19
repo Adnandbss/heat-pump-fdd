@@ -5,7 +5,7 @@ modules are on that path.
 
 ```
 physics/simulator.py → fdd/features.py → studies/synthetic/generator.py → fdd/ml_models.py → fdd/inference.py → api/app.py → web/
-     R410A cycle         24 features          labelled samples              sklearn.Pipeline     FDDEngine        FastAPI      React
+     R410A cycle         23 features          labelled samples              sklearn.Pipeline     FDDEngine        FastAPI      React
 ```
 
 ## Layers
@@ -26,7 +26,7 @@ and the package guards in `test_packages.py`).
 | `src/physics/simulator.py` | `HeatPumpSimulator`, `CycleResults`, `RefrigerantProperties`, `HAS_COOLPROP` | `features`, `generator`, `scenarios` |
 | `src/physics/thermo_lab.py` | P-h / COP lab helpers | `api/app.py` |
 | `src/physics/thermodynamic_viz.py` | `ThermodynamicVisualizer`, `R410A`, `HAS_COOLPROP` | `api/app.py`, `thermo_lab` |
-| `src/fdd/features.py` | `FEATURE_COLUMNS` (24), `cycle_to_features`, `healthy_cycle` | `generator`, `scenarios`, `api/app.py` |
+| `src/fdd/features.py` | `FEATURE_COLUMNS` (23), `cycle_to_features`, `healthy_cycle` | `generator`, `scenarios`, `api/app.py` |
 | `src/fdd/ml_models.py` | `FDDClassifier`, `FDDPipeline` | `inference`, `main_analysis.py` |
 | `src/fdd/inference.py` | `FDDEngine` — load a model, diagnose a vector | `api/app.py` |
 | `src/studies/synthetic/generator.py` | `FaultDataGenerator`, `FaultType` | `scenarios` |
@@ -69,7 +69,7 @@ A split along that seam is the natural next refactor.
 | File | Covers |
 |---|---|
 | `tests/test_thermo.py` | R410A saturation pressure, nominal cycle invariants |
-| `tests/test_features.py` | 24-column contract, fault signatures stay distinguishable |
+| `tests/test_features.py` | 23-column contract, fault signatures stay distinguishable |
 | `tests/test_scenarios.py` | `simulate_cycle`, `live_trace`, severity overrides |
 | `tests/test_inference.py` | `FDDEngine` predicts, and carries no study API |
 | `tests/test_taxonomy.py` | `FAULT_PARAM_MAP` / `SCENARIOS` stay aligned |
@@ -77,7 +77,7 @@ A split along that seam is the natural next refactor.
 | `tests/test_packages.py`, `tests/test_ml_models.py` | layering guards |
 | `tests/test_api.py` | route contracts, schema rejection (skipped without a model) |
 
-76 tests today.
+78 tests today.
 
 ## Training data
 
@@ -109,7 +109,7 @@ separable the fault signatures are inside the physical model** — not detection
 on hardware. There is no out-of-domain hold-out and no `GroupKFold` over operating
 conditions. Quote the metric accordingly.
 
-The 24 features are residuals against a healthy cycle (`d_COP`, `d_superheat`,
+The 23 features include residuals against a healthy cycle (`d_COP`, `d_superheat`,
 `d_subcooling`, `d_T_discharge`, `d_W_comp`). That is the design choice that makes transfer
 to measured data plausible, since residuals cancel part of the unit- and sensor-specific
 bias.

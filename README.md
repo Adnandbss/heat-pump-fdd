@@ -1,6 +1,6 @@
 # Heat Pump Fault Detection & Diagnostics
 
-Closed-loop FDD for a vapour-compression heat pump: CoolProp R410A cycle → 24 features (including residuals vs a healthy cycle) → Random Forest (`sklearn.Pipeline`) → FastAPI + React dashboard.
+Closed-loop FDD for a vapour-compression heat pump: CoolProp R410A cycle → 23 features (including residuals vs a healthy cycle) → Random Forest (`sklearn.Pipeline`) → FastAPI + React dashboard.
 
 Built as a **portfolio product**, not a lab notebook: a recruiter can clone, run, and watch the model switch from `Normal` to `Condenser_Fouling` when condenser fouling is injected.
 
@@ -46,7 +46,7 @@ Fouling, fan faults and refrigerant leaks all hurt COP, but the signatures overl
 ```mermaid
 flowchart LR
     sim[HeatPumpSimulator]
-    feat[24 features]
+    feat[23 features]
     model[classifier.joblib]
     api[FastAPI]
     web[React Vite]
@@ -80,21 +80,21 @@ flowchart LR
 
 ## Results
 
-Hold-out on 5000 CoolProp cycles (24 features). Split: 2625 train / 875 val / 1500 test
+Hold-out on 5000 CoolProp cycles (23 features). Split: 2625 train / 875 val / 1500 test
 (52.5 / 17.5 / 30 %). Scaler and classifier live in a `sklearn.Pipeline`. The model is
 **selected on val**, never on test. Interval: 95 % Wilson on the 1500-row test set.
 
 | Model | Test accuracy | 95 % CI | Test F1 | Val F1 |
 |---|---|---|---|---|
-| **Random Forest (shipped)** | **89.3 %** | 87.6 – 90.7 | 0.872 | 0.896 |
-| Gradient Boosting (calibrated) | 90.5 % | 88.9 – 91.9 | 0.882 | 0.899 |
+| **Random Forest (shipped)** | **89.3 %** | 87.7 – 90.8 | 0.871 | 0.905 |
+| Gradient Boosting | 89.9 % | 88.2 – 91.3 | 0.879 | 0.902 |
 
-The two models are tied on val (ΔF1 = 0.003). Random Forest is shipped: cheaper inference,
-readable importances. 5-fold CV on **train only**: F1 0.881 ± 0.017.
+The two models are tied on val (ΔF1 = 0.002). Random Forest is shipped: cheaper inference,
+readable importances. 5-fold CV on **train only**: F1 0.886 ± 0.017.
 
-Per-class F1 (test): `Condenser_Fan_Fault` 0.97, `Evaporator_Fan_Fault` 0.97, `Normal` 0.94,
-`Refrigerant_Overcharge` 0.88, `Refrigerant_Undercharge` 0.84, `Evaporator_Fouling` 0.79,
-`Condenser_Fouling` 0.71.
+Per-class F1 (test): `Condenser_Fan_Fault` 0.96, `Evaporator_Fan_Fault` 0.97, `Normal` 0.94,
+`Refrigerant_Overcharge` 0.87, `Refrigerant_Undercharge` 0.83, `Evaporator_Fouling` 0.79,
+`Condenser_Fouling` 0.74.
 
 Adding overcharge (and dropping the unmodelled valve-leak ghost class) moved the headline
 from 91.9 % [90.4 – 93.1] on six classes to **89.3 % [87.6 – 90.7]** on seven. Overcharge is

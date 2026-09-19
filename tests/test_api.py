@@ -19,7 +19,8 @@ def test_normal_point_is_diagnosed():
     )
     assert payload["diagnosis"]["label"] in engine.class_names
     assert 0.0 <= payload["diagnosis"]["confidence"] <= 1.0
-    assert len(payload["features"]) == 24
+    assert len(payload["features"]) == 23
+    assert "pressure_ratio" not in payload["features"]
 
 
 @pytest.mark.skipif(not MODEL_PATH.exists(), reason="Train the model with main_analysis.py first")
@@ -132,7 +133,11 @@ def test_ml_dashboard_payloads():
     assert len(titles) == 7
     assert "Refrigerant_Overcharge" in titles
     assert "Compressor_Valve_Leak" not in titles
-    assert "superheat" in catalog.json()["features"]
+    feats = catalog.json()["features"]
+    assert "superheat" in feats
+    assert "pressure_ratio" not in feats
+    assert len(feats) == 23
+    assert client.get("/openapi.json").json()["info"]["version"] == "2.0.0"
 
     models = client.get("/api/models")
     assert models.status_code == 200
@@ -221,3 +226,8 @@ def test_feature_vector_and_diagnosis_schemas():
     assert parsed.diagnosis.label == "Normal"
     assert FeatureVector.model_validate(payload["features"]).COP > 0
     Diagnosis.model_validate(payload["diagnosis"])
+    leaked = dict(payload["features"])
+    leaked["pressure_ratio"] = 3.2
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError):
+        FeatureVector.model_validate(leaked)

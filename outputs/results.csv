@@ -1,5 +1,26 @@
 experiment,protocol,reference,features,model,label,metric,value,n,note
+P5,holdout-domain-Tset>48,simulated,23-col,random-forest,__global__,accuracy,0.896047,1366,"95% Wilson CI [0.879, 0.911]; F1=0.873"
+P5,holdout-domain-Tset>48,simulated,23-col,random-forest,__global__,f1,0.873186,1366,macro; selected on val
+P5,holdout-domain-Tset>48,simulated,23-col-minus-dead,random-forest,__global__,accuracy,0.898243,1366,"95% Wilson CI [0.881, 0.913]; F1=0.878"
+P5,holdout-domain-Tset>48,simulated,23-col-minus-dead,random-forest,__global__,f1,0.877528,1366,macro; selected on val
+P5,holdout-domain-Tset>48,simulated,residuals,random-forest,__global__,accuracy,0.764275,1366,"95% Wilson CI [0.741, 0.786]; F1=0.721"
+P5,holdout-domain-Tset>48,simulated,residuals,random-forest,__global__,f1,0.721392,1366,macro; selected on val
+P5,holdout-domain-Tset>48,simulated,residuals+conditions,random-forest,__global__,accuracy,0.770132,1366,"95% Wilson CI [0.747, 0.792]; F1=0.727"
+P5,holdout-domain-Tset>48,simulated,residuals+conditions,random-forest,__global__,f1,0.727024,1366,macro; selected on val
+P5,holdout-test,simulated,23-col,random-forest,__global__,accuracy,0.893333,1500,"95% Wilson CI [0.877, 0.908]; F1=0.871"
+P5,holdout-test,simulated,23-col,random-forest,__global__,f1,0.871127,1500,macro; selected on val
+P5,holdout-test,simulated,23-col-minus-dead,random-forest,__global__,accuracy,0.895333,1500,"95% Wilson CI [0.879, 0.910]; F1=0.875"
+P5,holdout-test,simulated,23-col-minus-dead,random-forest,__global__,f1,0.875204,1500,macro; selected on val
+P5,holdout-test,simulated,residuals,random-forest,__global__,accuracy,0.822667,1500,"95% Wilson CI [0.803, 0.841]; F1=0.783"
+P5,holdout-test,simulated,residuals,random-forest,__global__,f1,0.782961,1500,macro; selected on val
+P5,holdout-test,simulated,residuals+conditions,random-forest,__global__,accuracy,0.822667,1500,"95% Wilson CI [0.803, 0.841]; F1=0.785"
+P5,holdout-test,simulated,residuals+conditions,random-forest,__global__,f1,0.78516,1500,macro; selected on val
+X0,cv-train,simulated,23-col,random-forest,__global__,f1,0.886283,2625,"5-fold stratified, train only, std=0.0173"
 X0,cv-train,simulated,24-col,random-forest,__global__,f1,0.881119,2625,"5-fold stratified, train only, std=0.0170"
+X0,holdout-test,simulated,23-col,gradient-boosting,__global__,accuracy,0.898667,1500,"95% Wilson CI [0.882, 0.913]; selected on val"
+X0,holdout-test,simulated,23-col,gradient-boosting,__global__,f1,0.878874,1500,macro; selected on val; 23-col
+X0,holdout-test,simulated,23-col,random-forest,__global__,accuracy,0.893333,1500,"95% Wilson CI [0.877, 0.908]; selected on val; CV-train F1=0.886±0.017; P5 dropped pressure_ratio"
+X0,holdout-test,simulated,23-col,random-forest,__global__,f1,0.871127,1500,macro; selected on val; 23-col
 X0,holdout-test,simulated,24-col,gradient-boosting,__global__,accuracy,0.905333,1500,"95% Wilson CI [0.889, 0.919]; selected on val"
 X0,holdout-test,simulated,24-col,gradient-boosting,__global__,f1,0.882277,1500,macro; selected on val
 X0,holdout-test,simulated,24-col,random-forest,__global__,accuracy,0.892667,1500,"95% Wilson CI [0.876, 0.907]; selected on val; CV-train F1=0.881±0.017"

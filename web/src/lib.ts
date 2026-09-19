@@ -44,7 +44,7 @@ export const PAGE_COPY: Record<string, { eyebrow: string; title: string; subtitl
   models: {
     eyebrow: "Models",
     title: "Hold-out performance",
-    subtitle: "Synthetic 5000-cycle set · 24 residual features",
+    subtitle: "Synthetic 5000-cycle set · 23 residual features",
   },
   thermo: {
     eyebrow: "Thermodynamics",

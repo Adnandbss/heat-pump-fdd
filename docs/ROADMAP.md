@@ -113,12 +113,12 @@ Li & Braun. Décision de fond, pas de refactor.
 **C bis. Les grandeurs dérivées** — **fait, absorbé par P0.** Le bruit est appliqué aux
 capteurs, puis `COP`, `pressure_ratio`, `compression_ratio`, `delta_T_*` et `capacity_ratio`
 sont recalculés, et la référence saine des `d_*` est bruitée indépendamment. Un test
-permanent vérifie `pressure_ratio = P_cond / P_evap` et qu'aucun résidu n'est identiquement
-nul sur une classe. Retirer `pressure_ratio` du contrat (doublon de `compression_ratio`)
-reste **P5**.
+permanent vérifie `compression_ratio = P_cond / P_evap` et qu'aucun résidu n'est identiquement
+nul sur une classe. `pressure_ratio` (doublon) a été retiré en **P5**.
 
-**C. `FEATURE_COLUMNS` en résidus seuls ?** Il mélange aujourd'hui 19 grandeurs absolues et 5
-résidus. La mesure dit que ce mélange nuit au transfert.
+**C. `FEATURE_COLUMNS` en résidus seuls ?** — **mesuré, non appliqué (P5).** Sur NIST, les
+résidus seuls battent brutes + résidus parce qu'il y a deux machines. Ici il n'y en a qu'une.
+Les résidus seuls perdent sept points (0,823 contre 0,893). On garde le contrat à 23 colonnes.
 
 **D. Les deux défauts fantômes** — **fait, P4.** `REFRIGERANT_OVERCHARGE` est produite
 (500 / 5000), après retrait du `condenser_fouling` parasite dans la branche d'injection.
@@ -182,7 +182,7 @@ metadata).
 | P2 | Budget de calibration mesuré | fait |
 | P3 | Quatre défauts de physique corrigés, accord des signes 12/16 → 20/22 | fait |
 | P4 | Décision D : produire la surcharge, trancher la fuite de clapet | **fait** |
-| P5 | Contrat de features : résidus + conditions ; retirer le doublon `pressure_ratio` | à faire |
+| P5 | Contrat de features : doublon retiré, résidus seuls mesurés et **rejetés** | **fait** |
 | P6 | Découper `api/app.py` — 4 routes d'inférence contre 17 de tableau de bord | à faire |
 
 ### 1B. Les expériences

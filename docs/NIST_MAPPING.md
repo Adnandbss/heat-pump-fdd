@@ -45,15 +45,15 @@ US customary units.
 | 15 | `COP` | — | derived: `Q_cond / W_comp` |
 | 16 | `delta_T_evap` | — | derived: `T_ambient − T_evap` |
 | 17 | `delta_T_cond` | — | derived: `T_cond − T_setpoint` |
-| 18 | `pressure_ratio` | — | derived — **duplicate of #12, see below** |
-| 19 | `capacity_ratio` | — | derived: `Q_cond / 10000`; the 10 kW nominal is this project's machine, not NIST's |
-| 20 | `d_T_discharge` | faulted − no-fault, same test condition | via `baseline=` |
-| 21 | `d_superheat` | idem | via `baseline=` |
-| 22 | `d_subcooling` | idem | via `baseline=` |
-| 23 | `d_COP` | idem | via `baseline=` |
-| 24 | `d_W_comp` | idem | via `baseline=` |
+| 18 | `capacity_ratio` | — | derived: `Q_cond / 10000`; the 10 kW nominal is this project's machine, not NIST's |
+| 19 | `d_T_discharge` | faulted − no-fault, same test condition | via `baseline=` |
+| 20 | `d_superheat` | idem | via `baseline=` |
+| 21 | `d_subcooling` | idem | via `baseline=` |
+| 22 | `d_COP` | idem | via `baseline=` |
+| 23 | `d_W_comp` | idem | via `baseline=` |
 
-**23 of 24 features are recoverable.** Only `compressor_speed_ratio` has no counterpart: the
+`pressure_ratio` was dropped in P5: it was identical to `compression_ratio` (#12).
+**22 of 23 features are recoverable.** Only `compressor_speed_ratio` has no counterpart: the
 NIST units are single-speed, so it is constant. Since the model was trained over
 `speed_ratio ∈ (0.3, 1.0)`, any NIST comparison sits at one edge of that domain.
 
@@ -78,9 +78,8 @@ Verified identical to machine precision across operating points and fault types:
 (7, 40, 0.7) charge 0.80     3.523522  3.523522
 ```
 
-`CycleResults.compression_ratio` is already `P_cond / P_evap`, which feature #18 recomputes.
-The model therefore has **23 independent inputs, not 24**. Worth resolving during cleanup —
-and the `test_feature_count` assertion pins 24, so it changes with it.
+`CycleResults.compression_ratio` is already `P_cond / P_evap`. The duplicate
+`pressure_ratio` column was removed in P5. `test_feature_count` now pins 23.
 
 ## Fault taxonomy
 
