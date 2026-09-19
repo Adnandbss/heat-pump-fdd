@@ -370,3 +370,84 @@ The simulator is a demonstration and exploration tool. It is not a source of
 training labels for a field detector. Numbers: `outputs/results.csv` (`experiment=X5`),
 `outputs/x5_sim2real.csv`. Notebook and figure: `EDA/EDA_sim2real.ipynb`,
 `docs/nist_x5_sim2real.png`. Compute: `EDA/x5_compute.py`.
+
+## Simulated domain hold-out (X4)
+
+The published **91.9 % survives extrapolation in operating conditions** — at
+worst 0.889 (`T_setpoint > 48 °C`), a three-point loss on a region the model
+never saw. Severity extrapolation is measured on **four classes only**
+(Normal, both foulings, undercharge): train on marked faults and test on
+nascent ones scores **0.428 [0.381, 0.477]**; the inverse scores **0.469
+[0.445, 0.494]**. The two fan faults are excluded because **the generator
+never draws a mild fan** (`severity_min = 0.20` on `fan_*_ratio`) — a
+simulator limit, not an experimental result.
+
+This is the first measurement in the project that **confirms** something
+instead of demolishing it. Once the P0 leaks were closed, residual signatures
+transfer from one region of the envelope to another. It is not memorising
+`(T, speed)`.
+
+Same 5000-row set, same 24-col Random Forest pipeline, same train/val split
+of the complement. Only the cut changes. Control recovered exactly:
+**0.9187 [0.904, 0.931]**.
+
+| Split | n test | Accuracy | F1 macro |
+|---|---|---|---|
+| Random hold-out (control) | 1500 | **0.919 [0.904, 0.931]** | 0.918 |
+| `speed_ratio > 0.85` | 1077 | 0.920 [0.902, 0.935] | 0.916 |
+| GroupKFold `T_amb × T_set` (4×4 bins) | 5000 pooled | 0.911 [0.903, 0.919] | 0.911 |
+| `T_ambient < −5 °C` | 804 | 0.893 [0.870, 0.913] | 0.883 |
+| `T_setpoint > 48 °C` | 1366 | 0.889 [0.871, 0.904] | 0.882 |
+
+Wilson intervals that overlap the control are ties. All four operating-point
+cuts are ties (`T_setpoint > 48 °C` sits on the boundary). On the speed cut
+that even rises, `T_ambient` / `T_setpoint` / `speed_ratio` rank 20–24;
+`d_COP` is 9th at importance 0.034, the post-P0 level. The model uses
+`delta_T_*`, `superheat`, `d_T_discharge`.
+
+### Severity — four classes that exist on both sides of 0.20
+
+A first cut on all six classes mixed a missing-class artefact into the score
+(fan F1 = 0.000 because those rows were absent from train). Those numbers
+are withdrawn. Restricted to the four classes the generator actually
+produces as both mild and marked:
+
+| Split | n test | mix | Accuracy | F1 |
+|---|---|---|---|---|
+| `severity < 0.20` (nascent) | 411 | CF 120, EF 98, UC 193 | **0.428 [0.381, 0.477]** | 0.496 |
+| `severity ≥ 0.20` (inverse) | 1589 | CF 630, EF 652, UC 307 | 0.469 [0.445, 0.494] | 0.540 |
+
+`Normal` (n=2000) stays in train both ways — the healthy class the model may
+predict. Test is faults only. Nascent accuracy sits **below the test
+majority** (0.470). Per class, nascent:
+
+| Class | n | F1 | called `Normal` |
+|---|---|---|---|
+| Condenser fouling | 120 | 0.603 | 60 / 120 |
+| Evaporator fouling | 98 | 0.424 | 26 / 98 |
+| Undercharge | 193 | 0.462 | 8 / 193 |
+
+The inverse is not symmetric: severe undercharge is 307 / 307 correct
+(training on mild undercharge *helps* when the fault grows); evaporator
+fouling stays at F1 0.42.
+
+### Binary detection — all six classes, collapsed
+
+Fault vs Normal does not suffer from a missing class. 30 % of `Normal` is
+held out with the test faults so accuracy has a false-positive denominator.
+
+| Train | Test | Accuracy | Recall Fault | FPR |
+|---|---|---|---|---|
+| Normal + mild | Normal held-out + severe | 0.762 [0.747, 0.776] | 0.710 | 0.013 |
+| Normal + severe | Normal held-out + mild | **0.887 [0.866, 0.905]** | 0.805 | 0.057 |
+
+Trained on marked faults, the detector flags 80 % of nascent faults as “a
+problem” at 5.7 % false positives. The other direction is conservative:
+almost no false alarms (FPR 0.013) and it misses 29 % of the severe faults.
+Accuracy 0.762 is below the test majority (0.812) — a dummy that always
+predicts Fault would score higher.
+
+Numbers: `outputs/results.csv` (`experiment=X4`),
+`outputs/x4_domain_holdout.csv`. Notebook and figure:
+`EDA/EDA_holdout_domain.ipynb`, `docs/nist_x4_domain.png`.
+

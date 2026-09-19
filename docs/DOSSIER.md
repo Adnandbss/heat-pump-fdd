@@ -798,44 +798,161 @@ la densité des mesures saines disponibles.
 > de malchance — c'est la démonstration que le protocole, et non le modèle, est ce qui porte le
 > résultat.
 
-# 14. Conclusion
+# 14. Le chiffre survit-il hors des conditions apprises ?
+
+Le volet simulé est validé en hold-out **aléatoire** : les exemples sont mélangés, 30 % mis de
+côté. Or les conditions sont tirées uniformément dans un domaine continu et densément
+échantillonné — un point de test a donc presque toujours un voisin d'entraînement très proche.
+
+Le même soupçon que côté mesuré, appliqué au simulé : **le modèle reconnaît-il une panne, ou un
+point de fonctionnement ?**
+
+*(Mesures effectuées sur la configuration à six classes, avant l'ajout de la surcharge.)*
+
+## En conditions de fonctionnement : il survit
+
+| Découpage | accuracy |
+|---|---|
+| Contrôle aléatoire | 0,919 |
+| `speed_ratio > 0,85` tenu à l'écart | 0,920 |
+| `GroupKFold` sur bacs de conditions | 0,911 |
+| `T_ambient < −5 °C` tenu à l'écart | 0,893 |
+| `T_setpoint > 48 °C` tenu à l'écart | 0,889 |
+
+**Trois points de perte au pire**, sur une région entière du domaine jamais vue. C'est un
+résultat positif, et il n'était pas acquis : c'est même l'hypothèse inverse qui était attendue.
+
+## En sévérité : il s'effondre
+
+Deux des six classes — les défauts de ventilateur — n'ont **aucun exemple** sous une sévérité de
+0,20 : le générateur ne produit jamais de ventilateur légèrement dégradé. L'analyse est donc
+restreinte aux quatre classes présentes des deux côtés.
+
+| Tâche | Défauts naissants | Défauts marqués |
+|---|---|---|
+| **Diagnostic** — nommer la panne, 4 classes | **0,428** | 0,469 |
+| **Détection** — dire qu'il y a un problème | **0,887** | 0,762 |
+
+La distinction est nette et utile : **le système sait dire qu'il y a un problème sur un régime
+de sévérité jamais vu, mais pas lequel.**
+
+Un détail retient l'attention : sur la sous-charge, entraîner sur les cas légers et tester sur
+les sévères donne 307 identifications correctes sur 307. **Apprendre une sous-charge naissante
+aide à reconnaître une sous-charge avancée** ; l'inverse est moins vrai.
+
+> **Pour le jury.** Le chiffre du volet simulé n'est pas un score de détection précoce. Il mesure
+> la séparabilité des signatures à sévérité médiane. Un exploitant qui veut attraper une panne
+> avant qu'elle ne coûte doit lire la ligne « détection », pas la ligne « diagnostic ».
+
+# 15. Le simulateur décrit-il la réalité ?
+
+Toute la première moitié de ce document repose sur un simulateur. Toute la seconde sur des
+essais mesurés. **Ils n'avaient jamais été confrontés** : entraîner sur l'un, tester sur l'autre.
+
+C'est possible parce que le recouvrement de domaine de 5,3 % évoqué plus haut est un obstacle
+de **choix d'échantillonnage**, pas de physique. En tirant les conditions simulées dans le
+domaine NIST, la comparaison devient directe.
+
+Périmètre : cinq classes qui se correspondent, et températures intérieures inférieures à 26 °C —
+au-delà, le simulateur écrête sa température d'évaporation à 20 °C et produirait des cycles
+déformés. Cela laisse 59 % des essais mesurés.
+
+## Trois protocoles comparables
+
+| | accuracy | F1 macro |
+|---|---|---|
+| Simulé → simulé, hold-out | **0,921** | 0,917 |
+| Mesuré → mesuré, par machine | **0,668** | 0,596 |
+| **Simulé → mesuré** | **0,454** | 0,343 |
+
+*(classe majoritaire : 0,281)*
+
+Le deuxième protocole est indispensable : sans lui, on ne saurait pas si un score de 0,454
+signifie que le simulateur est mauvais, ou que la tâche est simplement difficile. **Il se lit
+entre 0,281 et 0,668** — le simulateur transfère partiellement.
+
+## Mais la moyenne cache l'essentiel
+
+| Classe | F1, simulé → mesuré |
+|---|---|
+| Sans défaut | 0,716 |
+| Surcharge | 0,522 |
+| Sous-charge | 0,445 |
+| **Débit d'air évaporateur** | **0,031** |
+| **Encrassement condenseur** | **0,000** |
+
+**Le simulateur transfère sur la charge de fluide et échoue totalement sur les échangeurs.**
+Zéro sur l'encrassement du condenseur — pas « faible », zéro.
+
+Et ce résultat recoupe tout le reste. La confrontation des sens de variation (section 1) avait
+montré que le sous-refroidissement de l'encrassement et la surchauffe du défaut de ventilateur
+étaient **de signe inversé**, et ils ont été corrigés. Corriger le sens n'a manifestement pas
+suffi à rendre l'amplitude transférable.
+
+L'histoire est cohérente d'un bout à l'autre du projet : **la physique de la charge de fluide
+est juste, celle des échangeurs ne l'est pas.**
+
+> **Pour le jury.** C'est la seule mesure du projet qui dise ce que vaut son propre simulateur.
+> Elle est sévère et elle est précise : il sert à démontrer et à explorer, et il sert à entraîner
+> un modèle de terrain **pour les défauts de charge uniquement**. Un projet qui sait cela de son
+> outil en sait plus que la plupart.
+
+# 16. Conclusion
 
 ## Ce que le système fait
 
 Il modélise un cycle thermodynamique complet et en dérive des signatures de panne cohérentes ;
 il en fabrique un jeu d'apprentissage ; il diagnostique sept classes ; il sert le tout par une
-API et un tableau de bord qui se clonent et tournent sans préparation. Son architecture en
-couches permet d'ajouter une source de données sans toucher à la méthode — démontré en
-pratique, pas seulement affirmé.
+API et un tableau de bord qui se clonent et tournent sans préparation.
 
-Et surtout : il a été **confronté à des mesures indépendantes**, ce qui a produit quatre
-corrections de physique et un résultat que la simulation seule ne pouvait pas donner.
+Et surtout, il a été **confronté à des mesures indépendantes** — ce qui a produit quatre
+corrections de physique, la fermeture de quatre fuites du pipeline, et cinq résultats
+qu'aucune simulation seule ne pouvait donner.
+
+## Ce qu'il sait de lui-même
+
+C'est la partie inhabituelle, et c'est celle qui compte.
+
+| Question | Réponse mesurée |
+|---|---|
+| Que vaut le chiffre annoncé ? | 89,3 % sur données simulées, hold-out, sélection sur validation |
+| Survit-il hors des conditions apprises ? | **Oui** — au pire 0,889 |
+| Survit-il aux pannes naissantes ? | **Non** pour le diagnostic (0,43), **oui** pour la détection (0,89) |
+| Quelles pannes sont détectées sur du réel ? | Les défauts de charge ; ni les débits d'air, ni la ligne liquide |
+| Que coûte le déploiement ? | Une calibration saine sur la machine, **proche** des conditions à diagnostiquer |
+| L'apprentissage est-il justifié ? | **Oui**, +24 points sur une table de règles — mais un arbre de profondeur 3 en récupère 93 % |
+| Le simulateur décrit-il la réalité ? | **Sur la charge oui** (F1 0,45–0,52), **sur les échangeurs non** (0,00–0,03) |
+
+## Le fil conducteur
+
+Six fois dans ce document, un chiffre a changé de sens selon un détail de protocole : le
+découpage aléatoire contre le découpage par machine, l'origine de la référence saine, la
+structure du plan d'essais, le régime de sévérité, la présence d'une fuite d'étiquette, le jeu
+d'entraînement lui-même.
+
+Ce n'est pas une accumulation de malchance. **C'est la démonstration que le protocole, et non le
+modèle, est ce qui porte le résultat.** Le chiffre affiché est passé de 99,8 % à 89,3 % au fil
+de ces corrections, et chaque baisse a rendu le projet plus vrai.
 
 ## Ce qu'il ne fait pas
 
-- Il ne détecte pas les pannes à 99 % sur le terrain : 89,3 % [87,6 – 90,7] mesure la
-  séparabilité des signatures à l'intérieur du modèle physique, en hold-out, après fermeture
-  d'une fuite d'étiquette qui affichait 99,6 % et après l'ajout de la surcharge (six classes :
-  91,9 %).
-- Il ne fonctionne pas sur une machine inconnue sans calibration préalable.
+- Il ne détecte pas les pannes à 99 % sur le terrain.
+- Il ne fonctionne pas sur une machine inconnue sans calibration préalable et proche.
+- Il ne diagnostique pas les pannes naissantes, seulement les signale.
 - Il ne prédit pas les pannes futures : les essais disponibles sont stationnaires, sans axe du
   temps. Leur en inventer un produirait exactement le genre de chiffre que ce travail s'attache
   à ne pas produire.
 
 ## La formulation défendable
 
-> Les signatures de défaut sont séparables à 89,3 % [87,6 – 90,7] en hold-out sur données
-> simulées (sept classes, sélection sur val, `Pipeline` sklearn). Confrontée à des essais mesurés
-> indépendants, la méthode des résidus fait passer la détection de 0,33 à 0,60 lorsque la
-> référence saine est calibrée sur la machine cible — contre 0,32 sans cette calibration, et
-> 0,95 en validation aléatoire, laquelle surestime largement.
+> Les signatures de défaut sont séparables à 89,3 % en hold-out sur données simulées à sévérité
+> médiane, et ce chiffre survit à l'extrapolation en conditions de fonctionnement. Confronté à
+> des essais mesurés indépendants, le système diagnostique les défauts de charge — sur une
+> machine réelle jamais vue, la surcharge est même identifiée sans aucune calibration — et ne
+> sépare ni les défauts de débit d'air ni la restriction de ligne liquide.
 >
-> Ce 0,60 suppose toutefois une mesure saine à la condition même du défaut, ce que garantit une
-> campagne en chambre et non une machine en service : à distance réaliste, la performance se
-> situe entre 0,43 et 0,52. Le coût de la calibration a été mesuré, et il porte autant sur la
-> **proximité** des mesures saines que sur leur nombre.
-
----
+> Le simulateur, lui, transfère sur la charge de fluide et pas sur les échangeurs. Il sert à
+> démontrer et à explorer ; il ne sert pas à entraîner un modèle de terrain, sauf sur la charge.
 
 # Annexes
 

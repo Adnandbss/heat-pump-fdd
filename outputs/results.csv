@@ -553,6 +553,66 @@ X3-prelim,LOMO,target-machine-knn1,residuals,gradient-boosting,__global__,accura
 X3-prelim,LOMO,target-machine-knn1-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.523,5386,repliques exclues
 X3-prelim,LOMO,target-machine-knn5-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.511,5386,repliques exclues
 X3-prelim,LOMO,target-machine-knn5-median,residuals,gradient-boosting,__global__,accuracy,0.602,5386,
+X4,holdout-binary-severity-train<0.20,simulated,24-col,random-forest,Fault,f1,0.828597,2589,
+X4,holdout-binary-severity-train<0.20,simulated,24-col,random-forest,Fault,recall,0.70954,2589,FPR=0.013; TP=1837 FN=752 FP=8 TN=592
+X4,holdout-binary-severity-train<0.20,simulated,24-col,random-forest,Normal,f1,0.609053,600,
+X4,holdout-binary-severity-train<0.20,simulated,24-col,random-forest,__global__,accuracy,0.761681,3189,"95% Wilson [0.747, 0.776]; F1=0.719; binary Fault/Normal; train Normal+mild (all 6 classes); test held-out Normal+severe"
+X4,holdout-binary-severity-train<0.20,simulated,24-col,random-forest,__global__,f1,0.718825,3189,macro; selected on val of complement
+X4,holdout-binary-severity-train>=0.20,simulated,24-col,random-forest,Fault,f1,0.853093,411,
+X4,holdout-binary-severity-train>=0.20,simulated,24-col,random-forest,Fault,recall,0.805353,411,FPR=0.057; TP=331 FN=80 FP=34 TN=566
+X4,holdout-binary-severity-train>=0.20,simulated,24-col,random-forest,Normal,f1,0.908507,600,
+X4,holdout-binary-severity-train>=0.20,simulated,24-col,random-forest,__global__,accuracy,0.88724,1011,"95% Wilson [0.866, 0.905]; F1=0.881; binary Fault/Normal; train Normal+severe (all 6 classes); test held-out Normal+mild"
+X4,holdout-binary-severity-train>=0.20,simulated,24-col,random-forest,__global__,f1,0.8808,1011,macro; selected on val of complement
+X4,holdout-domain-GroupKFold,simulated,24-col,random-forest,Condenser_Fan_Fault,f1,0.992979,500,
+X4,holdout-domain-GroupKFold,simulated,24-col,random-forest,Condenser_Fouling,f1,0.834746,750,
+X4,holdout-domain-GroupKFold,simulated,24-col,random-forest,Evaporator_Fan_Fault,f1,0.957299,500,
+X4,holdout-domain-GroupKFold,simulated,24-col,random-forest,Evaporator_Fouling,f1,0.86313,750,
+X4,holdout-domain-GroupKFold,simulated,24-col,random-forest,Normal,f1,0.930765,2000,
+X4,holdout-domain-GroupKFold,simulated,24-col,random-forest,Refrigerant_Undercharge,f1,0.885384,500,
+X4,holdout-domain-GroupKFold,simulated,24-col,random-forest,__global__,accuracy,0.9114,5000,"95% Wilson [0.903, 0.919]; F1=0.911; 5-fold GroupKFold; fold-mean acc=0.911±0.012; pooled 0.911"
+X4,holdout-domain-GroupKFold,simulated,24-col,random-forest,__global__,f1,0.910717,5000,macro; selected on val of complement
+X4,holdout-domain-Tamb<-5,simulated,24-col,random-forest,Condenser_Fan_Fault,f1,0.993464,77,
+X4,holdout-domain-Tamb<-5,simulated,24-col,random-forest,Condenser_Fouling,f1,0.808081,113,
+X4,holdout-domain-Tamb<-5,simulated,24-col,random-forest,Evaporator_Fan_Fault,f1,0.951807,81,
+X4,holdout-domain-Tamb<-5,simulated,24-col,random-forest,Evaporator_Fouling,f1,0.778325,107,
+X4,holdout-domain-Tamb<-5,simulated,24-col,random-forest,Normal,f1,0.92827,338,
+X4,holdout-domain-Tamb<-5,simulated,24-col,random-forest,Refrigerant_Undercharge,f1,0.836158,88,
+X4,holdout-domain-Tamb<-5,simulated,24-col,random-forest,__global__,accuracy,0.893035,804,"95% Wilson [0.870, 0.913]; F1=0.883; extrapolation source froide"
+X4,holdout-domain-Tamb<-5,simulated,24-col,random-forest,__global__,f1,0.882684,804,macro; selected on val of complement
+X4,holdout-domain-Tsink>48,simulated,24-col,random-forest,Condenser_Fan_Fault,f1,0.936027,140,
+X4,holdout-domain-Tsink>48,simulated,24-col,random-forest,Condenser_Fouling,f1,0.796915,203,
+X4,holdout-domain-Tsink>48,simulated,24-col,random-forest,Evaporator_Fan_Fault,f1,0.945055,137,
+X4,holdout-domain-Tsink>48,simulated,24-col,random-forest,Evaporator_Fouling,f1,0.837696,198,
+X4,holdout-domain-Tsink>48,simulated,24-col,random-forest,Normal,f1,0.918584,552,
+X4,holdout-domain-Tsink>48,simulated,24-col,random-forest,Refrigerant_Undercharge,f1,0.858238,136,
+X4,holdout-domain-Tsink>48,simulated,24-col,random-forest,__global__,accuracy,0.888726,1366,"95% Wilson [0.871, 0.904]; F1=0.882; extrapolation puits chaud"
+X4,holdout-domain-Tsink>48,simulated,24-col,random-forest,__global__,f1,0.882086,1366,macro; selected on val of complement
+X4,holdout-domain-speed>0.85,simulated,24-col,random-forest,Condenser_Fan_Fault,f1,0.991071,111,
+X4,holdout-domain-speed>0.85,simulated,24-col,random-forest,Condenser_Fouling,f1,0.848684,162,
+X4,holdout-domain-speed>0.85,simulated,24-col,random-forest,Evaporator_Fan_Fault,f1,0.970297,102,
+X4,holdout-domain-speed>0.85,simulated,24-col,random-forest,Evaporator_Fouling,f1,0.863492,146,
+X4,holdout-domain-speed>0.85,simulated,24-col,random-forest,Normal,f1,0.945616,443,
+X4,holdout-domain-speed>0.85,simulated,24-col,random-forest,Refrigerant_Undercharge,f1,0.875,113,
+X4,holdout-domain-speed>0.85,simulated,24-col,random-forest,__global__,accuracy,0.920149,1077,"95% Wilson [0.902, 0.935]; F1=0.916; extrapolation régime"
+X4,holdout-domain-speed>0.85,simulated,24-col,random-forest,__global__,f1,0.915693,1077,macro; selected on val of complement
+X4,holdout-random-control,simulated,24-col,random-forest,Condenser_Fan_Fault,f1,1,150,
+X4,holdout-random-control,simulated,24-col,random-forest,Condenser_Fouling,f1,0.851259,225,
+X4,holdout-random-control,simulated,24-col,random-forest,Evaporator_Fan_Fault,f1,0.966887,150,
+X4,holdout-random-control,simulated,24-col,random-forest,Evaporator_Fouling,f1,0.87069,225,
+X4,holdout-random-control,simulated,24-col,random-forest,Normal,f1,0.9375,600,
+X4,holdout-random-control,simulated,24-col,random-forest,Refrigerant_Undercharge,f1,0.882562,150,
+X4,holdout-random-control,simulated,24-col,random-forest,__global__,accuracy,0.918667,1500,"95% Wilson [0.904, 0.931]; F1=0.918; reproduces X0 protocol; n_jobs=1"
+X4,holdout-random-control,simulated,24-col,random-forest,__global__,f1,0.91815,1500,macro; selected on val of complement
+X4,holdout-severity-4class-<0.20,simulated,24-col,random-forest,Condenser_Fouling,f1,0.603175,120,
+X4,holdout-severity-4class-<0.20,simulated,24-col,random-forest,Evaporator_Fouling,f1,0.423611,98,
+X4,holdout-severity-4class-<0.20,simulated,24-col,random-forest,Refrigerant_Undercharge,f1,0.462151,193,
+X4,holdout-severity-4class-<0.20,simulated,24-col,random-forest,__global__,accuracy,0.428224,411,"95% Wilson [0.381, 0.477]; F1=0.496; 4-class; fans excluded; train=Normal+severe of fouling/UC; test=mild"
+X4,holdout-severity-4class-<0.20,simulated,24-col,random-forest,__global__,f1,0.496312,411,macro; selected on val of complement
+X4,holdout-severity-4class->=0.20,simulated,24-col,random-forest,Condenser_Fouling,f1,0.589944,630,
+X4,holdout-severity-4class->=0.20,simulated,24-col,random-forest,Evaporator_Fouling,f1,0.417661,652,
+X4,holdout-severity-4class->=0.20,simulated,24-col,random-forest,Refrigerant_Undercharge,f1,0.612774,307,
+X4,holdout-severity-4class->=0.20,simulated,24-col,random-forest,__global__,accuracy,0.469478,1589,"95% Wilson [0.445, 0.494]; F1=0.540; 4-class; fans excluded; train=Normal+mild of fouling/UC; test=severe"
+X4,holdout-severity-4class->=0.20,simulated,24-col,random-forest,__global__,f1,0.540127,1589,macro; selected on val of complement
 X5,LOMO,measured-knn5,residuals,random-forest,Condenser_Fouling,f1,0.31746,287,
 X5,LOMO,measured-knn5,residuals,random-forest,Evaporator_Fan_Fault,f1,0.4,485,
 X5,LOMO,measured-knn5,residuals,random-forest,Normal,f1,0.807598,800,
