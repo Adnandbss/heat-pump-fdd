@@ -8,7 +8,9 @@ from src.studies.synthetic.generator import FaultDataGenerator, FaultType
 
 
 def test_feature_count():
-    assert len(FEATURE_COLUMNS) == 24
+    assert len(FEATURE_COLUMNS) == 23
+    assert "pressure_ratio" not in FEATURE_COLUMNS
+    assert "compression_ratio" in FEATURE_COLUMNS
 
 
 def test_features_module_has_no_study_taxonomy():

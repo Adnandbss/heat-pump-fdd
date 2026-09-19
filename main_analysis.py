@@ -332,19 +332,19 @@ def main():
     )
     log(
         experiment="X0", protocol="holdout-test", reference="simulated",
-        features="24-col", model=model_slug, label="__global__",
+        features="23-col", model=model_slug, label="__global__",
         metric="accuracy", value=float(best_result.accuracy),
         n=int(best_result.n), note=ci_note,
     )
     log(
         experiment="X0", protocol="holdout-test", reference="simulated",
-        features="24-col", model=model_slug, label="__global__",
+        features="23-col", model=model_slug, label="__global__",
         metric="f1", value=float(best_result.f1_macro),
         n=int(best_result.n), note="macro; selected on val",
     )
     log(
         experiment="X0", protocol="cv-train", reference="simulated",
-        features="24-col", model=model_slug, label="__global__",
+        features="23-col", model=model_slug, label="__global__",
         metric="f1", value=float(cv_mean),
         n=int(len(X_train)), note=f"5-fold stratified, train only, std={cv_std:.4f}",
     )

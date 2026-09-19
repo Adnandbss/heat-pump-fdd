@@ -41,8 +41,10 @@ def _small_dataset(n: int = 360, seed: int = 0) -> pd.DataFrame:
 
 def test_derived_features_are_consistent_with_their_noisy_inputs():
     df = _small_dataset()
+    assert "pressure_ratio" not in FEATURE_COLUMNS
     assert np.allclose(df.pressure_ratio, df.P_cond / df.P_evap, rtol=1e-6, atol=1e-9)
     assert np.allclose(df.compression_ratio, df.P_cond / df.P_evap, rtol=1e-6, atol=1e-9)
+    assert np.allclose(df.compression_ratio, df.pressure_ratio, rtol=1e-12, atol=0.0)
     assert np.allclose(df.COP, df.Q_cond / df.W_comp, rtol=1e-6, atol=1e-9)
     assert np.allclose(df.delta_T_evap, df.T_ambient - df.T_evap, rtol=1e-6, atol=1e-9)
     assert np.allclose(df.delta_T_cond, df.T_cond - df.T_setpoint, rtol=1e-6, atol=1e-9)
@@ -154,5 +156,6 @@ def test_shipped_model_declares_its_provenance():
         metric="accuracy",
         model="random-forest",
         label="__global__",
+        features="23-col",
     )
     assert abs(meta["accuracy"] - logged) < 1e-6

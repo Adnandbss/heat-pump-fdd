@@ -55,7 +55,7 @@ heat-pump-fdd/
 |   |   +-- thermodynamic_viz.py   diagrammes pression-enthalpie
 |   |
 |   +-- fdd/                     la méthode — partagée par toutes les études
-|   |   +-- features.py            contrat des 24 grandeurs, résidus
+|   |   +-- features.py            contrat des 23 grandeurs, résidus
 |   |   +-- ml_models.py           entraînement, sélection de modèle
 |   |   +-- inference.py           FDDEngine : charger, diagnostiquer
 |   |   +-- visualization.py       figures d'entraînement
@@ -203,7 +203,8 @@ pipeline d'apprentissage**. Une visualisation n'entre pas dans un vecteur de fea
 Un résultat de cycle n'est pas un vecteur exploitable. Il faut décider **quoi** montrer au
 modèle — et ce choix pèse plus lourd que celui de l'algorithme.
 
-Le contrat compte 24 colonnes : 3 conditions, 16 grandeurs mesurées ou dérivées, 5 **résidus**.
+Le contrat compte 23 colonnes : 3 conditions, 15 grandeurs mesurées ou dérivées, 5 **résidus**.
+`pressure_ratio` a été retiré : c'était le même nombre que `compression_ratio`.
 
 ## Les résidus, ou l'analogie de la fièvre
 
@@ -240,9 +241,10 @@ d'extension fait gagner.
 
 ## Une redondance
 
-$\texttt{compression\_ratio}$ et $\texttt{pressure\_ratio}$ sont **le même nombre**, vérifié à
-la précision machine sur tous les points testés. Le modèle dispose de 23 entrées indépendantes,
-pas 24.
+$\texttt{compression\_ratio}$ et $\texttt{pressure\_ratio}$ étaient **le même nombre**, vérifié à
+la précision machine sur 100 % des 5000 lignes. `pressure_ratio` a été retiré du contrat (P5).
+Passer aux résidus seuls ferait perdre sept points : il n'y a qu'une machine simulée, rien à
+ré-identifier.
 
 # 3. Fabriquer un jeu de données — `src/studies/synthetic/`
 
@@ -294,15 +296,15 @@ La portée de ce qui reste dans le modèle — partie suivante.
 
 ## Le choix d'algorithme, et pourquoi il compte peu
 
-Forêt aléatoire, sélectionnée sur le jeu de validation. Gradient Boosting calibré en
-probabilité, à égalité sur val (ΔF1 = 0,002) — départagé sur l'inférence et
+Forêt aléatoire, sélectionnée sur le jeu de validation. Gradient Boosting à égalité
+sur val (ΔF1 = 0,002) — départagé sur l'inférence et
 l'interprétabilité. Scaler et classifieur dans un `sklearn.Pipeline`. Split 2625 / 875 /
 1500 (train / val / test). Le test ne sert jamais à choisir.
 
 | Modèle | Accuracy test | IC 95 % | F1 test | F1 val |
 |---|---|---|---|---|
-| **Forêt aléatoire (livré)** | **89,3 %** | 87,6 – 90,7 | 0,872 | 0,896 |
-| Gradient Boosting calibré | 90,5 % | 88,9 – 91,9 | 0,882 | 0,899 |
+| **Forêt aléatoire (livré)** | **89,3 %** | 87,7 – 90,8 | 0,871 | 0,905 |
+| Gradient Boosting | 89,9 % | 88,2 – 91,3 | 0,879 | 0,902 |
 
 Validation croisée 5 plis **sur le train seulement** : F1 0,881 ± 0,017.
 
@@ -379,7 +381,7 @@ découpage à venir est nette.
 
 ![Le tableau de bord pendant une injection d'encrassement](live-fdd.png)
 
-**Le contrat d'entrée est strict.** `/predict` énumère les 24 grandeurs et refuse tout champ
+**Le contrat d'entrée est strict.** `/predict` énumère les 23 grandeurs et refuse tout champ
 inconnu — une grandeur mal nommée est rejetée plutôt qu'ignorée. Cela fait de toute évolution
 du contrat une **rupture de compatibilité**.
 

@@ -451,3 +451,32 @@ Numbers: `outputs/results.csv` (`experiment=X4`),
 `outputs/x4_domain_holdout.csv`. Notebook and figure:
 `EDA/EDA_holdout_domain.ipynb`, `docs/nist_x4_domain.png`.
 
+## Feature contract (P5)
+
+**Keep the 23-column mix. Do not switch to residuals-only.**
+
+`compression_ratio` and `pressure_ratio` are the same number on 100 % of the 5000
+rows (max |Δ| = 0). Dropping `pressure_ratio` moves hold-out accuracy by 0.0007
+(0.8927 → 0.8933), well inside the Wilson interval. That is the only contract
+change.
+
+The roadmap's case for residuals + conditions came from NIST leave-one-machine-out:
+residuals-only 0.602 beat raw + residuals 0.562 because absolute values re-identify
+the machine. **There is only one simulated machine.** The re-identification problem
+does not exist here. After P0, absolute features carry real weight (`superheat` 0.129,
+`subcooling` 0.088). Four contracts, production RF pipeline, two protocols:
+
+| Contract | Random hold-out | `T_setpoint > 48 °C` |
+|---|---|---|
+| **23-col (kept)** | **0.893 [0.877, 0.908]** | **0.896 [0.879, 0.911]** |
+| 23-col minus 6 dead | 0.895 [0.879, 0.910] | 0.898 [0.881, 0.913] |
+| Residuals + conditions | 0.823 [0.803, 0.841] | 0.770 [0.747, 0.792] |
+| Residuals only | 0.823 [0.803, 0.841] | 0.764 [0.741, 0.786] |
+
+The lean residual contracts lose seven points at home and **more** under the domain
+hold-out — the opposite of the NIST pattern. Dropping the six features below 0.01
+is a tie with 23-col, not a win. API `FeatureVector` is 23 fields, version **2.0.0**.
+
+Numbers: `outputs/results.csv` (`experiment=P5`), `outputs/p5_feature_contracts.csv`.
+Compute: `EDA/p5_compute.py`.
+

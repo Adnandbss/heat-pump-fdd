@@ -65,6 +65,7 @@ def test_readme_x0_matches_results_csv():
         metric="accuracy",
         model="random-forest",
         label="__global__",
+        features="23-col",
     )
     pct = f"{acc * 100:.1f}"
     text = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -109,6 +110,7 @@ def test_dossier_x0_matches_results_csv():
         metric="accuracy",
         model="random-forest",
         label="__global__",
+        features="23-col",
     )
     french = f"{acc * 100:.1f}".replace(".", ",")
     dossier = ROOT / "docs" / "DOSSIER.md"
