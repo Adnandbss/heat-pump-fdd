@@ -1,7 +1,11 @@
 experiment,protocol,reference,features,model,label,metric,value,n,note
 X0,cv-train,simulated,24-col,random-forest,__global__,f1,0.881119,2625,"5-fold stratified, train only, std=0.0170"
+X0,holdout-test,simulated,24-col,gradient-boosting,__global__,accuracy,0.905333,1500,"95% Wilson CI [0.889, 0.919]; selected on val"
+X0,holdout-test,simulated,24-col,gradient-boosting,__global__,f1,0.882277,1500,macro; selected on val
 X0,holdout-test,simulated,24-col,random-forest,__global__,accuracy,0.892667,1500,"95% Wilson CI [0.876, 0.907]; selected on val; CV-train F1=0.881±0.017"
 X0,holdout-test,simulated,24-col,random-forest,__global__,f1,0.871843,1500,macro; selected on val
+X0,holdout-test-6class,simulated,24-col,random-forest,__global__,accuracy,0.9187,1500,"P0 six-class; 95% Wilson CI [0.904, 0.931]; superseded by seven-class"
+X0,leaked-dCOP,simulated,24-col,random-forest,__global__,accuracy,0.996,5000,withdrawn: d_COP equalled the detection label
 X0b,LOMO,target-machine,raw,gradient-boosting,__global__,accuracy,0.333,5386,
 X0b,LOMO,target-machine,raw+residuals,gradient-boosting,__global__,accuracy,0.562,5386,
 X0b,LOMO,target-machine,residuals,gradient-boosting,__global__,accuracy,0.602,5386,
@@ -549,3 +553,24 @@ X3-prelim,LOMO,target-machine-knn1,residuals,gradient-boosting,__global__,accura
 X3-prelim,LOMO,target-machine-knn1-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.523,5386,repliques exclues
 X3-prelim,LOMO,target-machine-knn5-dmin0.5,residuals,gradient-boosting,__global__,accuracy,0.511,5386,repliques exclues
 X3-prelim,LOMO,target-machine-knn5-median,residuals,gradient-boosting,__global__,accuracy,0.602,5386,
+X5,LOMO,measured-knn5,residuals,random-forest,Condenser_Fouling,f1,0.31746,287,
+X5,LOMO,measured-knn5,residuals,random-forest,Evaporator_Fan_Fault,f1,0.4,485,
+X5,LOMO,measured-knn5,residuals,random-forest,Normal,f1,0.807598,800,
+X5,LOMO,measured-knn5,residuals,random-forest,Refrigerant_Overcharge,f1,0.542194,549,
+X5,LOMO,measured-knn5,residuals,random-forest,Refrigerant_Undercharge,f1,0.914908,725,
+X5,LOMO,measured-knn5,residuals,random-forest,__global__,accuracy,0.667955,2846,"95% Wilson CI [0.650, 0.685]; F1=0.596; 5 classes; T_source≤26.0; folds=0.689/0.647"
+X5,LOMO,measured-knn5,residuals,random-forest,__global__,f1,0.596432,2846,macro
+X5,holdout-test,simulated,residuals,random-forest,Condenser_Fouling,f1,0.748879,225,
+X5,holdout-test,simulated,residuals,random-forest,Evaporator_Fan_Fault,f1,0.997773,225,
+X5,holdout-test,simulated,residuals,random-forest,Normal,f1,0.929926,600,
+X5,holdout-test,simulated,residuals,random-forest,Refrigerant_Overcharge,f1,0.93578,225,
+X5,holdout-test,simulated,residuals,random-forest,Refrigerant_Undercharge,f1,0.973684,225,
+X5,holdout-test,simulated,residuals,random-forest,__global__,accuracy,0.920667,1500,"95% Wilson CI [0.906, 0.933]; F1=0.917; NIST-domain sim; T_source≤24.9"
+X5,holdout-test,simulated,residuals,random-forest,__global__,f1,0.917208,1500,macro
+X5,sim2real,measured-knn5,residuals,random-forest,Condenser_Fouling,f1,0,287,
+X5,sim2real,measured-knn5,residuals,random-forest,Evaporator_Fan_Fault,f1,0.0306407,485,
+X5,sim2real,measured-knn5,residuals,random-forest,Normal,f1,0.71612,800,
+X5,sim2real,measured-knn5,residuals,random-forest,Refrigerant_Overcharge,f1,0.522402,549,
+X5,sim2real,measured-knn5,residuals,random-forest,Refrigerant_Undercharge,f1,0.445423,725,
+X5,sim2real,measured-knn5,residuals,random-forest,__global__,accuracy,0.453619,2846,"95% Wilson CI [0.435, 0.472]; F1=0.343; majority=0.281"
+X5,sim2real,measured-knn5,residuals,random-forest,__global__,f1,0.342917,2846,macro

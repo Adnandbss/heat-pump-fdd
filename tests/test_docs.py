@@ -72,6 +72,34 @@ def test_readme_x0_matches_results_csv():
     assert "hold-out" in text.lower() or "holdout" in text.lower()
 
 
+def test_readme_results_percentages_are_logged():
+    """Every xx.x % in README Results must match a logged value.
+
+    Presence of one 89.3 left the previous test green after a second 89.3
+    was edited. A realistic edit that must go red: change either table
+    accuracy without updating results.csv.
+    """
+    from tools.results import get
+
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    match = re.search(r"^## Results\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+    assert match, "README has no ## Results section"
+    section = match.group(1).split("### Confronted")[0]
+    cited = {p.replace(",", ".") for p in re.findall(r"(\d+[.,]\d+)\s*%", section)}
+    logged = set()
+    for row in get():
+        logged.add(f"{float(row['value']) * 100:.1f}")
+        for a, b in re.findall(r"\[(\d+\.\d+),\s*(\d+\.\d+)\]", row.get("note") or ""):
+            lo, hi = float(a), float(b)
+            scale = 100.0 if lo <= 1.0 else 1.0
+            logged.add(f"{lo * scale:.1f}")
+            logged.add(f"{hi * scale:.1f}")
+    missing = sorted(cited - logged)
+    assert not missing, (
+        f"README Results cites {missing} % with no matching row in results.csv"
+    )
+
+
 def test_dossier_x0_matches_results_csv():
     from tools.results import value
 
