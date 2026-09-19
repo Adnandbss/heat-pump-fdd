@@ -381,6 +381,11 @@ découpage à venir est nette.
 
 ![Le tableau de bord pendant une injection d'encrassement](live-fdd.png)
 
+P7 ajoute une page **Evidence** (`/evidence`) qui n'appelle plus le classifieur : elle lit
+`outputs/results.csv` et affiche l'échelle de vérité 99,6 % → 89,3 % → 60,2 % → 31,8 %.
+Récit, captures et protocoles : [FRONT_EVIDENCE.md](FRONT_EVIDENCE.md)
+([PDF](FRONT_EVIDENCE.pdf)).
+
 **Le contrat d'entrée est strict.** `/predict` énumère les 23 grandeurs et refuse tout champ
 inconnu — une grandeur mal nommée est rejetée plutôt qu'ignorée. Cela fait de toute évolution
 du contrat une **rupture de compatibilité**.

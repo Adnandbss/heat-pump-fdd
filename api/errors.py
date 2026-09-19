@@ -1,5 +1,7 @@
 """Domain errors. HTTP status codes live in the handlers, not the routes."""
 
+from __future__ import annotations
+
 
 class ArtifactMissing(Exception):
     """A required on-disk artefact is absent (model, dataset, comparison table)."""

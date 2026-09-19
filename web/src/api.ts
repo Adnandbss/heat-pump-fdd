@@ -1,3 +1,5 @@
+import type { components } from "./api.generated";
+
 export const API_BASE = import.meta.env.VITE_API_URL ?? "";
 
 export type Stats = {
@@ -158,48 +160,57 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function fetchStats(faultType = "Condenser_Fouling") {
-  return request<Stats>(`/api/stats?fault_type=${encodeURIComponent(faultType)}`);
+export function isAbortError(err: unknown) {
+  return (
+    (typeof DOMException !== "undefined" && err instanceof DOMException && err.name === "AbortError") ||
+    (err instanceof Error && err.name === "AbortError")
+  );
 }
 
-export function fetchOverview() {
-  return request<Overview>("/api/overview");
+export function fetchStats(faultType = "Condenser_Fouling", signal?: AbortSignal) {
+  return request<Stats>(`/api/stats?fault_type=${encodeURIComponent(faultType)}`, { signal });
 }
 
-export function fetchActivity() {
-  return request<Activity>("/api/activity");
+export function fetchOverview(signal?: AbortSignal) {
+  return request<Overview>("/api/overview", { signal });
 }
 
-export function fetchChallenges() {
-  return request<{ challenges: Challenge[] }>("/api/challenges");
+export function fetchActivity(signal?: AbortSignal) {
+  return request<Activity>("/api/activity", { signal });
 }
 
-export function fetchCatalog() {
-  return request<Catalog>("/api/catalog");
+export function fetchChallenges(signal?: AbortSignal) {
+  return request<{ challenges: Challenge[] }>("/api/challenges", { signal });
 }
 
-export function fetchModels() {
-  return request<ModelsPayload>("/api/models");
+export function fetchCatalog(signal?: AbortSignal) {
+  return request<Catalog>("/api/catalog", { signal });
 }
 
-export function fetchDataset() {
-  return request<DatasetPayload>("/api/dataset");
+export function fetchModels(signal?: AbortSignal) {
+  return request<ModelsPayload>("/api/models", { signal });
 }
 
-export function fetchDistribution(feature: string) {
+export function fetchDataset(signal?: AbortSignal) {
+  return request<DatasetPayload>("/api/dataset", { signal });
+}
+
+export function fetchDistribution(feature: string, signal?: AbortSignal) {
   return request<{ feature: string; boxes: BoxStats[] }>(
     `/api/explore/distribution?feature=${encodeURIComponent(feature)}`,
+    { signal },
   );
 }
 
-export function fetchScatter(x: string, y: string) {
+export function fetchScatter(x: string, y: string, signal?: AbortSignal) {
   return request<{ x: string; y: string; points: ScatterPoint[] }>(
     `/api/explore/scatter?x=${encodeURIComponent(x)}&y=${encodeURIComponent(y)}`,
+    { signal },
   );
 }
 
-export function fetchAdvanced() {
-  return request<{ labels: string[]; matrix: number[][] }>("/api/advanced");
+export function fetchAdvanced(signal?: AbortSignal) {
+  return request<{ labels: string[]; matrix: number[][] }>("/api/advanced", { signal });
 }
 
 export type PhOverlay = {
@@ -220,30 +231,36 @@ export type PhComparePayload = {
   evaporator: PhOverlay | null;
 };
 
-export function fetchPh(params: {
-  T_evap: number;
-  T_cond: number;
-  superheat: number;
-  subcooling: number;
-}) {
+export function fetchPh(
+  params: {
+    T_evap: number;
+    T_cond: number;
+    superheat: number;
+    subcooling: number;
+  },
+  signal?: AbortSignal,
+) {
   const query = new URLSearchParams({
     T_evap: String(params.T_evap),
     T_cond: String(params.T_cond),
     superheat: String(params.superheat),
     subcooling: String(params.subcooling),
   });
-  return request<PhPayload>(`/api/thermo/ph?${query.toString()}`);
+  return request<PhPayload>(`/api/thermo/ph?${query.toString()}`, { signal });
 }
 
-export function fetchPhCompare(params: {
-  T_evap: number;
-  T_cond: number;
-  superheat: number;
-  subcooling: number;
-  load_factor: number;
-  t_source: number;
-  scenario: "nominal" | "condenser" | "evaporator" | "all";
-}) {
+export function fetchPhCompare(
+  params: {
+    T_evap: number;
+    T_cond: number;
+    superheat: number;
+    subcooling: number;
+    load_factor: number;
+    t_source: number;
+    scenario: "nominal" | "condenser" | "evaporator" | "all";
+  },
+  signal?: AbortSignal,
+) {
   const query = new URLSearchParams({
     T_evap: String(params.T_evap),
     T_cond: String(params.T_cond),
@@ -253,14 +270,14 @@ export function fetchPhCompare(params: {
     t_source: String(params.t_source),
     scenario: params.scenario,
   });
-  return request<PhComparePayload>(`/api/thermo/ph/compare?${query.toString()}`);
+  return request<PhComparePayload>(`/api/thermo/ph/compare?${query.toString()}`, { signal });
 }
 
-export function fetchCopCurves() {
+export function fetchCopCurves(signal?: AbortSignal) {
   return request<{
     curves: Array<{ T_amb: number; carnot: number; estimated: number }>;
     measured: Array<{ T_amb: number; COP: number }>;
-  }>("/api/thermo/cop");
+  }>("/api/thermo/cop", { signal });
 }
 
 export type SweepPoint = {
@@ -286,66 +303,149 @@ export type SweepPayload = {
   headline: string;
 };
 
-export function fetchCondenserSweep(T_evap: number, loadMin: number, loadMax: number) {
+export function fetchCondenserSweep(
+  T_evap: number,
+  loadMin: number,
+  loadMax: number,
+  signal?: AbortSignal,
+) {
   const query = new URLSearchParams({
     T_evap: String(T_evap),
     load_min: String(loadMin),
     load_max: String(loadMax),
   });
-  return request<SweepPayload>(`/api/thermo/sweep/condenser?${query.toString()}`);
+  return request<SweepPayload>(`/api/thermo/sweep/condenser?${query.toString()}`, { signal });
 }
 
-export function fetchEvaporatorSweep(T_cond: number, sourceMin: number, sourceMax: number) {
+export function fetchEvaporatorSweep(
+  T_cond: number,
+  sourceMin: number,
+  sourceMax: number,
+  signal?: AbortSignal,
+) {
   const query = new URLSearchParams({
     T_cond: String(T_cond),
     source_min: String(sourceMin),
     source_max: String(sourceMax),
   });
-  return request<SweepPayload>(`/api/thermo/sweep/evaporator?${query.toString()}`);
+  return request<SweepPayload>(`/api/thermo/sweep/evaporator?${query.toString()}`, { signal });
 }
 
-export function fetchAshrae() {
+export function fetchAshrae(signal?: AbortSignal) {
   return request<{ coolprop: boolean; rows: Array<{ T: number; ashrae: number; coolprop: number; error_pct: number }> }>(
     "/api/thermo/ashrae",
+    { signal },
   );
 }
 
-export function fetchAmbientHeatmap() {
-  return request<{ x_labels: string[]; y_labels: string[]; matrix: number[][] }>("/api/advanced/ambient");
+export function fetchAmbientHeatmap(signal?: AbortSignal) {
+  return request<{ x_labels: string[]; y_labels: string[]; matrix: number[][] }>("/api/advanced/ambient", {
+    signal,
+  });
 }
 
-export function postSimulate(body: {
-  T_source: number;
-  T_sink: number;
-  speed_ratio: number;
-  fault_type: string;
-}) {
+export function postSimulate(
+  body: {
+    T_source: number;
+    T_sink: number;
+    speed_ratio: number;
+    fault_type: string;
+  },
+  signal?: AbortSignal,
+) {
   return request<Diagnosis>("/simulate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal,
   });
 }
 
-export function postPredict(features: Record<string, number>) {
-  return request<{ label: string; confidence: number; probabilities: Record<string, number> }>(
-    "/predict",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ features }),
-    },
-  );
+export function postPredict(features: Record<string, number>, signal?: AbortSignal) {
+  return request<{ label: string; confidence: number; probabilities: Record<string, number> }>("/predict", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ features }),
+    signal,
+  });
 }
 
-export function postLive(body: {
-  fault_type: string;
-  inject_at: number;
-  n_points: number;
-}) {
+export function postLive(
+  body: {
+    fault_type: string;
+    inject_at: number;
+    n_points: number;
+  },
+  signal?: AbortSignal,
+) {
   return request<{ trace: ActivityPoint[] }>("/live", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal,
   });
+}
+
+export type ProtocolRef = components["schemas"]["ProtocolRef"];
+export type SummaryCard = components["schemas"]["SummaryCard"];
+export type EvidenceSummary = components["schemas"]["EvidenceSummary"];
+export type LadderRung = components["schemas"]["LadderRung"];
+export type EvidenceLadder = components["schemas"]["EvidenceLadder"];
+export type ProtocolSlopePoint = components["schemas"]["ProtocolSlopePoint"];
+export type EvidenceProtocols = components["schemas"]["EvidenceProtocols"];
+export type ReferencePoint = components["schemas"]["ReferencePoint"];
+export type EvidenceReferences = components["schemas"]["EvidenceReferences"];
+export type PerClassScores = components["schemas"]["PerClassScores"];
+export type EvidencePerClass = components["schemas"]["EvidencePerClass"];
+export type RunRow = components["schemas"]["RunRow"];
+export type EvidenceRuns = components["schemas"]["EvidenceRuns"];
+export type EvidenceConfusion = components["schemas"]["EvidenceConfusion"];
+
+export function fetchEvidenceSummary(signal?: AbortSignal) {
+  return request<EvidenceSummary>("/api/evidence/summary", { signal });
+}
+
+export function fetchEvidenceLadder(signal?: AbortSignal) {
+  return request<EvidenceLadder>("/api/evidence/ladder", { signal });
+}
+
+export function fetchEvidenceProtocols(signal?: AbortSignal) {
+  return request<EvidenceProtocols>("/api/evidence/protocols", { signal });
+}
+
+export function fetchEvidenceReferences(signal?: AbortSignal) {
+  return request<EvidenceReferences>("/api/evidence/references", { signal });
+}
+
+export function fetchEvidencePerClass(signal?: AbortSignal) {
+  return request<EvidencePerClass>("/api/evidence/per-class", { signal });
+}
+
+export function fetchEvidenceRuns(
+  params: {
+    experiment?: string;
+    protocol?: string;
+    model?: string;
+    label?: string;
+    offset?: number;
+    limit?: number;
+  } = {},
+  signal?: AbortSignal,
+) {
+  const query = new URLSearchParams();
+  if (params.experiment) query.set("experiment", params.experiment);
+  if (params.protocol) query.set("protocol", params.protocol);
+  if (params.model) query.set("model", params.model);
+  if (params.label) query.set("label", params.label);
+  if (params.offset != null) query.set("offset", String(params.offset));
+  if (params.limit != null) query.set("limit", String(params.limit));
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return request<EvidenceRuns>(`/api/evidence/runs${suffix}`, { signal });
+}
+
+export function fetchEvidenceConfusion(protocol = "holdout-test", signal?: AbortSignal) {
+  return request<EvidenceConfusion>(
+    `/api/evidence/confusion?protocol=${encodeURIComponent(protocol)}`,
+    { signal },
+  );
 }

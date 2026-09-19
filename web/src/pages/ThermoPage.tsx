@@ -18,6 +18,7 @@ import {
   fetchCopCurves,
   fetchEvaporatorSweep,
   fetchPh,
+  isAbortError,
   type PhPayload,
   type SweepPayload,
 } from "../api";
@@ -64,39 +65,63 @@ export function ThermoPage() {
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    fetchCopCurves()
+    const controller = new AbortController();
+    fetchCopCurves(controller.signal)
       .then(setCop)
-      .catch((err: Error) => setError(err.message));
-    fetchAshrae()
+      .catch((err: Error) => {
+        if (!isAbortError(err)) setError(err.message);
+      });
+    fetchAshrae(controller.signal)
       .then(setAshrae)
-      .catch((err: Error) => setError(err.message));
+      .catch((err: Error) => {
+        if (!isAbortError(err)) setError(err.message);
+      });
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     const handle = window.setTimeout(() => {
-      fetchPh({ T_evap: tEvap, T_cond: tCond, superheat, subcooling })
+      fetchPh({ T_evap: tEvap, T_cond: tCond, superheat, subcooling }, controller.signal)
         .then(setPh)
-        .catch((err: Error) => setError(err.message));
+        .catch((err: Error) => {
+          if (!isAbortError(err)) setError(err.message);
+        });
     }, 200);
-    return () => window.clearTimeout(handle);
+    return () => {
+      window.clearTimeout(handle);
+      controller.abort();
+    };
   }, [tEvap, tCond, superheat, subcooling]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const handle = window.setTimeout(() => {
-      fetchCondenserSweep(loadEvap, loadMin, loadMax)
+      fetchCondenserSweep(loadEvap, loadMin, loadMax, controller.signal)
         .then(setCondSweep)
-        .catch((err: Error) => setError(err.message));
+        .catch((err: Error) => {
+          if (!isAbortError(err)) setError(err.message);
+        });
     }, 250);
-    return () => window.clearTimeout(handle);
+    return () => {
+      window.clearTimeout(handle);
+      controller.abort();
+    };
   }, [loadEvap, loadMin, loadMax]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const handle = window.setTimeout(() => {
-      fetchEvaporatorSweep(fixedCond, sourceMin, sourceMax)
+      fetchEvaporatorSweep(fixedCond, sourceMin, sourceMax, controller.signal)
         .then(setEvapSweep)
-        .catch((err: Error) => setError(err.message));
+        .catch((err: Error) => {
+          if (!isAbortError(err)) setError(err.message);
+        });
     }, 250);
-    return () => window.clearTimeout(handle);
+    return () => {
+      window.clearTimeout(handle);
+      controller.abort();
+    };
   }, [fixedCond, sourceMin, sourceMax]);
 
   const satLiquid = ph?.saturation.map((row) => ({ h: row.h_liq, P: row.P })) ?? [];

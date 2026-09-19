@@ -85,19 +85,36 @@ def test_readme_results_percentages_are_logged():
     text = (ROOT / "README.md").read_text(encoding="utf-8")
     match = re.search(r"^## Results\n(.*?)(?=^## |\Z)", text, re.M | re.S)
     assert match, "README has no ## Results section"
-    section = match.group(1).split("### Confronted")[0]
-    cited = {p.replace(",", ".") for p in re.findall(r"(\d+[.,]\d+)\s*%", section)}
-    logged = set()
+    section = match.group(1)
+    cited_pct = {p.replace(",", ".") for p in re.findall(r"(\d+[.,]\d+)\s*%", section)}
+    cited_dec = set()
+    for line in section.splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        for cell in line.split("|"):
+            raw = cell.strip().replace(",", ".").strip("*")
+            if re.fullmatch(r"0\.\d+", raw):
+                cited_dec.add(f"{float(raw):.3f}")
+    logged_pct = set()
+    logged_dec = set()
     for row in get():
-        logged.add(f"{float(row['value']) * 100:.1f}")
+        value = float(row["value"])
+        logged_pct.add(f"{value * 100:.1f}")
+        logged_dec.add(f"{value:.3f}")
         for a, b in re.findall(r"\[(\d+\.\d+),\s*(\d+\.\d+)\]", row.get("note") or ""):
             lo, hi = float(a), float(b)
             scale = 100.0 if lo <= 1.0 else 1.0
-            logged.add(f"{lo * scale:.1f}")
-            logged.add(f"{hi * scale:.1f}")
-    missing = sorted(cited - logged)
-    assert not missing, (
-        f"README Results cites {missing} % with no matching row in results.csv"
+            logged_pct.add(f"{lo * scale:.1f}")
+            logged_pct.add(f"{hi * scale:.1f}")
+            logged_dec.add(f"{lo:.3f}")
+            logged_dec.add(f"{hi:.3f}")
+    missing_pct = sorted(cited_pct - logged_pct)
+    missing_dec = sorted(cited_dec - logged_dec)
+    assert not missing_pct, (
+        f"README Results cites {missing_pct} % with no matching row in results.csv"
+    )
+    assert not missing_dec, (
+        f"README Results tables cite {missing_dec} with no matching row in results.csv"
     )
 
 
@@ -118,3 +135,17 @@ def test_dossier_x0_matches_results_csv():
         pytest.skip("DOSSIER.md absent")
     text = dossier.read_text(encoding="utf-8")
     assert french in text, f"DOSSIER.md does not publish the logged hold-out accuracy {french} %"
+
+
+def test_web_tsx_has_no_hardcoded_result_percentages():
+    """FRONT_PLAN §1: result figures live in results.csv, never in TSX."""
+    pattern = re.compile(r"[0-9]+\.[0-9]+\s*%")
+    offenders = []
+    src = ROOT / "web" / "src"
+    if not src.exists():
+        pytest.skip("web/src absent")
+    for path in sorted(src.rglob("*.tsx")):
+        for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if pattern.search(line):
+                offenders.append(f"{path.relative_to(ROOT)}:{line_no}: {line.strip()}")
+    assert not offenders, "hardcoded result percentages in TSX:\n" + "\n".join(offenders)

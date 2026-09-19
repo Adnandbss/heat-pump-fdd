@@ -34,12 +34,10 @@ class MtimeCache:
 def _caches(request: Request) -> Dict[str, MtimeCache]:
     caches = getattr(request.app.state, "caches", None)
     if caches is None:
-        caches = {
-            "dataset": MtimeCache(),
-            "class_counts": MtimeCache(),
-            "saturation": MtimeCache(),
-        }
+        caches = {}
         request.app.state.caches = caches
+    for key in ("dataset", "class_counts", "saturation", "results"):
+        caches.setdefault(key, MtimeCache())
     return caches
 
 
@@ -87,6 +85,16 @@ def get_dataset(
     if not path.exists():
         raise ArtifactMissing(path.name)
     return _caches(request)["dataset"].get(path, lambda: pd.read_csv(path))
+
+
+def get_results(
+    request: Request,
+    settings: Settings = Depends(get_settings),
+) -> pd.DataFrame:
+    path = settings.results_path
+    if path is None or not path.exists():
+        raise ArtifactMissing("results.csv")
+    return _caches(request)["results"].get(path, lambda: pd.read_csv(path))
 
 
 def get_class_counts(

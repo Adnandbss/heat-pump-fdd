@@ -5,6 +5,7 @@ export const FAULT_COLORS: Record<string, string> = {
   Condenser_Fouling: "#5B9DFF",
   Evaporator_Fouling: "#7EC8FF",
   Refrigerant_Undercharge: "#F5C542",
+  Refrigerant_Overcharge: "#C084FC",
   Condenser_Fan_Fault: "#FB923C",
   Evaporator_Fan_Fault: "#F472B6",
 };
@@ -29,7 +30,12 @@ export const PAGE_COPY: Record<string, { eyebrow: string; title: string; subtitl
   insights: {
     eyebrow: "Overview",
     title: "HeatPump FDD",
-    subtitle: "CoolProp R410A cycle · calibrated Gradient Boosting",
+    subtitle: "CoolProp R410A cycle · Random Forest on 23 cycle features",
+  },
+  evidence: {
+    eyebrow: "Evidence",
+    title: "Measured results",
+    subtitle: "Every figure reads outputs/results.csv through the API",
   },
   live: {
     eyebrow: "Live FDD",
@@ -44,7 +50,7 @@ export const PAGE_COPY: Record<string, { eyebrow: string; title: string; subtitl
   models: {
     eyebrow: "Models",
     title: "Hold-out performance",
-    subtitle: "Synthetic 5000-cycle set · 23 residual features",
+    subtitle: "Synthetic 5000-cycle set · 23 cycle features, including residuals",
   },
   thermo: {
     eyebrow: "Thermodynamics",

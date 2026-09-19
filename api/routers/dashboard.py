@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from typing import Dict, List
 
 import pandas as pd
@@ -258,12 +259,17 @@ def api_dataset(
     counts = df["fault_type"].value_counts().to_dict() if "fault_type" in df.columns else {}
     total = int(len(df))
     numeric = df.select_dtypes(include="number")
+
+    def _finite(value: float) -> float:
+        number = float(value)
+        return 0.0 if math.isnan(number) or math.isinf(number) else number
+
     describe = {
         col: ColumnStats(
-            mean=float(numeric[col].mean()),
-            std=float(numeric[col].std()),
-            min=float(numeric[col].min()),
-            max=float(numeric[col].max()),
+            mean=_finite(numeric[col].mean()),
+            std=_finite(numeric[col].std()),
+            min=_finite(numeric[col].min()),
+            max=_finite(numeric[col].max()),
         )
         for col in ["COP", "P_cond", "P_evap", "T_discharge", "superheat", "subcooling"]
         if col in numeric.columns

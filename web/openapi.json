@@ -1,0 +1,3586 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Heat Pump FDD API",
+    "description": "Diagnose vapour-compression heat-pump faults from cycle features or simulated conditions.",
+    "version": "2.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "inference"
+        ],
+        "summary": "Loaded model and class list",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/predict": {
+      "post": {
+        "tags": [
+          "inference"
+        ],
+        "summary": "Diagnose a 23-d cycle feature vector",
+        "operationId": "predictFault",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PredictRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Diagnosis"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/simulate": {
+      "post": {
+        "tags": [
+          "inference"
+        ],
+        "summary": "Simulate a cycle and diagnose it",
+        "operationId": "simulateCycle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/live": {
+      "post": {
+        "tags": [
+          "inference"
+        ],
+        "summary": "Time series with a fault injected mid-trace",
+        "operationId": "getLiveTrace",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "One simulated point for the stats cards",
+        "operationId": "getStats",
+        "parameters": [
+          {
+            "name": "fault_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/FaultLabel",
+              "default": "Condenser_Fouling"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/overview": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Class counts and headline metrics",
+        "operationId": "getOverview",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverviewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/activity": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Short live trace for the activity strip",
+        "operationId": "getActivity",
+        "parameters": [
+          {
+            "name": "fault_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/FaultLabel",
+              "default": "Condenser_Fouling"
+            }
+          },
+          {
+            "name": "inject_at",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 40,
+              "minimum": 1,
+              "default": 7,
+              "title": "Inject At"
+            }
+          },
+          {
+            "name": "n_points",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 60,
+              "minimum": 10,
+              "default": 14,
+              "title": "N Points"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/challenges": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Named demo scenarios and whether the model matches",
+        "operationId": "getChallenges",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/catalog": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Classes, features, scenarios, and model card",
+        "operationId": "getCatalog",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Comparison table, confusion matrix, feature importance",
+        "operationId": "getModels",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dataset": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Dataset size, class mix, and column summaries",
+        "operationId": "getDataset",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatasetResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/explore/distribution": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Per-class box stats for one feature",
+        "operationId": "getDistribution",
+        "parameters": [
+          {
+            "name": "feature",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "superheat",
+              "title": "Feature"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistributionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/explore/scatter": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Stratified scatter sample of two columns",
+        "operationId": "getScatter",
+        "parameters": [
+          {
+            "name": "x",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "delta_T_evap",
+              "title": "X"
+            }
+          },
+          {
+            "name": "y",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "delta_T_cond",
+              "title": "Y"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2000,
+              "minimum": 60,
+              "default": 720,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScatterResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/advanced": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Correlation matrix of cycle features",
+        "operationId": "getCorrelationMatrix",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatrixResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/advanced/ambient": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Fault counts by ambient-temperature bin",
+        "operationId": "getAmbientHeatmap",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AmbientHeatmapResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/thermo/ph": {
+      "get": {
+        "tags": [
+          "thermo"
+        ],
+        "summary": "P-h diagram for one operating point",
+        "operationId": "getPhDiagram",
+        "parameters": [
+          {
+            "name": "T_evap",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 5.0,
+              "title": "T Evap"
+            }
+          },
+          {
+            "name": "T_cond",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 45.0,
+              "title": "T Cond"
+            }
+          },
+          {
+            "name": "superheat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 20.0,
+              "minimum": 0.0,
+              "default": 6.0,
+              "title": "Superheat"
+            }
+          },
+          {
+            "name": "subcooling",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 20.0,
+              "minimum": 0.0,
+              "default": 5.0,
+              "title": "Subcooling"
+            }
+          },
+          {
+            "name": "eta_is",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 1.0,
+              "minimum": 0.4,
+              "default": 0.75,
+              "title": "Eta Is"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/thermo/ph/compare": {
+      "get": {
+        "tags": [
+          "thermo"
+        ],
+        "summary": "Nominal P-h overlay against condenser and evaporator load",
+        "operationId": "getPhCompare",
+        "parameters": [
+          {
+            "name": "T_evap",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 10.0,
+              "minimum": -10.0,
+              "default": 0.0,
+              "title": "T Evap"
+            }
+          },
+          {
+            "name": "T_cond",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 55.0,
+              "minimum": 35.0,
+              "default": 45.0,
+              "title": "T Cond"
+            }
+          },
+          {
+            "name": "superheat",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 15.0,
+              "minimum": 2.0,
+              "default": 8.0,
+              "title": "Superheat"
+            }
+          },
+          {
+            "name": "subcooling",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 12.0,
+              "minimum": 2.0,
+              "default": 5.0,
+              "title": "Subcooling"
+            }
+          },
+          {
+            "name": "load_factor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100.0,
+              "minimum": 30.0,
+              "default": 50.0,
+              "title": "Load Factor"
+            }
+          },
+          {
+            "name": "t_source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 15.0,
+              "minimum": -15.0,
+              "default": -10.0,
+              "title": "T Source"
+            }
+          },
+          {
+            "name": "scenario",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "nominal",
+                "condenser",
+                "evaporator",
+                "all"
+              ],
+              "type": "string",
+              "default": "all",
+              "title": "Scenario"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhCompareResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/thermo/cop": {
+      "get": {
+        "tags": [
+          "thermo"
+        ],
+        "summary": "Carnot envelope and measured Normal COP vs ambient",
+        "operationId": "getCopCurve",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/thermo/sweep/condenser": {
+      "get": {
+        "tags": [
+          "thermo"
+        ],
+        "summary": "Condenser-load sweep of COP and compressor power",
+        "operationId": "getCondenserSweep",
+        "parameters": [
+          {
+            "name": "T_evap",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 10.0,
+              "minimum": -10.0,
+              "default": 0.0,
+              "title": "T Evap"
+            }
+          },
+          {
+            "name": "load_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 90.0,
+              "minimum": 20.0,
+              "default": 30.0,
+              "title": "Load Min"
+            }
+          },
+          {
+            "name": "load_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100.0,
+              "minimum": 40.0,
+              "default": 100.0,
+              "title": "Load Max"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SweepResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/thermo/sweep/evaporator": {
+      "get": {
+        "tags": [
+          "thermo"
+        ],
+        "summary": "Source-temperature sweep of heating capacity",
+        "operationId": "getEvaporatorSweep",
+        "parameters": [
+          {
+            "name": "T_cond",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 55.0,
+              "minimum": 35.0,
+              "default": 45.0,
+              "title": "T Cond"
+            }
+          },
+          {
+            "name": "source_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 5.0,
+              "minimum": -20.0,
+              "default": -15.0,
+              "title": "Source Min"
+            }
+          },
+          {
+            "name": "source_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 15.0,
+              "minimum": -5.0,
+              "default": 7.0,
+              "title": "Source Max"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SweepResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/thermo/ashrae": {
+      "get": {
+        "tags": [
+          "thermo"
+        ],
+        "summary": "R410A saturation pressure vs the ASHRAE table",
+        "operationId": "getAshraeTable",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AshraeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence/summary": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Headline cards from the results log",
+        "operationId": "getEvidenceSummary",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence/ladder": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Truth ladder: each rung is one logged accuracy",
+        "operationId": "getEvidenceLadder",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceLadder"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence/protocols": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "X0b: feature sets against random-CV vs LOMO",
+        "operationId": "getEvidenceProtocols",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceProtocols"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence/references": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "X3 healthy-reference benchmark grid",
+        "operationId": "getEvidenceReferences",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceReferences"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence/per-class": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Per-class F1 on simulator vs NIST target vs transferred",
+        "operationId": "getEvidencePerClass",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidencePerClass"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence/runs": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Paginated results.csv rows",
+        "operationId": "getEvidenceRuns",
+        "parameters": [
+          {
+            "name": "experiment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Experiment"
+            }
+          },
+          {
+            "name": "protocol",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Protocol"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model"
+            }
+          },
+          {
+            "name": "label",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Label"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceRuns"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence/confusion": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Confusion matrix for a named protocol",
+        "operationId": "getEvidenceConfusion",
+        "parameters": [
+          {
+            "name": "protocol",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "holdout-test",
+              "title": "Protocol"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceConfusion"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActivityResponse": {
+        "properties": {
+          "fault_type": {
+            "type": "string",
+            "title": "Fault Type"
+          },
+          "inject_at": {
+            "type": "integer",
+            "title": "Inject At"
+          },
+          "trace": {
+            "items": {
+              "$ref": "#/components/schemas/LiveTracePoint"
+            },
+            "type": "array",
+            "title": "Trace"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fault_type",
+          "inject_at",
+          "trace"
+        ],
+        "title": "ActivityResponse"
+      },
+      "AmbientHeatmapResponse": {
+        "properties": {
+          "x_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "X Labels"
+          },
+          "y_labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Y Labels"
+          },
+          "matrix": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Matrix"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x_labels",
+          "y_labels",
+          "matrix"
+        ],
+        "title": "AmbientHeatmapResponse"
+      },
+      "AshraeResponse": {
+        "properties": {
+          "coolprop": {
+            "type": "boolean",
+            "title": "Coolprop"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/AshraeRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "coolprop",
+          "rows"
+        ],
+        "title": "AshraeResponse"
+      },
+      "AshraeRow": {
+        "properties": {
+          "T": {
+            "type": "number",
+            "title": "T"
+          },
+          "ashrae": {
+            "type": "number",
+            "title": "Ashrae"
+          },
+          "coolprop": {
+            "type": "number",
+            "title": "Coolprop"
+          },
+          "error_pct": {
+            "type": "number",
+            "title": "Error Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "T",
+          "ashrae",
+          "coolprop",
+          "error_pct"
+        ],
+        "title": "AshraeRow"
+      },
+      "BoxStats": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "min": {
+            "type": "number",
+            "title": "Min"
+          },
+          "q1": {
+            "type": "number",
+            "title": "Q1"
+          },
+          "median": {
+            "type": "number",
+            "title": "Median"
+          },
+          "q3": {
+            "type": "number",
+            "title": "Q3"
+          },
+          "max": {
+            "type": "number",
+            "title": "Max"
+          },
+          "mean": {
+            "type": "number",
+            "title": "Mean"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "min",
+          "q1",
+          "median",
+          "q3",
+          "max",
+          "mean"
+        ],
+        "title": "BoxStats"
+      },
+      "CatalogResponse": {
+        "properties": {
+          "classes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Classes"
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features"
+          },
+          "faults": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Faults"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/Scenario"
+            },
+            "type": "array",
+            "title": "Scenarios"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelCard"
+          }
+        },
+        "type": "object",
+        "required": [
+          "classes",
+          "features",
+          "faults",
+          "scenarios",
+          "model"
+        ],
+        "title": "CatalogResponse"
+      },
+      "Challenge": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "injected": {
+            "type": "string",
+            "title": "Injected"
+          },
+          "predicted": {
+            "type": "string",
+            "title": "Predicted"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "On Going",
+              "Complete"
+            ],
+            "title": "Status"
+          },
+          "progress": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Progress"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "injected",
+          "predicted",
+          "confidence",
+          "status",
+          "progress"
+        ],
+        "title": "Challenge"
+      },
+      "ChallengesResponse": {
+        "properties": {
+          "challenges": {
+            "items": {
+              "$ref": "#/components/schemas/Challenge"
+            },
+            "type": "array",
+            "title": "Challenges"
+          }
+        },
+        "type": "object",
+        "required": [
+          "challenges"
+        ],
+        "title": "ChallengesResponse"
+      },
+      "ClassF1": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "f1": {
+            "type": "number",
+            "title": "F1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "f1"
+        ],
+        "title": "ClassF1"
+      },
+      "ClassShare": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "type": "integer",
+            "title": "Value"
+          },
+          "share": {
+            "type": "number",
+            "title": "Share"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "value",
+          "share"
+        ],
+        "title": "ClassShare"
+      },
+      "ColumnStats": {
+        "properties": {
+          "mean": {
+            "type": "number",
+            "title": "Mean"
+          },
+          "std": {
+            "type": "number",
+            "title": "Std"
+          },
+          "min": {
+            "type": "number",
+            "title": "Min"
+          },
+          "max": {
+            "type": "number",
+            "title": "Max"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mean",
+          "std",
+          "min",
+          "max"
+        ],
+        "title": "ColumnStats"
+      },
+      "ConfusionMatrix": {
+        "properties": {
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Labels"
+          },
+          "matrix": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Matrix"
+          }
+        },
+        "type": "object",
+        "required": [
+          "labels",
+          "matrix"
+        ],
+        "title": "ConfusionMatrix"
+      },
+      "CopCurvePoint": {
+        "properties": {
+          "T_amb": {
+            "type": "number",
+            "title": "T Amb"
+          },
+          "carnot": {
+            "type": "number",
+            "title": "Carnot"
+          },
+          "estimated": {
+            "type": "number",
+            "title": "Estimated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "T_amb",
+          "carnot",
+          "estimated"
+        ],
+        "title": "CopCurvePoint"
+      },
+      "CopMeasuredPoint": {
+        "properties": {
+          "T_amb": {
+            "type": "number",
+            "title": "T Amb"
+          },
+          "COP": {
+            "type": "number",
+            "title": "Cop"
+          }
+        },
+        "type": "object",
+        "required": [
+          "T_amb",
+          "COP"
+        ],
+        "title": "CopMeasuredPoint"
+      },
+      "CopResponse": {
+        "properties": {
+          "curves": {
+            "items": {
+              "$ref": "#/components/schemas/CopCurvePoint"
+            },
+            "type": "array",
+            "title": "Curves"
+          },
+          "measured": {
+            "items": {
+              "$ref": "#/components/schemas/CopMeasuredPoint"
+            },
+            "type": "array",
+            "title": "Measured"
+          }
+        },
+        "type": "object",
+        "required": [
+          "curves",
+          "measured"
+        ],
+        "title": "CopResponse"
+      },
+      "CycleState": {
+        "properties": {
+          "P_evap": {
+            "type": "number",
+            "title": "P Evap"
+          },
+          "P_cond": {
+            "type": "number",
+            "title": "P Cond"
+          },
+          "T_evap": {
+            "type": "number",
+            "title": "T Evap"
+          },
+          "T_cond": {
+            "type": "number",
+            "title": "T Cond"
+          },
+          "T_suction": {
+            "type": "number",
+            "title": "T Suction"
+          },
+          "T_discharge": {
+            "type": "number",
+            "title": "T Discharge"
+          },
+          "superheat": {
+            "type": "number",
+            "title": "Superheat"
+          },
+          "subcooling": {
+            "type": "number",
+            "title": "Subcooling"
+          },
+          "compression_ratio": {
+            "type": "number",
+            "title": "Compression Ratio"
+          },
+          "W_comp": {
+            "type": "number",
+            "title": "W Comp"
+          },
+          "Q_cond": {
+            "type": "number",
+            "title": "Q Cond"
+          },
+          "COP": {
+            "type": "number",
+            "title": "Cop"
+          }
+        },
+        "type": "object",
+        "required": [
+          "P_evap",
+          "P_cond",
+          "T_evap",
+          "T_cond",
+          "T_suction",
+          "T_discharge",
+          "superheat",
+          "subcooling",
+          "compression_ratio",
+          "W_comp",
+          "Q_cond",
+          "COP"
+        ],
+        "title": "CycleState"
+      },
+      "DatasetResponse": {
+        "properties": {
+          "n_samples": {
+            "type": "integer",
+            "title": "N Samples"
+          },
+          "n_classes": {
+            "type": "integer",
+            "title": "N Classes"
+          },
+          "normal_share": {
+            "type": "number",
+            "title": "Normal Share"
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Counts"
+          },
+          "describe": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ColumnStats"
+            },
+            "type": "object",
+            "title": "Describe"
+          },
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Columns"
+          }
+        },
+        "type": "object",
+        "required": [
+          "n_samples",
+          "n_classes",
+          "normal_share",
+          "counts",
+          "describe",
+          "columns"
+        ],
+        "title": "DatasetResponse"
+      },
+      "Diagnosis": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "probabilities": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Probabilities"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "confidence",
+          "probabilities"
+        ],
+        "title": "Diagnosis"
+      },
+      "DistributionResponse": {
+        "properties": {
+          "feature": {
+            "type": "string",
+            "title": "Feature"
+          },
+          "boxes": {
+            "items": {
+              "$ref": "#/components/schemas/BoxStats"
+            },
+            "type": "array",
+            "title": "Boxes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feature",
+          "boxes"
+        ],
+        "title": "DistributionResponse"
+      },
+      "Envelope": {
+        "properties": {
+          "normal": {
+            "$ref": "#/components/schemas/EnvelopeZone"
+          },
+          "extended": {
+            "$ref": "#/components/schemas/EnvelopeZone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "normal",
+          "extended"
+        ],
+        "title": "Envelope"
+      },
+      "EnvelopeZone": {
+        "properties": {
+          "T_evap": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "T Evap"
+          },
+          "T_cond": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "T Cond"
+          }
+        },
+        "type": "object",
+        "required": [
+          "T_evap",
+          "T_cond"
+        ],
+        "title": "EnvelopeZone"
+      },
+      "EvidenceConfusion": {
+        "properties": {
+          "protocol": {
+            "type": "string",
+            "title": "Protocol"
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Labels"
+          },
+          "matrix": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Matrix"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "protocol",
+          "labels",
+          "matrix",
+          "source"
+        ],
+        "title": "EvidenceConfusion"
+      },
+      "EvidenceLadder": {
+        "properties": {
+          "rungs": {
+            "items": {
+              "$ref": "#/components/schemas/LadderRung"
+            },
+            "type": "array",
+            "title": "Rungs"
+          },
+          "majority": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Majority"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rungs"
+        ],
+        "title": "EvidenceLadder"
+      },
+      "EvidencePerClass": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/PerClassScores"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "protocols": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProtocolRef"
+            },
+            "type": "object",
+            "title": "Protocols"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rows",
+          "notes",
+          "protocols"
+        ],
+        "title": "EvidencePerClass"
+      },
+      "EvidenceProtocols": {
+        "properties": {
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/ProtocolSlopePoint"
+            },
+            "type": "array",
+            "title": "Series"
+          }
+        },
+        "type": "object",
+        "required": [
+          "series"
+        ],
+        "title": "EvidenceProtocols"
+      },
+      "EvidenceReferences": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/ReferencePoint"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "majority": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Majority"
+          },
+          "annotation_dmin0": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReferencePoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "annotation_dmin05": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReferencePoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "points"
+        ],
+        "title": "EvidenceReferences"
+      },
+      "EvidenceRuns": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/RunRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "csv_path": {
+            "type": "string",
+            "title": "Csv Path",
+            "default": "outputs/results.csv"
+          },
+          "experiments": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Experiments"
+          },
+          "protocols": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Protocols"
+          },
+          "models": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Models"
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Labels"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "offset",
+          "limit",
+          "rows"
+        ],
+        "title": "EvidenceRuns"
+      },
+      "EvidenceSummary": {
+        "properties": {
+          "n_experiments": {
+            "type": "integer",
+            "title": "N Experiments"
+          },
+          "n_measurements": {
+            "type": "integer",
+            "title": "N Measurements"
+          },
+          "n_protocols": {
+            "type": "integer",
+            "title": "N Protocols"
+          },
+          "headline_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headline Value"
+          },
+          "headline_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headline Percent"
+          },
+          "headline_protocol": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProtocolRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/SummaryCard"
+            },
+            "type": "array",
+            "title": "Cards"
+          }
+        },
+        "type": "object",
+        "required": [
+          "n_experiments",
+          "n_measurements",
+          "n_protocols",
+          "cards"
+        ],
+        "title": "EvidenceSummary"
+      },
+      "FaultLabel": {
+        "type": "string",
+        "enum": [
+          "Normal",
+          "Condenser_Fouling",
+          "Evaporator_Fouling",
+          "Refrigerant_Undercharge",
+          "Refrigerant_Overcharge",
+          "Condenser_Fan_Fault",
+          "Evaporator_Fan_Fault"
+        ],
+        "title": "FaultLabel",
+        "description": "Labels the trained classifier can emit (and inject)."
+      },
+      "FeatureImportance": {
+        "properties": {
+          "feature": {
+            "type": "string",
+            "title": "Feature"
+          },
+          "importance": {
+            "type": "number",
+            "title": "Importance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feature",
+          "importance"
+        ],
+        "title": "FeatureImportance"
+      },
+      "FeatureVector": {
+        "properties": {
+          "T_ambient": {
+            "type": "number",
+            "title": "T Ambient"
+          },
+          "T_setpoint": {
+            "type": "number",
+            "title": "T Setpoint"
+          },
+          "compressor_speed_ratio": {
+            "type": "number",
+            "title": "Compressor Speed Ratio"
+          },
+          "P_evap": {
+            "type": "number",
+            "title": "P Evap"
+          },
+          "P_cond": {
+            "type": "number",
+            "title": "P Cond"
+          },
+          "T_evap": {
+            "type": "number",
+            "title": "T Evap"
+          },
+          "T_cond": {
+            "type": "number",
+            "title": "T Cond"
+          },
+          "T_suction": {
+            "type": "number",
+            "title": "T Suction"
+          },
+          "T_discharge": {
+            "type": "number",
+            "title": "T Discharge"
+          },
+          "superheat": {
+            "type": "number",
+            "title": "Superheat"
+          },
+          "subcooling": {
+            "type": "number",
+            "title": "Subcooling"
+          },
+          "compression_ratio": {
+            "type": "number",
+            "title": "Compression Ratio"
+          },
+          "W_comp": {
+            "type": "number",
+            "title": "W Comp"
+          },
+          "Q_cond": {
+            "type": "number",
+            "title": "Q Cond"
+          },
+          "COP": {
+            "type": "number",
+            "title": "Cop"
+          },
+          "delta_T_evap": {
+            "type": "number",
+            "title": "Delta T Evap"
+          },
+          "delta_T_cond": {
+            "type": "number",
+            "title": "Delta T Cond"
+          },
+          "capacity_ratio": {
+            "type": "number",
+            "title": "Capacity Ratio"
+          },
+          "d_T_discharge": {
+            "type": "number",
+            "title": "D T Discharge"
+          },
+          "d_superheat": {
+            "type": "number",
+            "title": "D Superheat"
+          },
+          "d_subcooling": {
+            "type": "number",
+            "title": "D Subcooling"
+          },
+          "d_COP": {
+            "type": "number",
+            "title": "D Cop"
+          },
+          "d_W_comp": {
+            "type": "number",
+            "title": "D W Comp"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "T_ambient",
+          "T_setpoint",
+          "compressor_speed_ratio",
+          "P_evap",
+          "P_cond",
+          "T_evap",
+          "T_cond",
+          "T_suction",
+          "T_discharge",
+          "superheat",
+          "subcooling",
+          "compression_ratio",
+          "W_comp",
+          "Q_cond",
+          "COP",
+          "delta_T_evap",
+          "delta_T_cond",
+          "capacity_ratio",
+          "d_T_discharge",
+          "d_superheat",
+          "d_subcooling",
+          "d_COP",
+          "d_W_comp"
+        ],
+        "title": "FeatureVector",
+        "description": "23-d cycle vector consumed by the classifier (P5: pressure_ratio dropped)."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "classes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Classes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "model",
+          "classes"
+        ],
+        "title": "HealthResponse"
+      },
+      "LadderRung": {
+        "properties": {
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "percent": {
+            "type": "number",
+            "title": "Percent"
+          },
+          "cause": {
+            "type": "string",
+            "title": "Cause"
+          },
+          "band": {
+            "type": "string",
+            "title": "Band"
+          },
+          "majority": {
+            "type": "boolean",
+            "title": "Majority",
+            "default": false
+          },
+          "protocol": {
+            "$ref": "#/components/schemas/ProtocolRef"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "percent",
+          "cause",
+          "band",
+          "protocol"
+        ],
+        "title": "LadderRung"
+      },
+      "LiveRequest": {
+        "properties": {
+          "T_source": {
+            "type": "number",
+            "title": "T Source",
+            "default": 7.0
+          },
+          "T_sink": {
+            "type": "number",
+            "title": "T Sink",
+            "default": 40.0
+          },
+          "speed_ratio": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.3,
+            "title": "Speed Ratio",
+            "default": 0.7
+          },
+          "fault_type": {
+            "$ref": "#/components/schemas/FaultLabel",
+            "default": "Condenser_Fouling"
+          },
+          "inject_at": {
+            "type": "integer",
+            "maximum": 80.0,
+            "minimum": 1.0,
+            "title": "Inject At",
+            "default": 25
+          },
+          "n_points": {
+            "type": "integer",
+            "maximum": 120.0,
+            "minimum": 10.0,
+            "title": "N Points",
+            "default": 60
+          },
+          "severity_final": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Severity Final",
+            "default": 0.4
+          }
+        },
+        "type": "object",
+        "title": "LiveRequest"
+      },
+      "LiveResponse": {
+        "properties": {
+          "trace": {
+            "items": {
+              "$ref": "#/components/schemas/LiveTracePoint"
+            },
+            "type": "array",
+            "title": "Trace"
+          }
+        },
+        "type": "object",
+        "required": [
+          "trace"
+        ],
+        "title": "LiveResponse"
+      },
+      "LiveTracePoint": {
+        "properties": {
+          "t": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "T"
+          },
+          "injected_fault": {
+            "type": "string",
+            "title": "Injected Fault"
+          },
+          "severity": {
+            "type": "number",
+            "title": "Severity"
+          },
+          "predicted": {
+            "type": "string",
+            "title": "Predicted"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "P_evap": {
+            "type": "number",
+            "title": "P Evap"
+          },
+          "P_cond": {
+            "type": "number",
+            "title": "P Cond"
+          },
+          "T_discharge": {
+            "type": "number",
+            "title": "T Discharge"
+          },
+          "superheat": {
+            "type": "number",
+            "title": "Superheat"
+          },
+          "subcooling": {
+            "type": "number",
+            "title": "Subcooling"
+          },
+          "COP": {
+            "type": "number",
+            "title": "Cop"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "t",
+          "injected_fault",
+          "severity",
+          "predicted",
+          "confidence",
+          "P_evap",
+          "P_cond",
+          "T_discharge",
+          "superheat",
+          "subcooling",
+          "COP"
+        ],
+        "title": "LiveTracePoint"
+      },
+      "MatrixResponse": {
+        "properties": {
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Labels"
+          },
+          "matrix": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Matrix"
+          }
+        },
+        "type": "object",
+        "required": [
+          "labels",
+          "matrix"
+        ],
+        "title": "MatrixResponse"
+      },
+      "ModelCard": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "accuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracy"
+          },
+          "precision": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Precision"
+          },
+          "recall": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recall"
+          },
+          "f1": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "F1"
+          },
+          "f1_per_class": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "F1 Per Class"
+          },
+          "n_samples": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Samples"
+          },
+          "n_features": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Features"
+          },
+          "calibrated": {
+            "type": "boolean",
+            "title": "Calibrated",
+            "default": true
+          },
+          "coolprop": {
+            "type": "boolean",
+            "title": "Coolprop",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ModelCard"
+      },
+      "ModelComparisonRow": {
+        "properties": {
+          "Model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "Accuracy": {
+            "type": "number",
+            "title": "Accuracy"
+          },
+          "Precision": {
+            "type": "number",
+            "title": "Precision"
+          },
+          "Recall": {
+            "type": "number",
+            "title": "Recall"
+          },
+          "F1 Score": {
+            "type": "number",
+            "title": "F1 Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "Model",
+          "Accuracy",
+          "Precision",
+          "Recall",
+          "F1 Score"
+        ],
+        "title": "ModelComparisonRow"
+      },
+      "ModelsResponse": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "comparison": {
+            "items": {
+              "$ref": "#/components/schemas/ModelComparisonRow"
+            },
+            "type": "array",
+            "title": "Comparison"
+          },
+          "confusion": {
+            "$ref": "#/components/schemas/ConfusionMatrix"
+          },
+          "importance": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureImportance"
+            },
+            "type": "array",
+            "title": "Importance"
+          },
+          "f1_per_class": {
+            "items": {
+              "$ref": "#/components/schemas/ClassF1"
+            },
+            "type": "array",
+            "title": "F1 Per Class"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metadata",
+          "comparison",
+          "confusion",
+          "importance",
+          "f1_per_class"
+        ],
+        "title": "ModelsResponse"
+      },
+      "OperatingConditions": {
+        "properties": {
+          "T_source": {
+            "type": "number",
+            "title": "T Source"
+          },
+          "T_sink": {
+            "type": "number",
+            "title": "T Sink"
+          },
+          "speed_ratio": {
+            "type": "number",
+            "title": "Speed Ratio"
+          },
+          "injected_fault": {
+            "type": "string",
+            "title": "Injected Fault"
+          }
+        },
+        "type": "object",
+        "required": [
+          "T_source",
+          "T_sink",
+          "speed_ratio",
+          "injected_fault"
+        ],
+        "title": "OperatingConditions"
+      },
+      "OverviewResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "classes": {
+            "items": {
+              "$ref": "#/components/schemas/ClassShare"
+            },
+            "type": "array",
+            "title": "Classes"
+          },
+          "f1": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "F1"
+          },
+          "accuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "classes"
+        ],
+        "title": "OverviewResponse"
+      },
+      "PerClassScores": {
+        "properties": {
+          "display": {
+            "type": "string",
+            "title": "Display"
+          },
+          "simulated": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulated"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "transferred": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transferred"
+          }
+        },
+        "type": "object",
+        "required": [
+          "display"
+        ],
+        "title": "PerClassScores"
+      },
+      "PhCompareResponse": {
+        "properties": {
+          "coolprop": {
+            "type": "boolean",
+            "title": "Coolprop"
+          },
+          "scenario": {
+            "type": "string",
+            "title": "Scenario"
+          },
+          "saturation": {
+            "items": {
+              "$ref": "#/components/schemas/SaturationPoint"
+            },
+            "type": "array",
+            "title": "Saturation"
+          },
+          "nominal": {
+            "$ref": "#/components/schemas/PhOverlay"
+          },
+          "condenser": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PhOverlay"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evaporator": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PhOverlay"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "coolprop",
+          "scenario",
+          "saturation",
+          "nominal"
+        ],
+        "title": "PhCompareResponse"
+      },
+      "PhCyclePoint": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "h": {
+            "type": "number",
+            "title": "H"
+          },
+          "P": {
+            "type": "number",
+            "title": "P"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "h",
+          "P"
+        ],
+        "title": "PhCyclePoint"
+      },
+      "PhOverlay": {
+        "properties": {
+          "T_evap": {
+            "type": "number",
+            "title": "T Evap"
+          },
+          "T_cond": {
+            "type": "number",
+            "title": "T Cond"
+          },
+          "P_evap": {
+            "type": "number",
+            "title": "P Evap"
+          },
+          "P_cond": {
+            "type": "number",
+            "title": "P Cond"
+          },
+          "COP": {
+            "type": "number",
+            "title": "Cop"
+          },
+          "cycle": {
+            "items": {
+              "$ref": "#/components/schemas/PhCyclePoint"
+            },
+            "type": "array",
+            "title": "Cycle"
+          }
+        },
+        "type": "object",
+        "required": [
+          "T_evap",
+          "T_cond",
+          "P_evap",
+          "P_cond",
+          "COP",
+          "cycle"
+        ],
+        "title": "PhOverlay"
+      },
+      "PhResponse": {
+        "properties": {
+          "coolprop": {
+            "type": "boolean",
+            "title": "Coolprop"
+          },
+          "P_evap": {
+            "type": "number",
+            "title": "P Evap"
+          },
+          "P_cond": {
+            "type": "number",
+            "title": "P Cond"
+          },
+          "COP": {
+            "type": "number",
+            "title": "Cop"
+          },
+          "saturation": {
+            "items": {
+              "$ref": "#/components/schemas/SaturationPoint"
+            },
+            "type": "array",
+            "title": "Saturation"
+          },
+          "cycle": {
+            "items": {
+              "$ref": "#/components/schemas/PhCyclePoint"
+            },
+            "type": "array",
+            "title": "Cycle"
+          },
+          "envelope": {
+            "$ref": "#/components/schemas/Envelope"
+          }
+        },
+        "type": "object",
+        "required": [
+          "coolprop",
+          "P_evap",
+          "P_cond",
+          "COP",
+          "saturation",
+          "cycle",
+          "envelope"
+        ],
+        "title": "PhResponse"
+      },
+      "PredictRequest": {
+        "properties": {
+          "features": {
+            "$ref": "#/components/schemas/FeatureVector"
+          }
+        },
+        "type": "object",
+        "required": [
+          "features"
+        ],
+        "title": "PredictRequest"
+      },
+      "ProtocolRef": {
+        "properties": {
+          "experiment": {
+            "type": "string",
+            "title": "Experiment"
+          },
+          "protocol": {
+            "type": "string",
+            "title": "Protocol"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "features": {
+            "type": "string",
+            "title": "Features",
+            "default": ""
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "experiment",
+          "protocol",
+          "reference"
+        ],
+        "title": "ProtocolRef"
+      },
+      "ProtocolSlopePoint": {
+        "properties": {
+          "features": {
+            "type": "string",
+            "title": "Features"
+          },
+          "random_cv": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Random Cv"
+          },
+          "lomo": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lomo"
+          },
+          "protocol_cv": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProtocolRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_lomo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProtocolRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "features"
+        ],
+        "title": "ProtocolSlopePoint"
+      },
+      "ReferencePoint": {
+        "properties": {
+          "family": {
+            "type": "string",
+            "title": "Family"
+          },
+          "facet": {
+            "type": "string",
+            "title": "Facet"
+          },
+          "conditioning": {
+            "type": "string",
+            "title": "Conditioning"
+          },
+          "dmin": {
+            "type": "number",
+            "title": "Dmin"
+          },
+          "accuracy": {
+            "type": "number",
+            "title": "Accuracy"
+          },
+          "protocol": {
+            "$ref": "#/components/schemas/ProtocolRef"
+          }
+        },
+        "type": "object",
+        "required": [
+          "family",
+          "facet",
+          "conditioning",
+          "dmin",
+          "accuracy",
+          "protocol"
+        ],
+        "title": "ReferencePoint"
+      },
+      "RunRow": {
+        "properties": {
+          "experiment": {
+            "type": "string",
+            "title": "Experiment"
+          },
+          "protocol": {
+            "type": "string",
+            "title": "Protocol"
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          },
+          "features": {
+            "type": "string",
+            "title": "Features"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "metric": {
+            "type": "string",
+            "title": "Metric"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "experiment",
+          "protocol",
+          "reference",
+          "features",
+          "model",
+          "label",
+          "metric",
+          "value"
+        ],
+        "title": "RunRow"
+      },
+      "SaturationPoint": {
+        "properties": {
+          "T": {
+            "type": "number",
+            "title": "T"
+          },
+          "P": {
+            "type": "number",
+            "title": "P"
+          },
+          "h_liq": {
+            "type": "number",
+            "title": "H Liq"
+          },
+          "h_vap": {
+            "type": "number",
+            "title": "H Vap"
+          }
+        },
+        "type": "object",
+        "required": [
+          "T",
+          "P",
+          "h_liq",
+          "h_vap"
+        ],
+        "title": "SaturationPoint"
+      },
+      "ScatterPoint": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "title": "Y"
+          },
+          "fault_type": {
+            "type": "string",
+            "title": "Fault Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x",
+          "y",
+          "fault_type"
+        ],
+        "title": "ScatterPoint"
+      },
+      "ScatterResponse": {
+        "properties": {
+          "x": {
+            "type": "string",
+            "title": "X"
+          },
+          "y": {
+            "type": "string",
+            "title": "Y"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/ScatterPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x",
+          "y",
+          "points"
+        ],
+        "title": "ScatterResponse"
+      },
+      "Scenario": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "fault_type": {
+            "type": "string",
+            "title": "Fault Type"
+          },
+          "params": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Params"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "fault_type",
+          "description"
+        ],
+        "title": "Scenario"
+      },
+      "SimulateRequest": {
+        "properties": {
+          "T_source": {
+            "type": "number",
+            "title": "T Source",
+            "description": "Evaporator source temperature \u00b0C",
+            "default": 7.0
+          },
+          "T_sink": {
+            "type": "number",
+            "title": "T Sink",
+            "description": "Condenser sink temperature \u00b0C",
+            "default": 40.0
+          },
+          "speed_ratio": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.3,
+            "title": "Speed Ratio",
+            "default": 0.7
+          },
+          "fault_type": {
+            "$ref": "#/components/schemas/FaultLabel",
+            "default": "Normal"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          }
+        },
+        "type": "object",
+        "title": "SimulateRequest"
+      },
+      "SimulateResponse": {
+        "properties": {
+          "conditions": {
+            "$ref": "#/components/schemas/OperatingConditions"
+          },
+          "cycle": {
+            "$ref": "#/components/schemas/CycleState"
+          },
+          "features": {
+            "$ref": "#/components/schemas/FeatureVector"
+          },
+          "diagnosis": {
+            "$ref": "#/components/schemas/Diagnosis"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conditions",
+          "cycle",
+          "features",
+          "diagnosis"
+        ],
+        "title": "SimulateResponse"
+      },
+      "StatsResponse": {
+        "properties": {
+          "fault_type": {
+            "type": "string",
+            "title": "Fault Type"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "probabilities": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Probabilities"
+          },
+          "COP": {
+            "type": "number",
+            "title": "Cop"
+          },
+          "P_cond": {
+            "type": "number",
+            "title": "P Cond"
+          },
+          "P_evap": {
+            "type": "number",
+            "title": "P Evap"
+          },
+          "T_discharge": {
+            "type": "number",
+            "title": "T Discharge"
+          },
+          "superheat": {
+            "type": "number",
+            "title": "Superheat"
+          },
+          "subcooling": {
+            "type": "number",
+            "title": "Subcooling"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fault_type",
+          "label",
+          "confidence",
+          "probabilities",
+          "COP",
+          "P_cond",
+          "P_evap",
+          "T_discharge",
+          "superheat",
+          "subcooling",
+          "model"
+        ],
+        "title": "StatsResponse"
+      },
+      "SummaryCard": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "protocol": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProtocolRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "value"
+        ],
+        "title": "SummaryCard"
+      },
+      "SweepPoint": {
+        "properties": {
+          "T_evap": {
+            "type": "number",
+            "title": "T Evap"
+          },
+          "T_cond": {
+            "type": "number",
+            "title": "T Cond"
+          },
+          "P_evap": {
+            "type": "number",
+            "title": "P Evap"
+          },
+          "P_cond": {
+            "type": "number",
+            "title": "P Cond"
+          },
+          "tau": {
+            "type": "number",
+            "title": "Tau"
+          },
+          "COP": {
+            "type": "number",
+            "title": "Cop"
+          },
+          "W_comp": {
+            "type": "number",
+            "title": "W Comp"
+          },
+          "Q_cond": {
+            "type": "number",
+            "title": "Q Cond"
+          },
+          "Q_evap": {
+            "type": "number",
+            "title": "Q Evap"
+          },
+          "T_dis": {
+            "type": "number",
+            "title": "T Dis"
+          },
+          "load": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Load"
+          },
+          "t_source": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "T Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "T_evap",
+          "T_cond",
+          "P_evap",
+          "P_cond",
+          "tau",
+          "COP",
+          "W_comp",
+          "Q_cond",
+          "Q_evap",
+          "T_dis"
+        ],
+        "title": "SweepPoint"
+      },
+      "SweepResponse": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "coolprop": {
+            "type": "boolean",
+            "title": "Coolprop"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/SweepPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "deltas": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Deltas"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "coolprop",
+          "points",
+          "deltas",
+          "headline"
+        ],
+        "title": "SweepResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "inference",
+      "description": "Diagnose a cycle or simulate one."
+    },
+    {
+      "name": "dashboard",
+      "description": "Payloads that feed the React views."
+    },
+    {
+      "name": "thermo",
+      "description": "P-h diagram, COP curve, sweeps, ASHRAE table."
+    },
+    {
+      "name": "evidence",
+      "description": "Logged experiment results from outputs/results.csv."
+    }
+  ]
+}

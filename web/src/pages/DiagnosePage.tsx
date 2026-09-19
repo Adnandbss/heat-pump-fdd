@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   fetchCatalog,
+  isAbortError,
   postPredict,
   postSimulate,
   type Catalog,
@@ -27,35 +28,48 @@ export function DiagnosePage() {
   const spec = catalog?.scenarios.find((row) => row.title === scenario);
 
   useEffect(() => {
-    fetchCatalog()
+    const controller = new AbortController();
+    fetchCatalog(controller.signal)
       .then((next) => {
         setCatalog(next);
         if (next.scenarios[0]) setScenario(next.scenarios[1]?.title ?? next.scenarios[0].title);
       })
-      .catch((err: Error) => setError(err.message));
+      .catch((err: Error) => {
+        if (!isAbortError(err)) setError(err.message);
+      });
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
     if (!catalog) return;
     const current = catalog.scenarios.find((row) => row.title === scenario);
     if (!current) return;
+    const controller = new AbortController();
     const handle = window.setTimeout(() => {
       setLoading(true);
-      postSimulate({
-        T_source: tSource,
-        T_sink: tSink,
-        speed_ratio: speed / 100,
-        fault_type: current.fault_type,
-      })
+      postSimulate(
+        {
+          T_source: tSource,
+          T_sink: tSink,
+          speed_ratio: speed / 100,
+          fault_type: current.fault_type,
+        },
+        controller.signal,
+      )
         .then((next) => {
           setPayload(next);
           setManual(next.features);
           setManualResult(undefined);
         })
-        .catch((err: Error) => setError(err.message))
+        .catch((err: Error) => {
+          if (!isAbortError(err)) setError(err.message);
+        })
         .finally(() => setLoading(false));
     }, 250);
-    return () => window.clearTimeout(handle);
+    return () => {
+      window.clearTimeout(handle);
+      controller.abort();
+    };
   }, [catalog, scenario, tSource, tSink, speed]);
 
   const diagnosis = payload?.diagnosis;
@@ -172,7 +186,9 @@ export function DiagnosePage() {
                 if (!manual) return;
                 postPredict(manual)
                   .then(setManualResult)
-                  .catch((err: Error) => setError(err.message));
+                  .catch((err: Error) => {
+                    if (!isAbortError(err)) setError(err.message);
+                  });
               }}
             >
               Diagnose manual vector

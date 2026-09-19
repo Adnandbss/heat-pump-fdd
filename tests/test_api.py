@@ -311,7 +311,7 @@ def test_openapi_declares_tags_and_operation_ids():
     from api.app import app
 
     spec = TestClient(app).get("/openapi.json").json()
-    assert {tag["name"] for tag in spec["tags"]} >= {"inference", "dashboard", "thermo"}
+    assert {tag["name"] for tag in spec["tags"]} >= {"inference", "dashboard", "thermo", "evidence"}
     missing = []
     for path, methods in spec["paths"].items():
         for method, op in methods.items():
