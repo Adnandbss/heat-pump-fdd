@@ -328,3 +328,45 @@ these five citations must move together in a separate PR:
 - `docs/ROADMAP.md`
 - `docs/NIST_FINDINGS.md` — this file, every 0.602 above this section
 - `outputs/results.csv` — `X0b` / `LOMO` / `target-machine` / `residuals` / `accuracy`
+
+## Does the simulator describe reality? (X5)
+
+**No. It describes itself.** A model that scores **0.921 [0.906 – 0.933]** on simulated
+hold-out at NIST conditions falls to **0.454 [0.435 – 0.472]** on the measured tests.
+The same five-class task trained on measured data reaches **0.668 [0.650 – 0.685]**
+(LOMO). The drop is the simulator, not the task.
+
+The 5.3 % domain overlap was a sampling limit, not a physical one. The simulator runs
+at NIST conditions. At 24 / 35 °C it reports `P_evap` 14.04 bar, τ 1.72, COP 4.32;
+healthy NIST tests sit at **10.5 bar, 2.37, 3.41**. Aspiration is 35 % high, the
+compression ratio 28 % low, COP 27 % optimistic. Residuals built on those scales
+do not live in the same space as residuals built on a measured kNN (k=5, median,
+X3 protocol).
+
+`T_evap` is capped at 20 °C. That bound is hit from `T_source = 25 °C` on a healthy
+cycle (the brief's 27 °C threshold was one step late). Comparison is therefore
+restricted: simulated training in `T_source ∈ [14, 24.9]`, `T_sink ∈ [19, 48]`,
+speed 1.0; measured test at `T_source ≤ 26 °C` (4356 / 7375 rows, 59 %). No
+generated `T_evap` sits on 20.0. The cap itself was not raised — that would be a
+physics change and would invalidate the simulated scores.
+
+Five classes correspond. Liquid-line tests are dropped (unmodelled). Simulated
+evaporator fouling and condenser-fan faults are dropped (absent from NIST). In
+cooling, the outdoor coil is the condenser: NIST `CF` maps to `Condenser_Fouling`,
+not evaporator fouling.
+
+| Protocol | Accuracy | 95 % Wilson | F1 macro | Majority | n |
+|---|---|---|---|---|---|
+| Simulated → simulated (hold-out) | **0.921** | 0.906 – 0.933 | 0.917 | 0.400 | 1500 |
+| **Simulated → measured** | **0.454** | **0.435 – 0.472** | **0.343** | 0.281 | 2846 |
+| Measured → measured (LOMO) | **0.668** | 0.650 – 0.685 | 0.596 | 0.281 | 2846 |
+
+Charge is the only fault that partially transfers (overcharge F1 0.52, undercharge
+0.45). Condenser blockage and indoor airflow do not (F1 0.00 and 0.03) — and they
+are already the hard classes on measured LOMO (0.32 and 0.40). No-fault recall on
+transfer is 0.94: the model mostly says *Normal*.
+
+The simulator is a demonstration and exploration tool. It is not a source of
+training labels for a field detector. Numbers: `outputs/results.csv` (`experiment=X5`),
+`outputs/x5_sim2real.csv`. Notebook and figure: `EDA/EDA_sim2real.ipynb`,
+`docs/nist_x5_sim2real.png`. Compute: `EDA/x5_compute.py`.
