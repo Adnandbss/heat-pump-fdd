@@ -174,7 +174,7 @@ If residual FDD needs healthy data from the machine in service, the practical qu
 | 50 | 0.456 | 0.380 |
 | all (~625–727) | 0.602 | 0.479 |
 
-**Fifty healthy tests recover only about 49% of the gap.** Reaching 90% takes essentially the full set. Spreading the sampled tests across the operating range rather than drawing at random helps most when few are available (n = 5: 0.391 against 0.314).
+**Fifty healthy tests recover only about 49% of the gap.** Reaching 90% takes essentially the full set. Spreading the sampled tests across the operating range rather than drawing at random helps most when few are available.
 
 The field reading: a handful of commissioning measurements is not a calibration. Covering the operating envelope is what matters, and that is a deployment constraint rather than an algorithmic one.
 
