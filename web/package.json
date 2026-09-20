@@ -8,8 +8,9 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 5173",
     "lint": "eslint .",
-    "gen:api": "../.venv/bin/python ../tools/export_openapi.py && openapi-typescript openapi.json -o src/api.generated.ts",
-    "test:e2e": "playwright test"
+    "gen:api": "python3 ../tools/export_openapi.py && openapi-typescript openapi.json -o src/api.generated.ts",
+    "test:e2e": "playwright test",
+    "capture": "node scripts/run_capture.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

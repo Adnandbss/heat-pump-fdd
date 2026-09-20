@@ -101,7 +101,7 @@ export function RunsTable({ data, experiment, protocol, model, label, onFilter, 
                 >
                   <button
                     type="button"
-                    className="hover:text-white/80 transition-colors duration-150"
+                    className="hover:text-white/80 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                     onClick={() =>
                       setSort((prev) => ({
                         key: col.key,

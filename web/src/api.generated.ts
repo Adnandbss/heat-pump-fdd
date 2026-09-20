@@ -300,7 +300,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Carnot envelope and measured Normal COP vs ambient */
+        /** Heating Carnot envelope and measured Normal COP vs ambient */
         get: operations["getCopCurve"];
         put?: never;
         post?: never;
@@ -480,6 +480,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/evidence/domain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** X4: domain hold-out vs severity transfer */
+        get: operations["getEvidenceDomain"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/evidence/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** P5: feature-contract slopegraph */
+        get: operations["getEvidenceFeatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/evidence/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** X2: sign table vs tree vs boosting */
+        get: operations["getEvidenceRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/evidence/calibration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** X1: healthy-calibration budget on the target machine */
+        get: operations["getEvidenceCalibration"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -536,6 +604,18 @@ export interface components {
             max: number;
             /** Mean */
             mean: number;
+        };
+        /** CalibrationPoint */
+        CalibrationPoint: {
+            /** N Label */
+            n_label: string;
+            /** N Healthy */
+            n_healthy?: number | null;
+            /** Accuracy */
+            accuracy?: number | null;
+            /** F1 */
+            f1?: number | null;
+            protocol?: components["schemas"]["ProtocolRef"] | null;
         };
         /** CatalogResponse */
         CatalogResponse: {
@@ -617,7 +697,9 @@ export interface components {
             /** Carnot */
             carnot: number;
             /** Estimated */
-            estimated: number;
+            estimated?: number | null;
+            /** N */
+            n?: number | null;
         };
         /** CopMeasuredPoint */
         CopMeasuredPoint: {
@@ -697,6 +779,19 @@ export interface components {
             /** Boxes */
             boxes: components["schemas"]["BoxStats"][];
         };
+        /** DomainBar */
+        DomainBar: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Accuracy */
+            accuracy: number;
+            /** N */
+            n?: number | null;
+            wilson?: components["schemas"]["WilsonInterval"] | null;
+            protocol: components["schemas"]["ProtocolRef"];
+        };
         /** Envelope */
         Envelope: {
             normal: components["schemas"]["EnvelopeZone"];
@@ -709,6 +804,14 @@ export interface components {
             /** T Cond */
             T_cond: number[];
         };
+        /** EvidenceCalibration */
+        EvidenceCalibration: {
+            /** Points */
+            points: components["schemas"]["CalibrationPoint"][];
+            /** Caption */
+            caption: string;
+            badge: components["schemas"]["ProtocolRef"];
+        };
         /** EvidenceConfusion */
         EvidenceConfusion: {
             /** Protocol */
@@ -719,6 +822,24 @@ export interface components {
             matrix: number[][];
             /** Source */
             source: string;
+        };
+        /** EvidenceDomain */
+        EvidenceDomain: {
+            /** Domain */
+            domain: components["schemas"]["DomainBar"][];
+            /** Severity */
+            severity: components["schemas"]["SeverityPair"][];
+            /** Caption */
+            caption: string;
+            badge: components["schemas"]["ProtocolRef"];
+        };
+        /** EvidenceFeatures */
+        EvidenceFeatures: {
+            /** Series */
+            series: components["schemas"]["FeatureSlopePoint"][];
+            /** Note */
+            note: string;
+            badge: components["schemas"]["ProtocolRef"];
         };
         /** EvidenceLadder */
         EvidenceLadder: {
@@ -751,6 +872,16 @@ export interface components {
             majority?: number | null;
             annotation_dmin0?: components["schemas"]["ReferencePoint"] | null;
             annotation_dmin05?: components["schemas"]["ReferencePoint"] | null;
+            badge?: components["schemas"]["ProtocolRef"] | null;
+        };
+        /** EvidenceRules */
+        EvidenceRules: {
+            /** Bars */
+            bars: components["schemas"]["RulesBar"][];
+            /** Majority */
+            majority?: number | null;
+            majority_protocol?: components["schemas"]["ProtocolRef"] | null;
+            badge: components["schemas"]["ProtocolRef"];
         };
         /** EvidenceRuns */
         EvidenceRuns: {
@@ -804,6 +935,17 @@ export interface components {
             feature: string;
             /** Importance */
             importance: number;
+        };
+        /** FeatureSlopePoint */
+        FeatureSlopePoint: {
+            /** Features */
+            features: string;
+            /** Holdout */
+            holdout?: number | null;
+            /** Domain */
+            domain?: number | null;
+            protocol_holdout?: components["schemas"]["ProtocolRef"] | null;
+            protocol_domain?: components["schemas"]["ProtocolRef"] | null;
         };
         /**
          * FeatureVector
@@ -1153,6 +1295,16 @@ export interface components {
             accuracy: number;
             protocol: components["schemas"]["ProtocolRef"];
         };
+        /** RulesBar */
+        RulesBar: {
+            /** Model */
+            model: string;
+            /** Label */
+            label: string;
+            /** Accuracy */
+            accuracy?: number | null;
+            protocol?: components["schemas"]["ProtocolRef"] | null;
+        };
         /** RunRow */
         RunRow: {
             /** Experiment */
@@ -1220,6 +1372,23 @@ export interface components {
             };
             /** Description */
             description: string;
+        };
+        /** SeverityPair */
+        SeverityPair: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Binary */
+            binary?: number | null;
+            /** Multiclass */
+            multiclass?: number | null;
+            /** N Binary */
+            n_binary?: number | null;
+            /** N Multiclass */
+            n_multiclass?: number | null;
+            binary_protocol?: components["schemas"]["ProtocolRef"] | null;
+            multiclass_protocol?: components["schemas"]["ProtocolRef"] | null;
         };
         /** SimulateRequest */
         SimulateRequest: {
@@ -1343,6 +1512,13 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WilsonInterval */
+        WilsonInterval: {
+            /** Low */
+            low: number;
+            /** High */
+            high: number;
         };
     };
     responses: never;
@@ -1814,7 +1990,9 @@ export interface operations {
     };
     getCopCurve: {
         parameters: {
-            query?: never;
+            query?: {
+                T_sink?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1828,6 +2006,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CopResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -2081,6 +2268,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getEvidenceDomain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceDomain"];
+                };
+            };
+        };
+    };
+    getEvidenceFeatures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceFeatures"];
+                };
+            };
+        };
+    };
+    getEvidenceRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceRules"];
+                };
+            };
+        };
+    };
+    getEvidenceCalibration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceCalibration"];
                 };
             };
         };

@@ -126,27 +126,45 @@ def api_thermo_ph_compare(
 @router.get(
     "/api/thermo/cop",
     response_model=CopResponse,
-    summary="Carnot envelope and measured Normal COP vs ambient",
+    summary="Heating Carnot envelope and measured Normal COP vs ambient",
     operation_id="getCopCurve",
 )
-def api_thermo_cop(df: pd.DataFrame = Depends(get_dataset)) -> CopResponse:
-    # Heating Carnot is T_hot/(T_hot-T_cold). This uses a fixed 20 °C source as
-    # the numerator and T_amb as the other side — physically wrong for this
-    # heating study. Left unchanged; see docs/ARCHITECTURE.md.
-    T_amb = np.linspace(-10, 45, 40)
-    t_source = 20.0
-    carnot = np.clip((t_source + 273.15) / (T_amb - t_source + 0.1), 0, 15)
-    real = np.clip(carnot * 0.45, 0, 6)
-    curves = [
-        CopCurvePoint(T_amb=float(t), carnot=float(c), estimated=float(r))
-        for t, c, r in zip(T_amb, carnot, real)
-    ]
-    measured: List[CopMeasuredPoint] = []
+def api_thermo_cop(
+    T_sink: float = Query(40.0, ge=25.0, le=60.0),
+    df: pd.DataFrame = Depends(get_dataset),
+) -> CopResponse:
+    t_max = T_sink - 10.0
+    T_amb = np.linspace(-10.0, t_max, 40)
+    t_sink_k = T_sink + 273.15
+    carnot = t_sink_k / np.maximum(t_sink_k - (T_amb + 273.15), 1.0)
+    half = float((T_amb[1] - T_amb[0]) / 2.0) if len(T_amb) > 1 else 1.0
+
+    normal = pd.DataFrame()
     if {"T_ambient", "COP", "fault_type"}.issubset(df.columns):
-        sample = df[df["fault_type"] == "Normal"].sample(
-            n=min(400, int((df["fault_type"] == "Normal").sum())),
-            random_state=0,
+        normal = df.loc[
+            (df["fault_type"] == "Normal") & df["T_ambient"].notna() & df["COP"].notna(),
+            ["T_ambient", "COP"],
+        ]
+
+    curves: List[CopCurvePoint] = []
+    for t, c in zip(T_amb, carnot):
+        band = normal.loc[
+            (normal["T_ambient"] >= t - half) & (normal["T_ambient"] < t + half)
+        ] if not normal.empty else normal
+        n = int(len(band))
+        estimated = float(band["COP"].mean()) if n else None
+        curves.append(
+            CopCurvePoint(
+                T_amb=float(t),
+                carnot=float(c),
+                estimated=estimated,
+                n=n if n else None,
+            )
         )
+
+    measured: List[CopMeasuredPoint] = []
+    if not normal.empty:
+        sample = normal.sample(n=min(400, len(normal)), random_state=0)
         measured = [
             CopMeasuredPoint(T_amb=float(row["T_ambient"]), COP=float(row["COP"]))
             for row in sample.to_dict(orient="records")

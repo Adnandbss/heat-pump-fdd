@@ -222,7 +222,8 @@ class PhCompareResponse(BaseModel):
 class CopCurvePoint(BaseModel):
     T_amb: float
     carnot: float
-    estimated: float
+    estimated: Optional[float] = None
+    n: Optional[int] = None
 
 
 class CopMeasuredPoint(BaseModel):

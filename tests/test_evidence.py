@@ -337,6 +337,54 @@ TOY_ROWS = [
         "n": "10",
         "note": "toy",
     },
+    {
+        "experiment": "X1",
+        "protocol": "LOMO-calibration-n10",
+        "reference": "target-machine",
+        "features": "residuals",
+        "model": "gradient-boosting",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.377",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "X1",
+        "protocol": "LOMO-calibration-n10",
+        "reference": "target-machine",
+        "features": "residuals",
+        "model": "gradient-boosting",
+        "label": "__global__",
+        "metric": "f1",
+        "value": "0.324",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "X1",
+        "protocol": "LOMO-calibration-n50",
+        "reference": "target-machine",
+        "features": "residuals",
+        "model": "gradient-boosting",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.456",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "X1",
+        "protocol": "LOMO-calibration-n50",
+        "reference": "target-machine",
+        "features": "residuals",
+        "model": "gradient-boosting",
+        "label": "__global__",
+        "metric": "f1",
+        "value": "0.380",
+        "n": "10",
+        "note": "toy",
+    },
 ]
 
 
@@ -438,6 +486,14 @@ def test_evidence_routes_on_toy_csv_without_joblib(tmp_path):
         assert labels["gradient-boosting"] == 0.602
         assert labels["rule-table"] == 0.365
 
+        calibration = client.get("/api/evidence/calibration")
+        assert calibration.status_code == 200
+        by_n = {row["n_label"]: row["accuracy"] for row in calibration.json()["points"]}
+        assert by_n["0"] == 0.318
+        assert by_n["10"] == 0.377
+        assert by_n["50"] == 0.456
+        assert by_n["all"] == 0.602
+
 
 def test_evidence_404_when_results_csv_is_absent(tmp_path):
     app = create_app(
@@ -470,6 +526,7 @@ def test_evidence_openapi_tag_and_operation_ids():
         "/api/evidence/domain",
         "/api/evidence/features",
         "/api/evidence/rules",
+        "/api/evidence/calibration",
     ):
         op = spec["paths"][path]["get"]
         assert op["operationId"]
@@ -500,7 +557,7 @@ def test_evidence_reads_shipped_csv_without_joblib(tmp_path):
 
 
 def test_every_logged_experiment_has_a_figure():
-    from api.routers.evidence import covered_experiments
+    from api.routers.evidence import EXCLUDED_FROM_FIGURES, covered_experiments
     from tools.results import get
 
     canonical = {"X0", "X0b", "X1", "X2", "X3", "X4", "X5", "P5"}
@@ -510,3 +567,8 @@ def test_every_logged_experiment_has_a_figure():
     absent = sorted(canonical - logged)
     assert not missing, f"canonical experiments with no figure: {missing}"
     assert not absent, f"canonical experiments missing from results.csv: {absent}"
+    assert EXCLUDED_FROM_FIGURES == {"X3-prelim"}
+    assert "X3-prelim" in logged
+    assert "X3-prelim" not in selected
+    leftover = sorted(logged - selected - EXCLUDED_FROM_FIGURES)
+    assert not leftover, f"logged experiments with no figure and no exclusion: {leftover}"

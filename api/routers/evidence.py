@@ -12,7 +12,9 @@ from fastapi import APIRouter, Depends, Query
 from api.deps import get_results, get_settings
 from api.errors import ArtifactMissing
 from api.schemas.evidence import (
+    CalibrationPoint,
     DomainBar,
+    EvidenceCalibration,
     EvidenceConfusion,
     EvidenceDomain,
     EvidenceFeatures,
@@ -46,6 +48,9 @@ _KNN_FACET = re.compile(r"^(knn-k\d+)-median-unif$")
 _WILSON_RE = re.compile(r"\[(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\]")
 
 # Experiments a figure endpoint selects. The coverage test compares this to results.csv.
+# X3-prelim (6 rows) is deliberately not plotted: it is the preliminary pass that
+# X3 (505 rows) supersedes. Coverage is therefore 8 experiments out of 9.
+EXCLUDED_FROM_FIGURES = {"X3-prelim"}
 FIGURE_EXPERIMENTS = {
     "ladder": {"X0", "X0b", "X1", "X5"},
     "protocols": {"X0b"},
@@ -54,6 +59,7 @@ FIGURE_EXPERIMENTS = {
     "domain": {"X4"},
     "features": {"P5"},
     "rules": {"X2"},
+    "calibration": {"X1"},
 }
 
 _DOMAIN_BARS = [
@@ -842,6 +848,93 @@ def evidence_rules(df: pd.DataFrame = Depends(get_results)) -> EvidenceRules:
         badge=ProtocolRef(
             experiment="X2",
             protocol="LOMO",
+            reference="target-machine",
+            features="residuals",
+            model="gradient-boosting",
+        ),
+    )
+
+
+_CALIBRATION_POINTS = [
+    {
+        "n_label": "0",
+        "n_healthy": 0,
+        "lookup": {
+            "experiment": "X1",
+            "protocol": "LOMO",
+            "reference": "training-machine",
+            "features": "residuals",
+            "model": "gradient-boosting",
+            "label": "__global__",
+        },
+    },
+    {
+        "n_label": "10",
+        "n_healthy": 10,
+        "lookup": {
+            "experiment": "X1",
+            "protocol": "LOMO-calibration-n10",
+            "reference": "target-machine",
+            "features": "residuals",
+            "model": "gradient-boosting",
+            "label": "__global__",
+        },
+    },
+    {
+        "n_label": "50",
+        "n_healthy": 50,
+        "lookup": {
+            "experiment": "X1",
+            "protocol": "LOMO-calibration-n50",
+            "reference": "target-machine",
+            "features": "residuals",
+            "model": "gradient-boosting",
+            "label": "__global__",
+        },
+    },
+    {
+        "n_label": "all",
+        "n_healthy": None,
+        "lookup": {
+            "experiment": "X0b",
+            "protocol": "LOMO",
+            "reference": "target-machine",
+            "features": "residuals",
+            "model": "gradient-boosting",
+            "label": "__global__",
+        },
+    },
+]
+
+
+@router.get(
+    "/calibration",
+    response_model=EvidenceCalibration,
+    summary="X1: healthy-calibration budget on the target machine",
+    operation_id="getEvidenceCalibration",
+)
+def evidence_calibration(df: pd.DataFrame = Depends(get_results)) -> EvidenceCalibration:
+    points: List[CalibrationPoint] = []
+    for spec in _CALIBRATION_POINTS:
+        acc = _match(df, {**spec["lookup"], "metric": "accuracy"})
+        f1 = _match(df, {**spec["lookup"], "metric": "f1"})
+        if acc is None and f1 is None:
+            continue
+        points.append(
+            CalibrationPoint(
+                n_label=spec["n_label"],
+                n_healthy=spec["n_healthy"],
+                accuracy=_nan_to_none(acc["value"]) if acc is not None else None,
+                f1=_nan_to_none(f1["value"]) if f1 is not None else None,
+                protocol=_protocol(acc if acc is not None else f1),
+            )
+        )
+    return EvidenceCalibration(
+        points=points,
+        caption="Fifty healthy tests recover about half the gap. Covering the envelope is the constraint.",
+        badge=ProtocolRef(
+            experiment="X1",
+            protocol="LOMO-calibration-n50",
             reference="target-machine",
             features="residuals",
             model="gradient-boosting",
