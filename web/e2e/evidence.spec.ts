@@ -4,7 +4,7 @@ test("evidence page renders six figures without NaN", async ({ page }) => {
   await page.goto("/evidence");
   await expect(page.getByTestId("truth-ladder")).toBeVisible();
   await expect(page.getByTestId("protocol-slope")).toBeVisible();
-  await expect(page.getByTestId("calibration-curve")).toBeVisible();
+  await expect(page.getByTestId("reference-benchmark")).toBeVisible();
   await expect(page.getByTestId("per-class-bars")).toBeVisible();
   await expect(page.getByTestId("confusion-heatmap")).toBeVisible();
   await expect(page.getByTestId("runs-table")).toBeVisible();

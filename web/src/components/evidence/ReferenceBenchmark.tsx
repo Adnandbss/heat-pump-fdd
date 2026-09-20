@@ -18,7 +18,7 @@ const FACET_ORDER = ["global-mean", "knn-k1", "knn-k5", "knn-k10", "knn-k20", "p
 
 type Props = { data?: EvidenceReferences };
 
-export function CalibrationCurve({ data }: Props) {
+export function ReferenceBenchmark({ data }: Props) {
   const points = (data?.points ?? []).filter((point) => FACET_ORDER.includes(point.facet));
   const facets = FACET_ORDER.filter((facet) => points.some((point) => point.facet === facet));
   const majority = data?.majority;
@@ -30,7 +30,7 @@ export function CalibrationCurve({ data }: Props) {
   const ann05 = data?.annotation_dmin05;
 
   return (
-    <GlassCard className="p-6" data-testid="calibration-curve">
+    <GlassCard className="p-6" data-testid="reference-benchmark">
       <div className="flex items-start justify-between gap-3 mb-2">
         <div>
           <h2 className="text-lg font-semibold">Healthy-reference grid</h2>

@@ -14,7 +14,7 @@ import {
   type EvidenceRuns,
   type EvidenceSummary,
 } from "../api";
-import { CalibrationCurve } from "../components/evidence/CalibrationCurve";
+import { ReferenceBenchmark } from "../components/evidence/ReferenceBenchmark";
 import { ConfusionPanel } from "../components/evidence/ConfusionPanel";
 import { PerClassBars } from "../components/evidence/PerClassBars";
 import { ProtocolSlope } from "../components/evidence/ProtocolSlope";
@@ -92,7 +92,7 @@ export function EvidencePage() {
 
       <TruthLadder data={ladder} />
       <ProtocolSlope data={protocols} />
-      <CalibrationCurve data={references} />
+      <ReferenceBenchmark data={references} />
       <PerClassBars data={perClass} />
       <ConfusionPanel />
       <RunsTable
