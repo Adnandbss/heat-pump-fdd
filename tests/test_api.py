@@ -172,6 +172,50 @@ def test_ml_dashboard_payloads():
     assert cop.status_code == 200
     assert cop.json()["curves"]
 
+
+def test_cop_curve_is_heating_carnot_under_second_law(tmp_path):
+    from api.deps import get_engine
+    from api.main import create_app
+    from api.settings import Settings
+
+    csv = tmp_path / "dataset.csv"
+    lines = ["fault_type,T_ambient,COP\n"]
+    for t_amb, cop in ((-10.0, 2.6), (-2.0, 3.0), (8.0, 3.4), (18.0, 3.9), (28.0, 4.3)):
+        lines.append(f"Normal,{t_amb},{cop}\n")
+        lines.append(f"Condenser_Fouling,{t_amb},{cop * 0.7}\n")
+    csv.write_text("".join(lines))
+
+    app = create_app(
+        Settings(
+            classifier_path=tmp_path / "absent.joblib",
+            metadata_path=tmp_path / "absent.json",
+            dataset_path=csv,
+        )
+    )
+    app.dependency_overrides[get_engine] = lambda: _ToyEngine()
+    with TestClient(app) as client:
+        response = client.get("/api/thermo/cop", params={"T_sink": 40})
+    assert response.status_code == 200
+    curves = response.json()["curves"]
+    assert curves
+    tamb = [row["T_amb"] for row in curves]
+    carnot = [row["carnot"] for row in curves]
+    assert all(value > 0 for value in carnot)
+    assert all(left < right for left, right in zip(tamb, tamb[1:]))
+    assert all(left < right for left, right in zip(carnot, carnot[1:]))
+    assert max(tamb) <= 40.0 - 2.0 + 1e-9
+    measured_bins = 0
+    for row in curves:
+        assert row["carnot"] != 0
+        if row["estimated"] is None:
+            assert row.get("n") in (None, 0)
+            continue
+        measured_bins += 1
+        assert row["estimated"] > 0
+        assert row["estimated"] < row["carnot"]
+        assert row["n"] and row["n"] > 0
+    assert measured_bins >= 1
+
     condenser = client.get("/api/thermo/sweep/condenser", params={"T_evap": 0, "load_min": 40, "load_max": 100})
     assert condenser.status_code == 200
     assert len(condenser.json()["points"]) == 20

@@ -275,7 +275,7 @@ export function fetchPhCompare(
 
 export function fetchCopCurves(signal?: AbortSignal) {
   return request<{
-    curves: Array<{ T_amb: number; carnot: number; estimated: number }>;
+    curves: Array<{ T_amb: number; carnot: number; estimated?: number | null; n?: number | null }>;
     measured: Array<{ T_amb: number; COP: number }>;
   }>("/api/thermo/cop", { signal });
 }
@@ -450,6 +450,18 @@ export type EvidenceRules = {
   badge: ProtocolRef;
 };
 
+export type EvidenceCalibration = {
+  points: Array<{
+    n_label: string;
+    n_healthy?: number | null;
+    accuracy?: number | null;
+    f1?: number | null;
+    protocol?: ProtocolRef | null;
+  }>;
+  caption: string;
+  badge: ProtocolRef;
+};
+
 export function fetchEvidenceSummary(signal?: AbortSignal) {
   return request<EvidenceSummary>("/api/evidence/summary", { signal });
 }
@@ -509,4 +521,8 @@ export function fetchEvidenceFeatures(signal?: AbortSignal) {
 
 export function fetchEvidenceRules(signal?: AbortSignal) {
   return request<EvidenceRules>("/api/evidence/rules", { signal });
+}
+
+export function fetchEvidenceCalibration(signal?: AbortSignal) {
+  return request<EvidenceCalibration>("/api/evidence/calibration", { signal });
 }

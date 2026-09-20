@@ -617,7 +617,9 @@ export interface components {
             /** Carnot */
             carnot: number;
             /** Estimated */
-            estimated: number;
+            estimated?: number | null;
+            /** N */
+            n?: number | null;
         };
         /** CopMeasuredPoint */
         CopMeasuredPoint: {

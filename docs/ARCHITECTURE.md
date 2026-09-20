@@ -122,10 +122,10 @@ The 23 features include residuals against a healthy cycle (`d_COP`, `d_superheat
 to measured data plausible, since residuals cancel part of the unit- and sensor-specific
 bias.
 
-`GET /api/thermo/cop` plots a “Carnot” envelope that is not the heating-mode COP. The
-numerator is a fixed 20 °C source (as if that were the hot reservoir) and `T_amb` is the
-other side, then clipped. Heating Carnot is \(T_\mathrm{sink}/(T_\mathrm{sink}-T_\mathrm{source})\).
-The route is left as-is; fixing it is a separate change.
+`GET /api/thermo/cop` plots the heating Carnot envelope
+\(T_\mathrm{sink}/(T_\mathrm{sink}-T_\mathrm{amb})\) at a queryable \(T_\mathrm{sink}\)
+(default 40 °C) and the mean Normal COP in each ambient bin. Empty bins are omitted
+from the measured series (a hole, not a zero).
 
 ## External validation: published NIST datasets
 

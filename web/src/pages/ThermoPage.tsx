@@ -232,7 +232,7 @@ export function ThermoPage() {
                     <Tooltip contentStyle={tooltipStyle} />
                     <Legend />
                     <Line dataKey="carnot" name="Carnot" stroke="#94A3B8" strokeDasharray="4 4" dot={false} />
-                    <Line dataKey="estimated" name="Estimated" stroke="#7DFF7A" dot={false} />
+                    <Line dataKey="estimated" name="Measured Normal" stroke="#7DFF7A" dot={false} connectNulls={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
