@@ -28,7 +28,7 @@ await page.locator("[data-testid='truth-ladder']").screenshot({ path: resolve(ou
 console.log("wrote 02-ladder.png");
 await page.locator("[data-testid='protocol-slope']").screenshot({ path: resolve(out, "03-slope.png") });
 console.log("wrote 03-slope.png");
-await page.locator("[data-testid='calibration-curve']").screenshot({ path: resolve(out, "04-references.png") });
+await page.locator("[data-testid='reference-benchmark']").screenshot({ path: resolve(out, "04-references.png") });
 console.log("wrote 04-references.png");
 await page.locator("[data-testid='per-class-bars']").screenshot({ path: resolve(out, "05-perclass.png") });
 console.log("wrote 05-perclass.png");

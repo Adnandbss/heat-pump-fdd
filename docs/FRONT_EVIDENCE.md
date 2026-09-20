@@ -46,7 +46,7 @@ web/src/
 +-- pages/EvidencePage.tsx
 +-- components/ProtocolBadge.tsx
 +-- components/ErrorBoundary.tsx
-+-- components/evidence/     TruthLadder, ProtocolSlope, CalibrationCurve,
++-- components/evidence/     TruthLadder, ProtocolSlope, ReferenceBenchmark,
 |                            PerClassBars, ConfusionPanel, RunsTable
 +-- App.tsx                  react-router : /evidence, /models, …
 
