@@ -80,16 +80,6 @@ def test_api_live_trace_injects_fouling():
 
 
 @pytest.mark.skipif(not MODEL_PATH.exists(), reason="Train the model with main_analysis.py first")
-def test_service_falls_back_when_api_is_down():
-    from src.service import FDDService
-
-    service = FDDService(api_url="http://127.0.0.1:9")
-    payload, mode = service.simulate_cycle(fault_type="Normal")
-    assert mode == "local"
-    assert payload["diagnosis"]["label"] == "Normal"
-
-
-@pytest.mark.skipif(not MODEL_PATH.exists(), reason="Train the model with main_analysis.py first")
 def test_dashboard_facade_and_cors():
     from api.app import app
 

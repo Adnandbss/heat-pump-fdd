@@ -437,5 +437,4 @@ aurait fallu relancer 280 entraînements pour corriger une légende.
 3. Rien qui casse le clone-and-run.
 4. Le pin `scikit-learn==1.6.1` est **porteur** : le `.joblib` commité ne se charge qu'avec
    cette version. La changer impose de réentraîner via `main_analysis.py`.
-5. `dashboard.py` et `scripts/` ne sont couverts par aucun test — les vérifier à la main
-   (`python -c "import dashboard"`) après tout déplacement.
+5. `scripts/` n'est couvert par aucun test — le vérifier à la main après tout déplacement.
