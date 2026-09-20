@@ -1,12 +1,27 @@
 # Heat Pump Fault Detection & Diagnostics
 
-Closed-loop FDD for a vapour-compression heat pump: CoolProp R410A cycle → 23 features (including residuals vs a healthy cycle) → Random Forest (`sklearn.Pipeline`) → FastAPI + React dashboard.
+[![CI](https://github.com/Adnandbss/heat-pump-fdd/actions/workflows/ci.yml/badge.svg)](https://github.com/Adnandbss/heat-pump-fdd/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.11-blue)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-1.6.1-orange)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688)
+![React](https://img.shields.io/badge/React-18-61DAFB)
+![Licence](https://img.shields.io/badge/licence-MIT-lightgrey)
 
-Built as a **portfolio product**, not a lab notebook: a recruiter can clone, run, and watch the model switch from `Normal` to `Condenser_Fouling` when condenser fouling is injected.
+This repository is a **validation methodology** for heat-pump FDD, not a field detector.
+The interesting result is how much a number moves when the protocol becomes honest.
 
-![Live FDD: condenser fouling injection](docs/live-fdd.png)
+![Evidence dashboard: every figure reads outputs/results.csv](docs/front/00-full.png)
+
+Each figure on that page is read from `outputs/results.csv` and carries its validation protocol.
 
 ## 60-second demo
+
+```bash
+make dev
+```
+
+API at `http://localhost:8000/docs`, glass dashboard at `http://localhost:5173`.
+Or the two terminals:
 
 ```bash
 pip install -r requirements.txt
@@ -14,7 +29,12 @@ uvicorn api.app:app --reload          # http://localhost:8000/docs
 cd web && npm install && npm run dev  # http://localhost:5173
 ```
 
-The glass dashboard loads COP, class mix, a fouling injection trace, and scenario status from `GET /api/stats`, `/api/overview`, `/api/activity`, and `/api/challenges`.
+The dashboard loads COP, class mix, a fouling injection trace, and the Evidence page
+from `GET /api/*`. Recapture the figures after a front change:
+
+```bash
+make capture                          # or: cd web && npm run capture
+```
 
 Streamlit (`dashboard.py`) is still in the repo for P-h diagrams and manual inject controls:
 
@@ -38,8 +58,8 @@ Fouling, fan faults and refrigerant leaks all hurt COP, but the signatures overl
 - Decouples condenser **fouling** (pinch / subcooling) from **fan** faults (airflow, compressor work, discharge temperature).
 - Serves a classifier so Diagnosis / Live FDD show readable probabilities.
 
-**For PM interviews:** the unit of value is a decision — fault class + confidence — not a notebook metric.  
-**For ML interviews:** the interesting part is the physics features and class overlap, not stacking more estimators. Scores below are on **synthetic** data.
+**For PM interviews:** the unit of value is a decision — fault class + confidence — not a notebook metric.
+**For ML interviews:** the interesting part is the physics features and class overlap, not stacking more estimators.
 
 ## Architecture
 
@@ -80,16 +100,31 @@ flowchart LR
 
 ## Results
 
+The protocol counts more than the model. The same residual features move from a leaked
+0.996 on the simulator to leave-one-machine-out **0.602** on NIST, and to 0.318 when
+the healthy reference is transferred.
+
+<!-- results-source: X0/leaked-dCOP, X0/holdout-test, X0b/LOMO, X5/sim2real, X1/LOMO, X0b/majority-class -->
+
+| Measured on | Protocol | Accuracy |
+|---|---|---|
+| Simulated | label leak (withdrawn) | 0.996 |
+| Simulated | hold-out, 7 classes | **0.893** |
+| NIST | LOMO, reference on the target machine | 0.602 |
+| NIST | trained on the simulator (sim2real) | 0.454 |
+| NIST | LOMO, transferred reference | 0.318 |
+| — | majority class | 0.251 |
+
 Hold-out on 5000 CoolProp cycles (23 features). Split: 2625 train / 875 val / 1500 test
 (52.5 / 17.5 / 30 %). Scaler and classifier live in a `sklearn.Pipeline`. The model is
 **selected on val**, never on test. Interval: 95 % Wilson on the 1500-row test set.
 
 <!-- results-source: X0/holdout-test -->
 
-| Model | Test accuracy | 95 % CI | Test F1 | Val F1 |
-|---|---|---|---|---|
-| **Random Forest (shipped)** | **89.3 %** | 87.7 – 90.8 | 0.871 | 0.905 † |
-| Gradient Boosting | 89.9 % | 88.2 – 91.3 | 0.879 | 0.902 † |
+| Model | Test accuracy | 95 % CI | Test F1 |
+|---|---|---|---|
+| **Random Forest (shipped)** | **89.3 %** | 87.7 – 90.8 | 0.871 |
+| Gradient Boosting | 89.9 % | 88.2 – 91.3 | 0.879 |
 
 The two models are tied on val (ΔF1 = 0.002). Random Forest is shipped: cheaper inference,
 readable importances. 5-fold CV on **train only**: F1 0.886 ± 0.017.
@@ -130,37 +165,41 @@ Two things follow. **Residuals nearly double detection when the healthy referenc
 
 If residual FDD needs healthy data from the machine in service, the practical question is how much. Measured by leave-one-machine-out over 20 draws, with the calibrating tests held out of the test set:
 
-<!-- results-source: X1/LOMO, X0b/LOMO -->
+<!-- results-source: X1/LOMO-calibration-n10, X1/LOMO-calibration-n50, X0b/LOMO, X1/LOMO -->
 
 | Healthy tests from the target machine | Accuracy | F1 macro |
 |---|---|---|
 | 0 — transferred reference | 0.318 | 0.290 |
-| 10 | 0.377 † | 0.324 † |
-| 50 | 0.456 † | 0.380 † |
+| 10 | 0.377 | 0.324 |
+| 50 | 0.456 | 0.380 |
 | all (~625–727) | 0.602 | 0.479 |
 
 **Fifty healthy tests recover only about 49% of the gap.** Reaching 90% takes essentially the full set. Spreading the sampled tests across the operating range rather than drawing at random helps most when few are available (n = 5: 0.391 against 0.314).
 
 The field reading: a handful of commissioning measurements is not a calibration. Covering the operating envelope is what matters, and that is a deployment constraint rather than an algorithmic one.
 
-† Not in `outputs/results.csv`. These four figures come from a sweep that was run
-but never logged through `tools.results.log()`, so nothing in the repository
-reproduces them and no test can check them. They are kept because they were
-measured and they carry the section's point; they are marked because an
-unreproducible number is not on the same footing as a logged one. Re-running the
-sweep and logging it is the fix.
+Replay: `python EDA/x1_calibration_compute.py`. The Evidence page plots the same rows.
 
 `docs/FRONT_EVIDENCE.pdf` and the NIST PNGs under `docs/` are generated artefacts
 (`web/scripts/capture_evidence.mjs` and the EDA compute scripts). They are kept in
 git so the dossier builds offline; they are not a second source of numbers.
 
+## Known limits
+
+Condenser fouling does not transfer (sim2real F1 0.000). Liquid-line restriction is
+essentially never detected (LOMO F1 0.040). The model does not extrapolate across
+severity (4-class accuracy 0.428 when trained on severe faults and tested on emerging
+ones). Those three numbers are in `outputs/results.csv` (`X5` / `sim2real`, `X1` / `LOMO`,
+`X4` / `holdout-severity-4class-<0.20`).
+
 ## Tests
 
 ```bash
-pytest -q
+make test
 ```
 
-CI runs the same suite on every push. CoolProp saturation pressure at 0 °C must stay within 0.5% of 8.0 bar.
+CI runs the same suite on every push, then the web lint / build / Playwright Evidence pass.
+CoolProp saturation pressure at 0 °C must stay within 0.5% of 8.0 bar.
 
 ## License
 
