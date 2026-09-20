@@ -1,27 +1,37 @@
 import { useEffect, useState } from "react";
 import {
+  fetchEvidenceDomain,
+  fetchEvidenceFeatures,
   fetchEvidenceLadder,
   fetchEvidencePerClass,
   fetchEvidenceProtocols,
   fetchEvidenceReferences,
+  fetchEvidenceRules,
   fetchEvidenceRuns,
   fetchEvidenceSummary,
   isAbortError,
+  type EvidenceDomain,
+  type EvidenceFeatures,
   type EvidenceLadder,
   type EvidencePerClass,
   type EvidenceProtocols,
   type EvidenceReferences,
+  type EvidenceRules,
   type EvidenceRuns,
   type EvidenceSummary,
 } from "../api";
+import { DomainSeverity } from "../components/evidence/DomainSeverity";
+import { FeatureContract } from "../components/evidence/FeatureContract";
 import { ReferenceBenchmark } from "../components/evidence/ReferenceBenchmark";
 import { ConfusionPanel } from "../components/evidence/ConfusionPanel";
 import { PerClassBars } from "../components/evidence/PerClassBars";
 import { ProtocolSlope } from "../components/evidence/ProtocolSlope";
+import { RulesBars } from "../components/evidence/RulesBars";
 import { RunsTable } from "../components/evidence/RunsTable";
 import { TruthLadder } from "../components/evidence/TruthLadder";
 import { ProtocolBadge } from "../components/ProtocolBadge";
 import { GlassCard } from "../components/GlassCard";
+import { Skeleton } from "../components/Skeleton";
 
 export function EvidencePage() {
   const [summary, setSummary] = useState<EvidenceSummary>();
@@ -29,10 +39,14 @@ export function EvidencePage() {
   const [protocols, setProtocols] = useState<EvidenceProtocols>();
   const [references, setReferences] = useState<EvidenceReferences>();
   const [perClass, setPerClass] = useState<EvidencePerClass>();
+  const [domain, setDomain] = useState<EvidenceDomain>();
+  const [features, setFeatures] = useState<EvidenceFeatures>();
+  const [rules, setRules] = useState<EvidenceRules>();
   const [runs, setRuns] = useState<EvidenceRuns>();
   const [filters, setFilters] = useState({ experiment: "", protocol: "", model: "", label: "" });
   const [offset, setOffset] = useState(0);
   const [error, setError] = useState<string>();
+  const loading = !summary && !error;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -42,13 +56,19 @@ export function EvidencePage() {
       fetchEvidenceProtocols(controller.signal),
       fetchEvidenceReferences(controller.signal),
       fetchEvidencePerClass(controller.signal),
+      fetchEvidenceDomain(controller.signal),
+      fetchEvidenceFeatures(controller.signal),
+      fetchEvidenceRules(controller.signal),
     ])
-      .then(([nextSummary, nextLadder, nextProtocols, nextReferences, nextPerClass]) => {
+      .then(([nextSummary, nextLadder, nextProtocols, nextReferences, nextPerClass, nextDomain, nextFeatures, nextRules]) => {
         setSummary(nextSummary);
         setLadder(nextLadder);
         setProtocols(nextProtocols);
         setReferences(nextReferences);
         setPerClass(nextPerClass);
+        setDomain(nextDomain);
+        setFeatures(nextFeatures);
+        setRules(nextRules);
       })
       .catch((err: Error) => {
         if (!isAbortError(err)) setError(err.message);
@@ -72,6 +92,22 @@ export function EvidencePage() {
     return () => controller.abort();
   }, [filters, offset]);
 
+  if (loading) {
+    return (
+      <div className="space-y-4" data-testid="evidence-page">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+          <Skeleton className="h-[104px]" />
+          <Skeleton className="h-[104px]" />
+          <Skeleton className="h-[104px]" />
+          <Skeleton className="h-[104px]" />
+        </div>
+        <Skeleton className="h-[28rem]" />
+        <Skeleton className="h-[22rem]" />
+        <Skeleton className="h-[26rem]" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4" data-testid="evidence-page">
       {error ? (
@@ -80,8 +116,8 @@ export function EvidencePage() {
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         {(summary?.cards ?? []).map((card) => (
-          <GlassCard key={card.key} className="p-4">
-            <div className="text-[11px] uppercase tracking-wide text-white/45">{card.label}</div>
+          <GlassCard key={card.key} className="p-4 transition-opacity duration-200">
+            <div className="text-[11px] uppercase tracking-wide text-white/60">{card.label}</div>
             <div className="text-2xl font-semibold mt-2">
               {card.key === "headline" && card.value ? `${card.value}%` : card.value || "—"}
             </div>
@@ -93,6 +129,9 @@ export function EvidencePage() {
       <TruthLadder data={ladder} />
       <ProtocolSlope data={protocols} />
       <ReferenceBenchmark data={references} />
+      <DomainSeverity data={domain} />
+      <FeatureContract data={features} />
+      <RulesBars data={rules} />
       <PerClassBars data={perClass} />
       <ConfusionPanel />
       <RunsTable

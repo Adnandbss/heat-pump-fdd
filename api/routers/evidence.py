@@ -12,20 +12,28 @@ from fastapi import APIRouter, Depends, Query
 from api.deps import get_results, get_settings
 from api.errors import ArtifactMissing
 from api.schemas.evidence import (
+    DomainBar,
     EvidenceConfusion,
+    EvidenceDomain,
+    EvidenceFeatures,
     EvidenceLadder,
     EvidencePerClass,
     EvidenceProtocols,
     EvidenceReferences,
+    EvidenceRules,
     EvidenceRuns,
     EvidenceSummary,
+    FeatureSlopePoint,
     LadderRung,
     PerClassScores,
     ProtocolRef,
     ProtocolSlopePoint,
     ReferencePoint,
+    RulesBar,
     RunRow,
+    SeverityPair,
     SummaryCard,
+    WilsonInterval,
 )
 from api.settings import ROOT, Settings
 
@@ -35,6 +43,54 @@ _REF_RE = re.compile(
     r"^(?P<family>.+)-(?P<conditioning>TT|TTdew)-dmin(?P<dmin>[0-9.]+)$"
 )
 _KNN_FACET = re.compile(r"^(knn-k\d+)-median-unif$")
+_WILSON_RE = re.compile(r"\[(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\]")
+
+# Experiments a figure endpoint selects. The coverage test compares this to results.csv.
+FIGURE_EXPERIMENTS = {
+    "ladder": {"X0", "X0b", "X1", "X5"},
+    "protocols": {"X0b"},
+    "references": {"X3"},
+    "per-class": {"X1", "X5"},
+    "domain": {"X4"},
+    "features": {"P5"},
+    "rules": {"X2"},
+}
+
+_DOMAIN_BARS = [
+    ("holdout-random-control", "Random (control)"),
+    ("holdout-domain-speed>0.85", "speed > 0.85"),
+    ("holdout-domain-GroupKFold", "GroupKFold 5-fold"),
+    ("holdout-domain-Tamb<-5", "T_amb < −5 °C"),
+    ("holdout-domain-Tsink>48", "T_sink > 48 °C"),
+]
+_SEVERITY_PAIRS = [
+    {
+        "key": "severe-to-emerging",
+        "label": "severe → emerging",
+        "binary": "holdout-binary-severity-train>=0.20",
+        "multiclass": "holdout-severity-4class-<0.20",
+    },
+    {
+        "key": "emerging-to-severe",
+        "label": "emerging → severe",
+        "binary": "holdout-binary-severity-train<0.20",
+        "multiclass": "holdout-severity-4class->=0.20",
+    },
+]
+_FEATURE_SETS = ["23-col", "23-col-minus-dead", "residuals", "residuals+conditions"]
+_RULE_BARS = [
+    ("rule-table", "Sign table"),
+    ("decision-tree-d3", "Depth-3 tree"),
+    ("gradient-boosting", "Gradient boosting"),
+]
+
+
+def covered_experiments() -> set:
+    """Union of experiments a figure endpoint looks up."""
+    selected: set = set()
+    for names in FIGURE_EXPERIMENTS.values():
+        selected.update(names)
+    return selected
 
 # Display order for figure 4. None = not measurable on that regime (hole, not zero).
 _CLASS_ALIGN: List[Tuple[str, Optional[str], Optional[str]]] = [
@@ -48,7 +104,7 @@ _CLASS_ALIGN: List[Tuple[str, Optional[str], Optional[str]]] = [
 
 _LADDER: List[Dict[str, Any]] = [
     {
-        "cause": "d_COP fuitait le label",
+        "cause": "d_COP leaked the label",
         "band": "simulator",
         "lookup": {
             "experiment": "X0",
@@ -61,7 +117,7 @@ _LADDER: List[Dict[str, Any]] = [
         },
     },
     {
-        "cause": "6 classes, dont une fantôme non modélisée",
+        "cause": "6 classes, including one unmodelled ghost",
         "band": "simulator",
         "lookup": {
             "experiment": "X0",
@@ -74,7 +130,7 @@ _LADDER: List[Dict[str, Any]] = [
         },
     },
     {
-        "cause": "7 classes, hold-out honnête",
+        "cause": "7 classes, honest hold-out",
         "band": "simulator",
         "lookup": {
             "experiment": "X0",
@@ -87,7 +143,7 @@ _LADDER: List[Dict[str, Any]] = [
         },
     },
     {
-        "cause": "LOMO, résidus, référence sur la machine cible",
+        "cause": "LOMO, residuals, healthy reference on the target machine",
         "band": "nist",
         "lookup": {
             "experiment": "X0b",
@@ -100,7 +156,7 @@ _LADDER: List[Dict[str, Any]] = [
         },
     },
     {
-        "cause": "sim2real : entraîné sur le simulateur, testé sur le réel",
+        "cause": "sim2real: trained on the simulator, tested on measured data",
         "band": "nist",
         "lookup": {
             "experiment": "X5",
@@ -113,7 +169,7 @@ _LADDER: List[Dict[str, Any]] = [
         },
     },
     {
-        "cause": "LOMO, référence transférée d'une autre machine",
+        "cause": "LOMO, healthy reference transferred from another machine",
         "band": "nist",
         "lookup": {
             "experiment": "X1",
@@ -126,7 +182,7 @@ _LADDER: List[Dict[str, Any]] = [
         },
     },
     {
-        "cause": "classe majoritaire",
+        "cause": "majority class",
         "band": "nist",
         "majority": True,
         "lookup": {
@@ -181,6 +237,18 @@ def _facet(family: str) -> str:
     if knn:
         return knn.group(1)
     return family
+
+
+def _wilson(note: Any) -> Optional[WilsonInterval]:
+    if note is None:
+        return None
+    match = _WILSON_RE.search(str(note))
+    if not match:
+        return None
+    low, high = float(match.group(1)), float(match.group(2))
+    if low > 1.0 or high > 1.0:
+        low, high = low / 100.0, high / 100.0
+    return WilsonInterval(low=low, high=high)
 
 
 def _int_or_none(value: Any) -> Optional[int]:
@@ -380,6 +448,13 @@ def evidence_references(df: pd.DataFrame = Depends(get_results)) -> EvidenceRefe
         majority=majority,
         annotation_dmin0=_ann("knn-k5-median-unif", "TT", 0.0),
         annotation_dmin05=_ann("knn-k5-median-unif", "TT", 0.5),
+        badge=ProtocolRef(
+            experiment="X3",
+            protocol="LOMO",
+            reference="target-machine",
+            features="residuals",
+            model="gradient-boosting",
+        ),
     )
 
 
@@ -572,4 +647,203 @@ def evidence_confusion(
         labels=labels,
         matrix=matrix,
         source=source,
+    )
+
+
+@router.get(
+    "/domain",
+    response_model=EvidenceDomain,
+    summary="X4: domain hold-out vs severity transfer",
+    operation_id="getEvidenceDomain",
+)
+def evidence_domain(df: pd.DataFrame = Depends(get_results)) -> EvidenceDomain:
+    domain: List[DomainBar] = []
+    for protocol, label in _DOMAIN_BARS:
+        row = _match(
+            df,
+            {
+                "experiment": "X4",
+                "protocol": protocol,
+                "reference": "simulated",
+                "model": "random-forest",
+                "label": "__global__",
+                "metric": "accuracy",
+            },
+        )
+        if row is None:
+            continue
+        value = _nan_to_none(row["value"])
+        if value is None:
+            continue
+        domain.append(
+            DomainBar(
+                key=protocol,
+                label=label,
+                accuracy=value,
+                n=_int_or_none(row.get("n")),
+                wilson=_wilson(row.get("note")),
+                protocol=_protocol(row),
+            )
+        )
+    severity: List[SeverityPair] = []
+    for spec in _SEVERITY_PAIRS:
+        binary = _match(
+            df,
+            {
+                "experiment": "X4",
+                "protocol": spec["binary"],
+                "reference": "simulated",
+                "model": "random-forest",
+                "label": "__global__",
+                "metric": "accuracy",
+            },
+        )
+        multi = _match(
+            df,
+            {
+                "experiment": "X4",
+                "protocol": spec["multiclass"],
+                "reference": "simulated",
+                "model": "random-forest",
+                "label": "__global__",
+                "metric": "accuracy",
+            },
+        )
+        severity.append(
+            SeverityPair(
+                key=spec["key"],
+                label=spec["label"],
+                binary=_nan_to_none(binary["value"]) if binary is not None else None,
+                multiclass=_nan_to_none(multi["value"]) if multi is not None else None,
+                n_binary=_int_or_none(binary.get("n")) if binary is not None else None,
+                n_multiclass=_int_or_none(multi.get("n")) if multi is not None else None,
+                binary_protocol=_protocol(binary) if binary is not None else None,
+                multiclass_protocol=_protocol(multi) if multi is not None else None,
+            )
+        )
+    return EvidenceDomain(
+        domain=domain,
+        severity=severity,
+        caption="The model knows something is wrong; it no longer knows what.",
+        badge=ProtocolRef(
+            experiment="X4",
+            protocol="holdout-domain",
+            reference="simulated",
+            features="24-col",
+            model="random-forest",
+        ),
+    )
+
+
+@router.get(
+    "/features",
+    response_model=EvidenceFeatures,
+    summary="P5: feature-contract slopegraph",
+    operation_id="getEvidenceFeatures",
+)
+def evidence_features(df: pd.DataFrame = Depends(get_results)) -> EvidenceFeatures:
+    series: List[FeatureSlopePoint] = []
+    for features in _FEATURE_SETS:
+        holdout = _match(
+            df,
+            {
+                "experiment": "P5",
+                "protocol": "holdout-test",
+                "reference": "simulated",
+                "features": features,
+                "model": "random-forest",
+                "label": "__global__",
+                "metric": "accuracy",
+            },
+        )
+        domain = _match(
+            df,
+            {
+                "experiment": "P5",
+                "protocol": "holdout-domain-Tset>48",
+                "reference": "simulated",
+                "features": features,
+                "model": "random-forest",
+                "label": "__global__",
+                "metric": "accuracy",
+            },
+        )
+        if holdout is None and domain is None:
+            continue
+        series.append(
+            FeatureSlopePoint(
+                features=features,
+                holdout=_nan_to_none(holdout["value"]) if holdout is not None else None,
+                domain=_nan_to_none(domain["value"]) if domain is not None else None,
+                protocol_holdout=_protocol(holdout) if holdout is not None else None,
+                protocol_domain=_protocol(domain) if domain is not None else None,
+            )
+        )
+    return EvidenceFeatures(
+        series=series,
+        note="Residuals-only was prescribed, measured, and rejected.",
+        badge=ProtocolRef(
+            experiment="P5",
+            protocol="holdout-test",
+            reference="simulated",
+            features="23-col",
+            model="random-forest",
+        ),
+    )
+
+
+@router.get(
+    "/rules",
+    response_model=EvidenceRules,
+    summary="X2: sign table vs tree vs boosting",
+    operation_id="getEvidenceRules",
+)
+def evidence_rules(df: pd.DataFrame = Depends(get_results)) -> EvidenceRules:
+    bars: List[RulesBar] = []
+    for model, label in _RULE_BARS:
+        row = _match(
+            df,
+            {
+                "experiment": "X2",
+                "protocol": "LOMO",
+                "reference": "target-machine",
+                "features": "residuals",
+                "model": model,
+                "label": "__global__",
+                "metric": "accuracy",
+            },
+        )
+        if row is None:
+            continue
+        bars.append(
+            RulesBar(
+                model=model,
+                label=label,
+                accuracy=_nan_to_none(row["value"]),
+                protocol=_protocol(row),
+            )
+        )
+    majority_row = _match(
+        df,
+        {
+            "experiment": "X2",
+            "protocol": "majority-class",
+            "reference": "none",
+            "features": "",
+            "model": "baseline",
+            "label": "__global__",
+            "metric": "accuracy",
+        },
+    )
+    return EvidenceRules(
+        bars=bars,
+        majority=_nan_to_none(majority_row["value"]) if majority_row is not None else None,
+        majority_protocol=_protocol(majority_row) if majority_row is not None else None,
+        badge=ProtocolRef(
+            experiment="X2",
+            protocol="LOMO",
+            reference="target-machine",
+            features="residuals",
+            model="gradient-boosting",
+        ),
     )

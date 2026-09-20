@@ -40,20 +40,28 @@ from api.schemas.dashboard import (
     SweepResponse,
 )
 from api.schemas.evidence import (
+    DomainBar,
     EvidenceConfusion,
+    EvidenceDomain,
+    EvidenceFeatures,
     EvidenceLadder,
     EvidencePerClass,
     EvidenceProtocols,
     EvidenceReferences,
+    EvidenceRules,
     EvidenceRuns,
     EvidenceSummary,
+    FeatureSlopePoint,
     LadderRung,
     PerClassScores,
     ProtocolRef,
     ProtocolSlopePoint,
     ReferencePoint,
+    RulesBar,
     RunRow,
+    SeverityPair,
     SummaryCard,
+    WilsonInterval,
 )
 from api.schemas.inference import (
     CycleState,

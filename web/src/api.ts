@@ -394,12 +394,61 @@ export type EvidenceLadder = components["schemas"]["EvidenceLadder"];
 export type ProtocolSlopePoint = components["schemas"]["ProtocolSlopePoint"];
 export type EvidenceProtocols = components["schemas"]["EvidenceProtocols"];
 export type ReferencePoint = components["schemas"]["ReferencePoint"];
-export type EvidenceReferences = components["schemas"]["EvidenceReferences"];
+export type EvidenceReferences = components["schemas"]["EvidenceReferences"] & {
+  badge?: ProtocolRef | null;
+};
 export type PerClassScores = components["schemas"]["PerClassScores"];
 export type EvidencePerClass = components["schemas"]["EvidencePerClass"];
 export type RunRow = components["schemas"]["RunRow"];
 export type EvidenceRuns = components["schemas"]["EvidenceRuns"];
 export type EvidenceConfusion = components["schemas"]["EvidenceConfusion"];
+
+export type EvidenceDomain = {
+  domain: Array<{
+    key: string;
+    label: string;
+    accuracy: number;
+    n?: number | null;
+    wilson?: { low: number; high: number } | null;
+    protocol: ProtocolRef;
+  }>;
+  severity: Array<{
+    key: string;
+    label: string;
+    binary?: number | null;
+    multiclass?: number | null;
+    n_binary?: number | null;
+    n_multiclass?: number | null;
+    binary_protocol?: ProtocolRef | null;
+    multiclass_protocol?: ProtocolRef | null;
+  }>;
+  caption: string;
+  badge: ProtocolRef;
+};
+
+export type EvidenceFeatures = {
+  series: Array<{
+    features: string;
+    holdout?: number | null;
+    domain?: number | null;
+    protocol_holdout?: ProtocolRef | null;
+    protocol_domain?: ProtocolRef | null;
+  }>;
+  note: string;
+  badge: ProtocolRef;
+};
+
+export type EvidenceRules = {
+  bars: Array<{
+    model: string;
+    label: string;
+    accuracy?: number | null;
+    protocol?: ProtocolRef | null;
+  }>;
+  majority?: number | null;
+  majority_protocol?: ProtocolRef | null;
+  badge: ProtocolRef;
+};
 
 export function fetchEvidenceSummary(signal?: AbortSignal) {
   return request<EvidenceSummary>("/api/evidence/summary", { signal });
@@ -448,4 +497,16 @@ export function fetchEvidenceConfusion(protocol = "holdout-test", signal?: Abort
     `/api/evidence/confusion?protocol=${encodeURIComponent(protocol)}`,
     { signal },
   );
+}
+
+export function fetchEvidenceDomain(signal?: AbortSignal) {
+  return request<EvidenceDomain>("/api/evidence/domain", { signal });
+}
+
+export function fetchEvidenceFeatures(signal?: AbortSignal) {
+  return request<EvidenceFeatures>("/api/evidence/features", { signal });
+}
+
+export function fetchEvidenceRules(signal?: AbortSignal) {
+  return request<EvidenceRules>("/api/evidence/rules", { signal });
 }
