@@ -63,10 +63,6 @@ X1,LOMO,training-machine,residuals,gradient-boosting,Overcharge,f1,0.786,942,
 X1,LOMO,training-machine,residuals,gradient-boosting,Undercharge,f1,0.481,1228,
 X1,LOMO,training-machine,residuals,gradient-boosting,__global__,accuracy,0.318,5386,
 X1,LOMO,training-machine,residuals,gradient-boosting,__global__,f1,0.29,5386,macro
-X1,LOMO-calibration-n10,target-machine,residuals,gradient-boosting,__global__,accuracy,0.377,10,mean of 20 LOMO draws; n healthy tests from target held out of test; F1=0.324
-X1,LOMO-calibration-n10,target-machine,residuals,gradient-boosting,__global__,f1,0.324,10,macro; mean of 20 LOMO draws
-X1,LOMO-calibration-n50,target-machine,residuals,gradient-boosting,__global__,accuracy,0.456,50,mean of 20 LOMO draws; n healthy tests from target held out of test; F1=0.380
-X1,LOMO-calibration-n50,target-machine,residuals,gradient-boosting,__global__,f1,0.38,50,macro; mean of 20 LOMO draws
 X3,LOMO,global-mean-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.327777,5386,fold-mean; F1=0.296; mae_h=38.3878
 X3,LOMO,global-mean-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.295964,5386,macro; mean of two LOMO folds
 X3,LOMO,global-mean-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.327908,5386,fold-mean; F1=0.296; mae_h=38.6743
