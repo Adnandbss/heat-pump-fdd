@@ -178,3 +178,17 @@ class EvidenceRules(BaseModel):
     majority: Optional[float] = None
     majority_protocol: Optional[ProtocolRef] = None
     badge: ProtocolRef
+
+
+class CalibrationPoint(BaseModel):
+    n_label: str
+    n_healthy: Optional[int] = None
+    accuracy: Optional[float] = None
+    f1: Optional[float] = None
+    protocol: Optional[ProtocolRef] = None
+
+
+class EvidenceCalibration(BaseModel):
+    points: List[CalibrationPoint]
+    caption: str
+    badge: ProtocolRef

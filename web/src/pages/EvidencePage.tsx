@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  fetchEvidenceCalibration,
   fetchEvidenceDomain,
   fetchEvidenceFeatures,
   fetchEvidenceLadder,
@@ -10,6 +11,7 @@ import {
   fetchEvidenceRuns,
   fetchEvidenceSummary,
   isAbortError,
+  type EvidenceCalibration,
   type EvidenceDomain,
   type EvidenceFeatures,
   type EvidenceLadder,
@@ -20,6 +22,7 @@ import {
   type EvidenceRuns,
   type EvidenceSummary,
 } from "../api";
+import { CalibrationBudget } from "../components/evidence/CalibrationBudget";
 import { DomainSeverity } from "../components/evidence/DomainSeverity";
 import { FeatureContract } from "../components/evidence/FeatureContract";
 import { ReferenceBenchmark } from "../components/evidence/ReferenceBenchmark";
@@ -42,6 +45,7 @@ export function EvidencePage() {
   const [domain, setDomain] = useState<EvidenceDomain>();
   const [features, setFeatures] = useState<EvidenceFeatures>();
   const [rules, setRules] = useState<EvidenceRules>();
+  const [calibration, setCalibration] = useState<EvidenceCalibration>();
   const [runs, setRuns] = useState<EvidenceRuns>();
   const [filters, setFilters] = useState({ experiment: "", protocol: "", model: "", label: "" });
   const [offset, setOffset] = useState(0);
@@ -59,8 +63,9 @@ export function EvidencePage() {
       fetchEvidenceDomain(controller.signal),
       fetchEvidenceFeatures(controller.signal),
       fetchEvidenceRules(controller.signal),
+      fetchEvidenceCalibration(controller.signal),
     ])
-      .then(([nextSummary, nextLadder, nextProtocols, nextReferences, nextPerClass, nextDomain, nextFeatures, nextRules]) => {
+      .then(([nextSummary, nextLadder, nextProtocols, nextReferences, nextPerClass, nextDomain, nextFeatures, nextRules, nextCalibration]) => {
         setSummary(nextSummary);
         setLadder(nextLadder);
         setProtocols(nextProtocols);
@@ -69,6 +74,7 @@ export function EvidencePage() {
         setDomain(nextDomain);
         setFeatures(nextFeatures);
         setRules(nextRules);
+        setCalibration(nextCalibration);
       })
       .catch((err: Error) => {
         if (!isAbortError(err)) setError(err.message);
@@ -128,6 +134,7 @@ export function EvidencePage() {
 
       <TruthLadder data={ladder} />
       <ProtocolSlope data={protocols} />
+      <CalibrationBudget data={calibration} />
       <ReferenceBenchmark data={references} />
       <DomainSeverity data={domain} />
       <FeatureContract data={features} />

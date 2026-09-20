@@ -337,6 +337,54 @@ TOY_ROWS = [
         "n": "10",
         "note": "toy",
     },
+    {
+        "experiment": "X1",
+        "protocol": "LOMO-calibration-n10",
+        "reference": "target-machine",
+        "features": "residuals",
+        "model": "gradient-boosting",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.377",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "X1",
+        "protocol": "LOMO-calibration-n10",
+        "reference": "target-machine",
+        "features": "residuals",
+        "model": "gradient-boosting",
+        "label": "__global__",
+        "metric": "f1",
+        "value": "0.324",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "X1",
+        "protocol": "LOMO-calibration-n50",
+        "reference": "target-machine",
+        "features": "residuals",
+        "model": "gradient-boosting",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.456",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "X1",
+        "protocol": "LOMO-calibration-n50",
+        "reference": "target-machine",
+        "features": "residuals",
+        "model": "gradient-boosting",
+        "label": "__global__",
+        "metric": "f1",
+        "value": "0.380",
+        "n": "10",
+        "note": "toy",
+    },
 ]
 
 
@@ -438,6 +486,14 @@ def test_evidence_routes_on_toy_csv_without_joblib(tmp_path):
         assert labels["gradient-boosting"] == 0.602
         assert labels["rule-table"] == 0.365
 
+        calibration = client.get("/api/evidence/calibration")
+        assert calibration.status_code == 200
+        by_n = {row["n_label"]: row["accuracy"] for row in calibration.json()["points"]}
+        assert by_n["0"] == 0.318
+        assert by_n["10"] == 0.377
+        assert by_n["50"] == 0.456
+        assert by_n["all"] == 0.602
+
 
 def test_evidence_404_when_results_csv_is_absent(tmp_path):
     app = create_app(
@@ -470,6 +526,7 @@ def test_evidence_openapi_tag_and_operation_ids():
         "/api/evidence/domain",
         "/api/evidence/features",
         "/api/evidence/rules",
+        "/api/evidence/calibration",
     ):
         op = spec["paths"][path]["get"]
         assert op["operationId"]
