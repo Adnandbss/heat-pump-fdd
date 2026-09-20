@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     comparison_path: Optional[Path] = None
     confusion_path: Optional[Path] = None
     importance_path: Optional[Path] = None
+    results_path: Optional[Path] = None
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -52,4 +53,5 @@ class Settings(BaseSettings):
         self.comparison_path = self.comparison_path or outputs / "model_comparison.csv"
         self.confusion_path = self.confusion_path or outputs / "confusion_matrix.csv"
         self.importance_path = self.importance_path or outputs / "feature_importance.csv"
+        self.results_path = self.results_path or ROOT / "outputs" / "results.csv"
         return self

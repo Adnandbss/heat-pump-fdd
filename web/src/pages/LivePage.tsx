@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { postLive, type ActivityPoint } from "../api";
+import { isAbortError, postLive, type ActivityPoint } from "../api";
 import { pretty, tooltipStyle } from "../lib";
 import { GlassCard } from "../components/GlassCard";
 import { SelectField, SliderField } from "../components/Fields";
@@ -31,17 +31,21 @@ export function LivePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
 
-  function run(nextFault = fault, nextInject = injectAt, nextN = nPoints) {
+  function run(nextFault = fault, nextInject = injectAt, nextN = nPoints, signal?: AbortSignal) {
     setLoading(true);
     setError(undefined);
-    postLive({ fault_type: nextFault, inject_at: nextInject, n_points: nextN })
+    postLive({ fault_type: nextFault, inject_at: nextInject, n_points: nextN }, signal)
       .then((payload) => setTrace(payload.trace))
-      .catch((err: Error) => setError(err.message))
+      .catch((err: Error) => {
+        if (!isAbortError(err)) setError(err.message);
+      })
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
-    run();
+    const controller = new AbortController();
+    run(fault, injectAt, nPoints, controller.signal);
+    return () => controller.abort();
     // initial live trace only
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

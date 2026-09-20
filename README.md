@@ -84,10 +84,12 @@ Hold-out on 5000 CoolProp cycles (23 features). Split: 2625 train / 875 val / 15
 (52.5 / 17.5 / 30 %). Scaler and classifier live in a `sklearn.Pipeline`. The model is
 **selected on val**, never on test. Interval: 95 % Wilson on the 1500-row test set.
 
+<!-- results-source: X0/holdout-test -->
+
 | Model | Test accuracy | 95 % CI | Test F1 | Val F1 |
 |---|---|---|---|---|
-| **Random Forest (shipped)** | **89.3 %** | 87.7 – 90.8 | 0.871 | 0.905 |
-| Gradient Boosting | 89.9 % | 88.2 – 91.3 | 0.879 | 0.902 |
+| **Random Forest (shipped)** | **89.3 %** | 87.7 – 90.8 | 0.871 | 0.905 † |
+| Gradient Boosting | 89.9 % | 88.2 – 91.3 | 0.879 | 0.902 † |
 
 The two models are tied on val (ΔF1 = 0.002). Random Forest is shipped: cheaper inference,
 readable importances. 5-fold CV on **train only**: F1 0.886 ± 0.017.
@@ -113,7 +115,9 @@ These numbers measure **how cleanly the simulator separates faults**, not field-
 
 The residual design was checked against the NIST *FDD Heat Pump Cooling* campaign — 7375 chamber tests on two machines with imposed faults. Full method and figures in [docs/NIST_FINDINGS.md](docs/NIST_FINDINGS.md).
 
-| Feature set | Random CV | Leave-one-machine-out |
+<!-- results-source: X0b/random-cv, X0b/LOMO -->
+
+| Feature set | Random CV accuracy | Leave-one-machine-out accuracy |
 |---|---|---|
 | Raw measurements | 0.954 | 0.333 |
 | Residuals only | 0.937 | **0.602** |
@@ -126,16 +130,25 @@ Two things follow. **Residuals nearly double detection when the healthy referenc
 
 If residual FDD needs healthy data from the machine in service, the practical question is how much. Measured by leave-one-machine-out over 20 draws, with the calibrating tests held out of the test set:
 
+<!-- results-source: X1/LOMO, X0b/LOMO -->
+
 | Healthy tests from the target machine | Accuracy | F1 macro |
 |---|---|---|
 | 0 — transferred reference | 0.318 | 0.290 |
-| 10 | 0.377 | 0.324 |
-| 50 | 0.456 | 0.380 |
+| 10 | 0.377 † | 0.324 † |
+| 50 | 0.456 † | 0.380 † |
 | all (~625–727) | 0.602 | 0.479 |
 
 **Fifty healthy tests recover only about 49% of the gap.** Reaching 90% takes essentially the full set. Spreading the sampled tests across the operating range rather than drawing at random helps most when few are available (n = 5: 0.391 against 0.314).
 
 The field reading: a handful of commissioning measurements is not a calibration. Covering the operating envelope is what matters, and that is a deployment constraint rather than an algorithmic one.
+
+† Not in `outputs/results.csv`. These four figures come from a sweep that was run
+but never logged through `tools.results.log()`, so nothing in the repository
+reproduces them and no test can check them. They are kept because they were
+measured and they carry the section's point; they are marked because an
+unreproducible number is not on the same footing as a logged one. Re-running the
+sweep and logging it is the fix.
 
 ## Tests
 

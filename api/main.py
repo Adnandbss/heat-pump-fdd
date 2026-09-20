@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 from api.deps import MtimeCache
 from api.errors import ArtifactMissing, UnprocessableInput
-from api.routers import dashboard, inference, thermo
+from api.routers import dashboard, evidence, inference, thermo
 from api.settings import Settings
 from src.fdd.inference import FDDEngine
 from src.studies.synthetic.scenarios import SyntheticScenarios
@@ -23,6 +23,7 @@ async def lifespan(app: FastAPI):
         "dataset": MtimeCache(),
         "class_counts": MtimeCache(),
         "saturation": MtimeCache(),
+        "results": MtimeCache(),
     }
     try:
         engine = FDDEngine(settings.classifier_path, settings.metadata_path)
@@ -45,6 +46,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             {"name": "inference", "description": "Diagnose a cycle or simulate one."},
             {"name": "dashboard", "description": "Payloads that feed the React views."},
             {"name": "thermo", "description": "P-h diagram, COP curve, sweeps, ASHRAE table."},
+            {"name": "evidence", "description": "Logged experiment results from outputs/results.csv."},
         ],
     )
     application.state.settings = settings
@@ -71,4 +73,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(inference.router)
     application.include_router(dashboard.router)
     application.include_router(thermo.router)
+    application.include_router(evidence.router)
     return application

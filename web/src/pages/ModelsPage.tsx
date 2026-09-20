@@ -13,27 +13,42 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { fetchAdvanced, fetchAmbientHeatmap, fetchModels, type ModelsPayload } from "../api";
+import { fetchAdvanced, fetchAmbientHeatmap, fetchEvidenceSummary, fetchModels, isAbortError, type EvidenceSummary, type ModelsPayload } from "../api";
 import { pretty, tooltipStyle } from "../lib";
 import { GlassCard } from "../components/GlassCard";
 import { HeatMap } from "../components/HeatMap";
+import { ProtocolBadge } from "../components/ProtocolBadge";
 
 const METRICS = ["Accuracy", "Precision", "Recall", "F1 Score"] as const;
 
 export function ModelsPage() {
   const [models, setModels] = useState<ModelsPayload>();
+  const [evidence, setEvidence] = useState<EvidenceSummary>();
   const [corr, setCorr] = useState<{ labels: string[]; matrix: number[][] }>();
   const [ambient, setAmbient] = useState<{ x_labels: string[]; y_labels: string[]; matrix: number[][] }>();
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    Promise.all([fetchModels(), fetchAdvanced(), fetchAmbientHeatmap()])
-      .then(([nextModels, nextCorr, nextAmbient]) => {
+    const controller = new AbortController();
+    Promise.all([
+      fetchModels(controller.signal),
+      fetchAdvanced(controller.signal),
+      fetchAmbientHeatmap(controller.signal),
+      fetchEvidenceSummary(controller.signal).catch((err: Error) => {
+        if (isAbortError(err)) throw err;
+        return undefined;
+      }),
+    ])
+      .then(([nextModels, nextCorr, nextAmbient, nextEvidence]) => {
         setModels(nextModels);
         setCorr(nextCorr);
         setAmbient(nextAmbient);
+        setEvidence(nextEvidence);
       })
-      .catch((err: Error) => setError(err.message));
+      .catch((err: Error) => {
+        if (!isAbortError(err)) setError(err.message);
+      });
+    return () => controller.abort();
   }, []);
 
   const best = models?.comparison[0];
@@ -61,6 +76,7 @@ export function ModelsPage() {
           <GlassCard key={gauge.label} className="p-4">
             <div className="text-[11px] uppercase tracking-wide text-white/45">{gauge.label}</div>
             <div className="text-3xl font-semibold mt-2">{(gauge.value * 100).toFixed(1)}%</div>
+            <ProtocolBadge protocol={evidence?.headline_protocol} className="mt-2" />
             <div className="mt-3 h-1.5 rounded-full bg-white/8 overflow-hidden">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-violet-500 to-emerald-300"
@@ -126,8 +142,11 @@ export function ModelsPage() {
       </div>
 
       <GlassCard className="p-6">
-        <h2 className="text-lg font-semibold mb-1">Confusion matrix</h2>
-        <p className="text-xs text-white/45 mb-4">Hold-out Gradient Boosting · synthetic cycles</p>
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <h2 className="text-lg font-semibold">Confusion matrix</h2>
+          <ProtocolBadge protocol={evidence?.headline_protocol} />
+        </div>
+        <p className="text-xs text-white/45 mb-4">Hold-out Random Forest · synthetic cycles</p>
         {models ? <HeatMap labels={models.confusion.labels} matrix={models.confusion.matrix} /> : null}
       </GlassCard>
 
@@ -156,7 +175,7 @@ export function ModelsPage() {
         </GlassCard>
         <GlassCard className="p-6">
           <h2 className="text-lg font-semibold mb-1">Per-class F1</h2>
-          <p className="text-xs text-white/45 mb-4">Calibrated Gradient Boosting</p>
+          <p className="text-xs text-white/45 mb-4">Random Forest · per-class F1 on the hold-out test set</p>
           <ul className="space-y-2">
             {(models?.f1_per_class ?? []).map((row) => (
               <li key={row.name} className="flex items-center justify-between text-sm">

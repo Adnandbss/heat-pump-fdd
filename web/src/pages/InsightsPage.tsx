@@ -14,12 +14,15 @@ import {
   fetchChallenges,
   fetchDataset,
   fetchDistribution,
+  fetchEvidenceSummary,
   fetchOverview,
   fetchScatter,
   fetchStats,
+  isAbortError,
   type Activity,
   type Challenge,
   type DatasetPayload,
+  type EvidenceSummary,
   type Overview,
   type Stats,
 } from "../api";
@@ -32,6 +35,7 @@ import { GlassCard } from "../components/GlassCard";
 import { MiniStats } from "../components/MiniStats";
 import { OutputWidget } from "../components/OutputWidget";
 import { OverviewDonut } from "../components/OverviewDonut";
+import { ProtocolBadge } from "../components/ProtocolBadge";
 import { SelectField } from "../components/Fields";
 
 export function InsightsPage() {
@@ -40,6 +44,7 @@ export function InsightsPage() {
   const [activity, setActivity] = useState<Activity>();
   const [challenges, setChallenges] = useState<Challenge[]>();
   const [dataset, setDataset] = useState<DatasetPayload>();
+  const [evidence, setEvidence] = useState<EvidenceSummary>();
   const [feature, setFeature] = useState("superheat");
   const [xCol, setXCol] = useState("delta_T_evap");
   const [yCol, setYCol] = useState("delta_T_cond");
@@ -48,41 +53,51 @@ export function InsightsPage() {
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     Promise.all([
-      fetchStats(),
-      fetchOverview(),
-      fetchActivity(),
-      fetchChallenges(),
-      fetchDataset(),
+      fetchStats("Condenser_Fouling", controller.signal),
+      fetchOverview(controller.signal),
+      fetchActivity(controller.signal),
+      fetchChallenges(controller.signal),
+      fetchDataset(controller.signal),
+      fetchEvidenceSummary(controller.signal).catch((err: Error) => {
+        if (isAbortError(err)) throw err;
+        return undefined;
+      }),
     ])
-      .then(([nextStats, nextOverview, nextActivity, nextChallenges, nextDataset]) => {
-        if (cancelled) return;
+      .then(([nextStats, nextOverview, nextActivity, nextChallenges, nextDataset, nextEvidence]) => {
         setStats(nextStats);
         setOverview(nextOverview);
         setActivity(nextActivity);
         setChallenges(nextChallenges.challenges);
         setDataset(nextDataset);
+        setEvidence(nextEvidence);
         if (nextDataset.columns.includes("superheat")) setFeature("superheat");
       })
       .catch((err: Error) => {
-        if (!cancelled) setError(err.message);
+        if (!isAbortError(err)) setError(err.message);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
-    fetchDistribution(feature)
+    const controller = new AbortController();
+    fetchDistribution(feature, controller.signal)
       .then(setBoxes)
-      .catch((err: Error) => setError(err.message));
+      .catch((err: Error) => {
+        if (!isAbortError(err)) setError(err.message);
+      });
+    return () => controller.abort();
   }, [feature]);
 
   useEffect(() => {
-    fetchScatter(xCol, yCol)
+    const controller = new AbortController();
+    fetchScatter(xCol, yCol, controller.signal)
       .then(setScatter)
-      .catch((err: Error) => setError(err.message));
+      .catch((err: Error) => {
+        if (!isAbortError(err)) setError(err.message);
+      });
+    return () => controller.abort();
   }, [xCol, yCol]);
 
   const kpis = useMemo(() => {
@@ -113,6 +128,9 @@ export function InsightsPage() {
           <GlassCard key={kpi.label} className="p-4">
             <div className="text-[11px] uppercase tracking-wide text-white/45">{kpi.label}</div>
             <div className="text-2xl font-semibold mt-2">{kpi.value}</div>
+            {kpi.label === "Hold-out accuracy" ? (
+              <ProtocolBadge protocol={evidence?.headline_protocol} className="mt-2" />
+            ) : null}
           </GlassCard>
         ))}
       </div>

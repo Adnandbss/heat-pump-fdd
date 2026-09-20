@@ -6,6 +6,7 @@ type Props = {
   matrix: number[][];
   percent?: boolean;
   integers?: boolean;
+  gap?: number;
 };
 
 function cellColor(value: number) {
@@ -13,7 +14,14 @@ function cellColor(value: number) {
   return `rgba(91, 157, 255, ${0.08 + t * 0.82})`;
 }
 
-export function HeatMap({ labels, rowLabels, matrix, percent = true, integers = false }: Props) {
+export function HeatMap({
+  labels,
+  rowLabels,
+  matrix,
+  percent = true,
+  integers = false,
+  gap = 4,
+}: Props) {
   const rows = rowLabels ?? labels;
   const maxAbs = Math.max(
     1,
@@ -21,7 +29,7 @@ export function HeatMap({ labels, rowLabels, matrix, percent = true, integers = 
   );
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[10px] border-separate border-spacing-1">
+      <table className="w-full text-[10px] border-separate" style={{ borderSpacing: gap }}>
         <thead>
           <tr>
             <th />
