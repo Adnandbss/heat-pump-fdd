@@ -8,7 +8,6 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const out = resolve(root, "docs/front");
 mkdirSync(out, { recursive: true });
 const BASE = "http://127.0.0.1:5173";
-const README = new Set(["00-full.png"]);
 const SHOTS = [
   "01-hero.png",
   "02-ladder.png",
@@ -22,28 +21,13 @@ const SHOTS = [
   "10-confusion.png",
   "11-runs.png",
   "00-full.png",
-  "12-insights.png",
-  "13-models.png",
 ];
 
 function compressPng(path) {
   const oxipng = spawnSync("oxipng", ["-o4", "--strip", "safe", path], { encoding: "utf8" });
-  if (oxipng.status === 0) return;
-  const pngquant = spawnSync(
-    "pngquant",
-    ["--quality=70-90", "--speed", "1", "--ext", ".png", "--force", path],
-    { encoding: "utf8" },
-  );
-  if (pngquant.status === 0) return;
-  spawnSync(
-    "python3",
-    [
-      "-c",
-      "import sys; from PIL import Image; p=sys.argv[1]; im=Image.open(p); im.save(p, optimize=True)",
-      path,
-    ],
-    { encoding: "utf8" },
-  );
+  if (oxipng.status === 0) return true;
+  console.warn("oxipng missing or failed — left", path, "uncompressed (install oxipng to hit the 2 Mo target)");
+  return false;
 }
 
 for (const name of readdirSync(out)) {
@@ -87,21 +71,11 @@ for (const [testId, name] of figures) {
   console.log("wrote", name);
 }
 
-await lite.page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-await lite.page.waitForTimeout(800);
-await lite.page.screenshot({ path: resolve(out, "12-insights.png"), fullPage: false });
-console.log("wrote 12-insights.png");
-
-await lite.page.goto(`${BASE}/models`, { waitUntil: "networkidle" });
-await lite.page.waitForTimeout(1000);
-await lite.page.screenshot({ path: resolve(out, "13-models.png"), fullPage: false });
-console.log("wrote 13-models.png");
-await lite.context.close();
-
-const hero = await openPage(2);
-await hero.page.screenshot({ path: resolve(out, "00-full.png"), fullPage: true });
+await lite.page.setViewportSize({ width: 1440, height: 1600 });
+await lite.page.waitForTimeout(400);
+await lite.page.screenshot({ path: resolve(out, "00-full.png"), fullPage: false });
 console.log("wrote 00-full.png");
-await hero.context.close();
+await lite.context.close();
 await browser.close();
 
 let bytes = 0;
@@ -115,5 +89,3 @@ console.log(`docs/front total ${(bytes / 1024 / 1024).toFixed(2)} Mo`);
 if (bytes > 2 * 1024 * 1024) {
   console.warn("docs/front is above the 2 Mo target");
 }
-
-void README;
