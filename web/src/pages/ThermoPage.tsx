@@ -236,6 +236,9 @@ export function ThermoPage() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+              <p className="text-[11px] text-white/50 mt-3">
+                Broken segments: no Normal measurement in that ambient bin.
+              </p>
             </GlassCard>
           </div>
         </>

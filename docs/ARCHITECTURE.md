@@ -124,8 +124,8 @@ bias.
 
 `GET /api/thermo/cop` plots the heating Carnot envelope
 \(T_\mathrm{sink}/(T_\mathrm{sink}-T_\mathrm{amb})\) at a queryable \(T_\mathrm{sink}\)
-(default 40 °C) and the mean Normal COP in each ambient bin. Empty bins are omitted
-from the measured series (a hole, not a zero).
+(default 40 °C), sweeping \(T_\mathrm{amb}\) up to \(T_\mathrm{sink}-10\) so the envelope
+stays finite. Empty bins are holes, not zeros.
 
 ## External validation: published NIST datasets
 

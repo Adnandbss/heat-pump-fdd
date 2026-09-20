@@ -133,7 +133,7 @@ def api_thermo_cop(
     T_sink: float = Query(40.0, ge=25.0, le=60.0),
     df: pd.DataFrame = Depends(get_dataset),
 ) -> CopResponse:
-    t_max = T_sink - 2.0
+    t_max = T_sink - 10.0
     T_amb = np.linspace(-10.0, t_max, 40)
     t_sink_k = T_sink + 273.15
     carnot = t_sink_k / np.maximum(t_sink_k - (T_amb + 273.15), 1.0)
