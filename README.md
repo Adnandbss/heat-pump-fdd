@@ -150,6 +150,10 @@ measured and they carry the section's point; they are marked because an
 unreproducible number is not on the same footing as a logged one. Re-running the
 sweep and logging it is the fix.
 
+`docs/FRONT_EVIDENCE.pdf` and the NIST PNGs under `docs/` are generated artefacts
+(`web/scripts/capture_evidence.mjs` and the EDA compute scripts). They are kept in
+git so the dossier builds offline; they are not a second source of numbers.
+
 ## Tests
 
 ```bash

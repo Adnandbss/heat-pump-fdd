@@ -217,6 +217,126 @@ TOY_ROWS = [
         "n": "10",
         "note": "toy",
     },
+    {
+        "experiment": "X4",
+        "protocol": "holdout-random-control",
+        "reference": "simulated",
+        "features": "24-col",
+        "model": "random-forest",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.919",
+        "n": "10",
+        "note": "95% Wilson [0.90, 0.93]",
+    },
+    {
+        "experiment": "X4",
+        "protocol": "holdout-binary-severity-train>=0.20",
+        "reference": "simulated",
+        "features": "24-col",
+        "model": "random-forest",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.887",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "X4",
+        "protocol": "holdout-severity-4class-<0.20",
+        "reference": "simulated",
+        "features": "24-col",
+        "model": "random-forest",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.428",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "P5",
+        "protocol": "holdout-test",
+        "reference": "simulated",
+        "features": "23-col",
+        "model": "random-forest",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.893",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "P5",
+        "protocol": "holdout-domain-Tset>48",
+        "reference": "simulated",
+        "features": "23-col",
+        "model": "random-forest",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.896",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "P5",
+        "protocol": "holdout-test",
+        "reference": "simulated",
+        "features": "residuals",
+        "model": "random-forest",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.823",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "P5",
+        "protocol": "holdout-domain-Tset>48",
+        "reference": "simulated",
+        "features": "residuals",
+        "model": "random-forest",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.764",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "X2",
+        "protocol": "LOMO",
+        "reference": "target-machine",
+        "features": "residuals",
+        "model": "gradient-boosting",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.602",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "X2",
+        "protocol": "LOMO",
+        "reference": "target-machine",
+        "features": "residuals",
+        "model": "rule-table",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.365",
+        "n": "10",
+        "note": "toy",
+    },
+    {
+        "experiment": "X2",
+        "protocol": "majority-class",
+        "reference": "none",
+        "features": "",
+        "model": "baseline",
+        "label": "__global__",
+        "metric": "accuracy",
+        "value": "0.251",
+        "n": "10",
+        "note": "toy",
+    },
 ]
 
 
@@ -300,6 +420,24 @@ def test_evidence_routes_on_toy_csv_without_joblib(tmp_path):
         missing = client.get("/api/evidence/confusion", params={"protocol": "sim2real"})
         assert missing.status_code == 404
 
+        domain = client.get("/api/evidence/domain")
+        assert domain.status_code == 200
+        assert domain.json()["domain"][0]["accuracy"] == 0.919
+        assert domain.json()["severity"][0]["multiclass"] == 0.428
+
+        features = client.get("/api/evidence/features")
+        assert features.status_code == 200
+        by_feat = {row["features"]: row for row in features.json()["series"]}
+        assert by_feat["23-col"]["holdout"] == 0.893
+        assert by_feat["residuals"]["domain"] == 0.764
+
+        rules = client.get("/api/evidence/rules")
+        assert rules.status_code == 200
+        assert rules.json()["majority"] == 0.251
+        labels = {row["model"]: row["accuracy"] for row in rules.json()["bars"]}
+        assert labels["gradient-boosting"] == 0.602
+        assert labels["rule-table"] == 0.365
+
 
 def test_evidence_404_when_results_csv_is_absent(tmp_path):
     app = create_app(
@@ -329,6 +467,9 @@ def test_evidence_openapi_tag_and_operation_ids():
         "/api/evidence/per-class",
         "/api/evidence/runs",
         "/api/evidence/confusion",
+        "/api/evidence/domain",
+        "/api/evidence/features",
+        "/api/evidence/rules",
     ):
         op = spec["paths"][path]["get"]
         assert op["operationId"]
@@ -356,3 +497,16 @@ def test_evidence_reads_shipped_csv_without_joblib(tmp_path):
     assert summary.status_code == 200
     assert len(ladder.json()["rungs"]) >= 6
     assert summary.json()["headline_value"] is not None
+
+
+def test_every_logged_experiment_has_a_figure():
+    from api.routers.evidence import covered_experiments
+    from tools.results import get
+
+    canonical = {"X0", "X0b", "X1", "X2", "X3", "X4", "X5", "P5"}
+    logged = {row["experiment"] for row in get()}
+    selected = covered_experiments()
+    missing = sorted(canonical - selected)
+    absent = sorted(canonical - logged)
+    assert not missing, f"canonical experiments with no figure: {missing}"
+    assert not absent, f"canonical experiments missing from results.csv: {absent}"

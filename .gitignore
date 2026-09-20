@@ -14,3 +14,5 @@ Thumbs.db
 *.log
 web/node_modules/
 web/dist/
+/package.json
+/package-lock.json

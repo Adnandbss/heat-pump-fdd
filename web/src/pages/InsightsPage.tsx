@@ -37,6 +37,7 @@ import { OutputWidget } from "../components/OutputWidget";
 import { OverviewDonut } from "../components/OverviewDonut";
 import { ProtocolBadge } from "../components/ProtocolBadge";
 import { SelectField } from "../components/Fields";
+import { Skeleton } from "../components/Skeleton";
 
 export function InsightsPage() {
   const [stats, setStats] = useState<Stats>();
@@ -117,6 +118,23 @@ export function InsightsPage() {
 
   const columns = (dataset?.columns ?? []).map((col) => ({ value: col, label: col }));
 
+  const loading = !dataset && !overview && !error;
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+          <Skeleton className="h-[104px]" />
+          <Skeleton className="h-[104px]" />
+          <Skeleton className="h-[104px]" />
+          <Skeleton className="h-[104px]" />
+        </div>
+        <Skeleton className="h-[22rem]" />
+        <Skeleton className="h-[20rem]" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {error ? (
@@ -126,7 +144,7 @@ export function InsightsPage() {
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         {kpis.map((kpi) => (
           <GlassCard key={kpi.label} className="p-4">
-            <div className="text-[11px] uppercase tracking-wide text-white/45">{kpi.label}</div>
+            <div className="text-[11px] uppercase tracking-wide text-white/60">{kpi.label}</div>
             <div className="text-2xl font-semibold mt-2">{kpi.value}</div>
             {kpi.label === "Hold-out accuracy" ? (
               <ProtocolBadge protocol={evidence?.headline_protocol} className="mt-2" />

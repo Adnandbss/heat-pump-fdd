@@ -72,6 +72,7 @@ class EvidenceReferences(BaseModel):
     majority: Optional[float] = None
     annotation_dmin0: Optional[ReferencePoint] = None
     annotation_dmin05: Optional[ReferencePoint] = None
+    badge: Optional[ProtocolRef] = None
 
 
 class PerClassScores(BaseModel):
@@ -117,3 +118,63 @@ class EvidenceConfusion(BaseModel):
     labels: List[str]
     matrix: List[List[float]]
     source: str
+
+
+class WilsonInterval(BaseModel):
+    low: float
+    high: float
+
+
+class DomainBar(BaseModel):
+    key: str
+    label: str
+    accuracy: float
+    n: Optional[int] = None
+    wilson: Optional[WilsonInterval] = None
+    protocol: ProtocolRef
+
+
+class SeverityPair(BaseModel):
+    key: str
+    label: str
+    binary: Optional[float] = None
+    multiclass: Optional[float] = None
+    n_binary: Optional[int] = None
+    n_multiclass: Optional[int] = None
+    binary_protocol: Optional[ProtocolRef] = None
+    multiclass_protocol: Optional[ProtocolRef] = None
+
+
+class EvidenceDomain(BaseModel):
+    domain: List[DomainBar]
+    severity: List[SeverityPair]
+    caption: str
+    badge: ProtocolRef
+
+
+class FeatureSlopePoint(BaseModel):
+    features: str
+    holdout: Optional[float] = None
+    domain: Optional[float] = None
+    protocol_holdout: Optional[ProtocolRef] = None
+    protocol_domain: Optional[ProtocolRef] = None
+
+
+class EvidenceFeatures(BaseModel):
+    series: List[FeatureSlopePoint]
+    note: str
+    badge: ProtocolRef
+
+
+class RulesBar(BaseModel):
+    model: str
+    label: str
+    accuracy: Optional[float] = None
+    protocol: Optional[ProtocolRef] = None
+
+
+class EvidenceRules(BaseModel):
+    bars: List[RulesBar]
+    majority: Optional[float] = None
+    majority_protocol: Optional[ProtocolRef] = None
+    badge: ProtocolRef

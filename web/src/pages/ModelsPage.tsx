@@ -18,6 +18,7 @@ import { pretty, tooltipStyle } from "../lib";
 import { GlassCard } from "../components/GlassCard";
 import { HeatMap } from "../components/HeatMap";
 import { ProtocolBadge } from "../components/ProtocolBadge";
+import { Skeleton } from "../components/Skeleton";
 
 const METRICS = ["Accuracy", "Precision", "Recall", "F1 Score"] as const;
 
@@ -66,6 +67,23 @@ export function ModelsPage() {
   });
 
   const modelNames = (models?.comparison ?? []).map((row) => String(row.Model));
+
+  const loading = !models && !error;
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+        </div>
+        <Skeleton className="h-[18rem]" />
+        <Skeleton className="h-[22rem]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

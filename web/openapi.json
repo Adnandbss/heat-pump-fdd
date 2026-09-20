@@ -1170,6 +1170,69 @@
           }
         }
       }
+    },
+    "/api/evidence/domain": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "X4: domain hold-out vs severity transfer",
+        "operationId": "getEvidenceDomain",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceDomain"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence/features": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "P5: feature-contract slopegraph",
+        "operationId": "getEvidenceFeatures",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceFeatures"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence/rules": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "X2: sign table vs tree vs boosting",
+        "operationId": "getEvidenceRules",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceRules"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1766,6 +1829,54 @@
         ],
         "title": "DistributionResponse"
       },
+      "DomainBar": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "accuracy": {
+            "type": "number",
+            "title": "Accuracy"
+          },
+          "n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N"
+          },
+          "wilson": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WilsonInterval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol": {
+            "$ref": "#/components/schemas/ProtocolRef"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "accuracy",
+          "protocol"
+        ],
+        "title": "DomainBar"
+      },
       "Envelope": {
         "properties": {
           "normal": {
@@ -1842,6 +1953,64 @@
           "source"
         ],
         "title": "EvidenceConfusion"
+      },
+      "EvidenceDomain": {
+        "properties": {
+          "domain": {
+            "items": {
+              "$ref": "#/components/schemas/DomainBar"
+            },
+            "type": "array",
+            "title": "Domain"
+          },
+          "severity": {
+            "items": {
+              "$ref": "#/components/schemas/SeverityPair"
+            },
+            "type": "array",
+            "title": "Severity"
+          },
+          "caption": {
+            "type": "string",
+            "title": "Caption"
+          },
+          "badge": {
+            "$ref": "#/components/schemas/ProtocolRef"
+          }
+        },
+        "type": "object",
+        "required": [
+          "domain",
+          "severity",
+          "caption",
+          "badge"
+        ],
+        "title": "EvidenceDomain"
+      },
+      "EvidenceFeatures": {
+        "properties": {
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureSlopePoint"
+            },
+            "type": "array",
+            "title": "Series"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "badge": {
+            "$ref": "#/components/schemas/ProtocolRef"
+          }
+        },
+        "type": "object",
+        "required": [
+          "series",
+          "note",
+          "badge"
+        ],
+        "title": "EvidenceFeatures"
       },
       "EvidenceLadder": {
         "properties": {
@@ -1957,6 +2126,16 @@
                 "type": "null"
               }
             ]
+          },
+          "badge": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProtocolRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -1964,6 +2143,47 @@
           "points"
         ],
         "title": "EvidenceReferences"
+      },
+      "EvidenceRules": {
+        "properties": {
+          "bars": {
+            "items": {
+              "$ref": "#/components/schemas/RulesBar"
+            },
+            "type": "array",
+            "title": "Bars"
+          },
+          "majority": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Majority"
+          },
+          "majority_protocol": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProtocolRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "badge": {
+            "$ref": "#/components/schemas/ProtocolRef"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bars",
+          "badge"
+        ],
+        "title": "EvidenceRules"
       },
       "EvidenceRuns": {
         "properties": {
@@ -2123,6 +2343,61 @@
           "importance"
         ],
         "title": "FeatureImportance"
+      },
+      "FeatureSlopePoint": {
+        "properties": {
+          "features": {
+            "type": "string",
+            "title": "Features"
+          },
+          "holdout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holdout"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "protocol_holdout": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProtocolRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_domain": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProtocolRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "features"
+        ],
+        "title": "FeatureSlopePoint"
       },
       "FeatureVector": {
         "properties": {
@@ -3068,6 +3343,45 @@
         ],
         "title": "ReferencePoint"
       },
+      "RulesBar": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "accuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracy"
+          },
+          "protocol": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProtocolRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "label"
+        ],
+        "title": "RulesBar"
+      },
       "RunRow": {
         "properties": {
           "experiment": {
@@ -3238,6 +3552,88 @@
           "description"
         ],
         "title": "Scenario"
+      },
+      "SeverityPair": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "binary": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Binary"
+          },
+          "multiclass": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Multiclass"
+          },
+          "n_binary": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Binary"
+          },
+          "n_multiclass": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Multiclass"
+          },
+          "binary_protocol": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProtocolRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "multiclass_protocol": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProtocolRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "SeverityPair"
       },
       "SimulateRequest": {
         "properties": {
@@ -3562,6 +3958,24 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WilsonInterval": {
+        "properties": {
+          "low": {
+            "type": "number",
+            "title": "Low"
+          },
+          "high": {
+            "type": "number",
+            "title": "High"
+          }
+        },
+        "type": "object",
+        "required": [
+          "low",
+          "high"
+        ],
+        "title": "WilsonInterval"
       }
     }
   },
