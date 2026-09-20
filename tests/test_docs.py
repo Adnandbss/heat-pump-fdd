@@ -82,40 +82,121 @@ def test_readme_results_percentages_are_logged():
     """
     from tools.results import get
 
-    text = (ROOT / "README.md").read_text(encoding="utf-8")
-    match = re.search(r"^## Results\n(.*?)(?=^## |\Z)", text, re.M | re.S)
-    assert match, "README has no ## Results section"
-    section = match.group(1)
-    cited_pct = {p.replace(",", ".") for p in re.findall(r"(\d+[.,]\d+)\s*%", section)}
-    cited_dec = set()
-    for line in section.splitlines():
-        if not line.strip().startswith("|"):
-            continue
-        for cell in line.split("|"):
-            raw = cell.strip().replace(",", ".").strip("*")
-            if re.fullmatch(r"0\.\d+", raw):
-                cited_dec.add(f"{float(raw):.3f}")
-    logged_pct = set()
-    logged_dec = set()
+    section = _results_section()
+    cited = {p.replace(",", ".") for p in re.findall(r"(\d+[.,]\d+)\s*%", section)}
+    logged = set()
     for row in get():
-        value = float(row["value"])
-        logged_pct.add(f"{value * 100:.1f}")
-        logged_dec.add(f"{value:.3f}")
+        logged.add(f"{float(row['value']) * 100:.1f}")
         for a, b in re.findall(r"\[(\d+\.\d+),\s*(\d+\.\d+)\]", row.get("note") or ""):
             lo, hi = float(a), float(b)
             scale = 100.0 if lo <= 1.0 else 1.0
-            logged_pct.add(f"{lo * scale:.1f}")
-            logged_pct.add(f"{hi * scale:.1f}")
-            logged_dec.add(f"{lo:.3f}")
-            logged_dec.add(f"{hi:.3f}")
-    missing_pct = sorted(cited_pct - logged_pct)
-    missing_dec = sorted(cited_dec - logged_dec)
-    assert not missing_pct, (
-        f"README Results cites {missing_pct} % with no matching row in results.csv"
+            logged.add(f"{lo * scale:.1f}")
+            logged.add(f"{hi * scale:.1f}")
+    missing = sorted(cited - logged)
+    assert not missing, (
+        f"README Results cites {missing} % with no matching row in results.csv"
     )
-    assert not missing_dec, (
-        f"README Results tables cite {missing_dec} with no matching row in results.csv"
+
+
+def _results_section() -> str:
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    match = re.search(r"^## Results\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+    assert match, "README has no ## Results section"
+    return match.group(1)
+
+
+_SOURCE_TAG = re.compile(r"<!--\s*results-source:\s*(.+?)\s*-->")
+_DECIMAL = re.compile(r"0\.\d+")
+
+
+def _tables_with_sources(section: str):
+    """Yield (source_pairs, header_cells, body_lines) for each Results table."""
+    pending: list[tuple[str, str]] = []
+    block: list[str] = []
+    for line in section.splitlines():
+        tag = _SOURCE_TAG.search(line)
+        if tag:
+            pending = [tuple(item.strip().split("/", 1)) for item in tag.group(1).split(",")]
+            continue
+        if line.strip().startswith("|"):
+            block.append(line)
+            continue
+        if block:
+            yield pending, block
+            pending, block = [], []
+    if block:
+        yield pending, block
+
+
+def _column_metric(header: str) -> str | None:
+    lowered = header.lower()
+    if "f1" in lowered:
+        return "f1"
+    if "accuracy" in lowered:
+        return "accuracy"
+    return None
+
+
+def test_readme_results_decimals_name_their_source():
+    """Each Results table declares which (experiment, protocol) it reads.
+
+    Matching on the bare value is not a guard: results.csv holds 656 rows and
+    only 327 distinct values at three decimals, so a number drawn at random in
+    [0.25, 0.99] lands on some unrelated row 42 % of the time. That is how the
+    README's calibration table passed while citing figures that were never
+    logged, and how a Val F1 of 0.905 was covered by an accuracy of 0.905333.
+
+    A cell that no logged row backs must carry a dagger and say so in print.
+    """
+    from tools.results import get
+
+    section = _results_section()
+    rows = list(get())
+    offenders: list[str] = []
+    checked = 0
+
+    for sources, block in _tables_with_sources(section):
+        header = [c.strip() for c in block[0].split("|")]
+        assert sources, f"Results table has no `<!-- results-source: ... -->` tag: {block[0]}"
+        allowed = [
+            r
+            for r in rows
+            if any(r["experiment"] == exp and r["protocol"] == proto for exp, proto in sources)
+        ]
+        assert allowed, f"no results.csv row matches {sources}"
+        for line in block[2:]:
+            cells = [c.strip() for c in line.split("|")]
+            for index, cell in enumerate(cells):
+                found = _DECIMAL.search(cell.replace(",", "."))
+                if not found:
+                    continue
+                metric = _column_metric(header[index]) if index < len(header) else None
+                if metric is None:
+                    continue
+                checked += 1
+                if "†" in cell:
+                    continue
+                value = float(found.group())
+                if not any(
+                    r["metric"] == metric and round(float(r["value"]), 3) == round(value, 3)
+                    for r in allowed
+                ):
+                    offenders.append(
+                        f"{cells[1] if len(cells) > 1 else line.strip()!r}: "
+                        f"{header[index]} = {value} has no {metric} row in {sources}"
+                    )
+
+    assert checked, "no Results table cell was checked -- the parser found nothing"
+    assert not offenders, (
+        "README Results cites figures that results.csv does not back.\n"
+        "Log the measurement, or mark the cell with † and footnote it:\n  "
+        + "\n  ".join(offenders)
     )
+    if "†" in section:
+        assert re.search(r"^†", section, re.M), (
+            "a Results cell is marked † but the section defines no † footnote"
+        )
+
 
 
 def test_dossier_x0_matches_results_csv():
