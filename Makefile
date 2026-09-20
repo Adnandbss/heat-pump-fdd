@@ -15,4 +15,5 @@ capture:
 	cd web && npm run capture
 
 openapi:
-	cd web && npm run gen:api
+	$(PY) tools/export_openapi.py
+	cd web && npx openapi-typescript openapi.json -o src/api.generated.ts

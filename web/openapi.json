@@ -728,8 +728,22 @@
         "tags": [
           "thermo"
         ],
-        "summary": "Carnot envelope and measured Normal COP vs ambient",
+        "summary": "Heating Carnot envelope and measured Normal COP vs ambient",
         "operationId": "getCopCurve",
+        "parameters": [
+          {
+            "name": "T_sink",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 60.0,
+              "minimum": 25.0,
+              "default": 40.0,
+              "title": "T Sink"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -737,6 +751,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CopResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -1233,6 +1257,27 @@
           }
         }
       }
+    },
+    "/api/evidence/calibration": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "X1: healthy-calibration budget on the target machine",
+        "operationId": "getEvidenceCalibration",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceCalibration"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1389,6 +1434,62 @@
           "mean"
         ],
         "title": "BoxStats"
+      },
+      "CalibrationPoint": {
+        "properties": {
+          "n_label": {
+            "type": "string",
+            "title": "N Label"
+          },
+          "n_healthy": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Healthy"
+          },
+          "accuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracy"
+          },
+          "f1": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "F1"
+          },
+          "protocol": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProtocolRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "n_label"
+        ],
+        "title": "CalibrationPoint"
       },
       "CatalogResponse": {
         "properties": {
@@ -1611,15 +1712,32 @@
             "title": "Carnot"
           },
           "estimated": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Estimated"
+          },
+          "n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N"
           }
         },
         "type": "object",
         "required": [
           "T_amb",
-          "carnot",
-          "estimated"
+          "carnot"
         ],
         "title": "CopCurvePoint"
       },
@@ -1916,6 +2034,31 @@
           "T_cond"
         ],
         "title": "EnvelopeZone"
+      },
+      "EvidenceCalibration": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/CalibrationPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "caption": {
+            "type": "string",
+            "title": "Caption"
+          },
+          "badge": {
+            "$ref": "#/components/schemas/ProtocolRef"
+          }
+        },
+        "type": "object",
+        "required": [
+          "points",
+          "caption",
+          "badge"
+        ],
+        "title": "EvidenceCalibration"
       },
       "EvidenceConfusion": {
         "properties": {

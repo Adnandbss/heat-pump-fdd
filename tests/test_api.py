@@ -172,6 +172,35 @@ def test_ml_dashboard_payloads():
     assert cop.status_code == 200
     assert cop.json()["curves"]
 
+    condenser = client.get("/api/thermo/sweep/condenser", params={"T_evap": 0, "load_min": 40, "load_max": 100})
+    assert condenser.status_code == 200
+    assert len(condenser.json()["points"]) == 20
+    assert condenser.json()["points"][0]["COP"] > 0
+
+    evap = client.get("/api/thermo/sweep/evaporator", params={"T_cond": 45})
+    assert evap.status_code == 200
+    assert evap.json()["headline"]
+
+    ashrae = client.get("/api/thermo/ashrae")
+    assert ashrae.status_code == 200
+    assert len(ashrae.json()["rows"]) >= 8
+
+    ambient = client.get("/api/advanced/ambient")
+    assert ambient.status_code == 200
+    assert len(ambient.json()["y_labels"]) == 5
+    assert ambient.json()["matrix"]
+
+    compare = client.get(
+        "/api/thermo/ph/compare",
+        params={"scenario": "all", "load_factor": 50, "t_source": -10, "T_evap": 0, "T_cond": 45},
+    )
+    assert compare.status_code == 200
+    body = compare.json()
+    assert body["condenser"]["P_cond"] > body["nominal"]["P_cond"]
+    assert body["evaporator"]["P_evap"] < body["nominal"]["P_evap"]
+    assert len(body["saturation"]) > 10
+    assert len(body["nominal"]["cycle"]) == 5
+
 
 def test_cop_curve_is_heating_carnot_under_second_law(tmp_path):
     from api.deps import get_engine
@@ -203,7 +232,8 @@ def test_cop_curve_is_heating_carnot_under_second_law(tmp_path):
     assert all(value > 0 for value in carnot)
     assert all(left < right for left, right in zip(tamb, tamb[1:]))
     assert all(left < right for left, right in zip(carnot, carnot[1:]))
-    assert max(tamb) <= 40.0 - 2.0 + 1e-9
+    assert max(tamb) <= 40.0 - 10.0 + 1e-9
+    assert max(carnot) < 40.0
     measured_bins = 0
     for row in curves:
         assert row["carnot"] != 0
@@ -215,35 +245,6 @@ def test_cop_curve_is_heating_carnot_under_second_law(tmp_path):
         assert row["estimated"] < row["carnot"]
         assert row["n"] and row["n"] > 0
     assert measured_bins >= 1
-
-    condenser = client.get("/api/thermo/sweep/condenser", params={"T_evap": 0, "load_min": 40, "load_max": 100})
-    assert condenser.status_code == 200
-    assert len(condenser.json()["points"]) == 20
-    assert condenser.json()["points"][0]["COP"] > 0
-
-    evap = client.get("/api/thermo/sweep/evaporator", params={"T_cond": 45})
-    assert evap.status_code == 200
-    assert evap.json()["headline"]
-
-    ashrae = client.get("/api/thermo/ashrae")
-    assert ashrae.status_code == 200
-    assert len(ashrae.json()["rows"]) >= 8
-
-    ambient = client.get("/api/advanced/ambient")
-    assert ambient.status_code == 200
-    assert len(ambient.json()["y_labels"]) == 5
-    assert ambient.json()["matrix"]
-
-    compare = client.get(
-        "/api/thermo/ph/compare",
-        params={"scenario": "all", "load_factor": 50, "t_source": -10, "T_evap": 0, "T_cond": 45},
-    )
-    assert compare.status_code == 200
-    body = compare.json()
-    assert body["condenser"]["P_cond"] > body["nominal"]["P_cond"]
-    assert body["evaporator"]["P_evap"] < body["nominal"]["P_evap"]
-    assert len(body["saturation"]) > 10
-    assert len(body["nominal"]["cycle"]) == 5
 
 
 def test_pydantic_contracts_reject_unknown_fault():
@@ -368,3 +369,19 @@ def test_openapi_declares_tags_and_operation_ids():
     assert not missing, missing
     assert spec["paths"]["/health"]["get"]["operationId"] == "getHealth"
     assert spec["paths"]["/predict"]["post"]["operationId"] == "predictFault"
+
+
+def test_committed_openapi_matches_the_app():
+    import json
+    from pathlib import Path
+
+    from api.main import create_app
+
+    generated = create_app().openapi()
+    committed = json.loads((Path(__file__).resolve().parents[1] / "web" / "openapi.json").read_text())
+    assert "/api/evidence/calibration" in generated["paths"]
+    assert "/api/evidence/calibration" in committed["paths"]
+    params = generated["paths"]["/api/thermo/cop"]["get"].get("parameters") or []
+    assert any(item.get("name") == "T_sink" for item in params)
+    assert generated["paths"].keys() == committed["paths"].keys()
+    assert json.dumps(generated["paths"], sort_keys=True) == json.dumps(committed["paths"], sort_keys=True)
