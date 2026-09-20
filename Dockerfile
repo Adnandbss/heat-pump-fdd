@@ -10,8 +10,8 @@ COPY src ./src
 COPY api ./api
 COPY models ./models
 COPY outputs ./outputs
-COPY dashboard.py main_analysis.py ./
+COPY main_analysis.py ./
 
-EXPOSE 8000 8501
+EXPOSE 8000
 
 CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8000"]

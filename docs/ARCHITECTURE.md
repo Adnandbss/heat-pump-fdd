@@ -49,9 +49,8 @@ came from (`study`, `mode`, `source`, `taxonomy`).
 
 ## Not on the serving path
 
-`dashboard.py` (Streamlit), `src/service.py` (httpx client used by Streamlit),
-`src/fdd/visualization.py` (training-time plots), `main_analysis.py` (training entry point),
-`scripts/`.
+`src/fdd/visualization.py` (training-time plots), `main_analysis.py` (training entry
+point), `scripts/`.
 
 Removing any of these would not affect `api/main.py` or the React app. None of them is covered
 by a test, so **`pytest` stays green even if they are broken** — check them by hand

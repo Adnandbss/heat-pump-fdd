@@ -36,13 +36,7 @@ from `GET /api/*`. Recapture the figures after a front change:
 make capture                          # or: cd web && npm run capture
 ```
 
-Streamlit (`dashboard.py`) is still in the repo for P-h diagrams and manual inject controls:
-
-```bash
-streamlit run dashboard.py            # http://localhost:8501
-```
-
-Docker (API + React; Streamlit is not in the compose path):
+Docker (API + React):
 
 ```bash
 docker compose up --build
@@ -80,10 +74,8 @@ flowchart LR
 | `src/studies/synthetic/generator.py` | 5000 labelled operating points |
 | `src/fdd/ml_models.py` | Random Forest (shipped) + tuned / calibrated Gradient Boosting |
 | `src/fdd/inference.py` | Load the model and diagnose a feature vector |
-| `src/service.py` | Streamlit client: API first, local fallback |
 | `api/app.py` | `GET /health`, `POST /predict`, `POST /simulate`, `POST /live`, `GET /api/*` |
 | `web/` | Glassmorphism dashboard (primary UI) |
-| `dashboard.py` | Leftover Streamlit: exploration, live inject, P-h diagrams |
 | `models/synthetic/` | Serialized classifier + metadata |
 
 ## Faults

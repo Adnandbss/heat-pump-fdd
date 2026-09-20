@@ -20,8 +20,7 @@ Un jury qui ouvre le front voyait un projet de démo. Un jury qui lit le dossier
 voyait un projet de recherche. C'est le même dépôt. P7 est le rattrapage :
 **le front doit afficher ce qu'on a mesuré**, y compris le chiffre qui dérange.
 
-Le plan d'exécution est [FRONT_PLAN.md](FRONT_PLAN.md). Ce document raconte ce
-qui a été livré, avec les captures du nouveau front.
+Ce document raconte ce qui a été livré, avec les captures du nouveau front.
 
 ## Comment lire ce document
 
