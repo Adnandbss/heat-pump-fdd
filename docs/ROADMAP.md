@@ -329,7 +329,9 @@ simulateur est publiable — la charge — et laquelle est un artefact de modél
 ### Où on en est
 
 Les sept chantiers sont livrés et les six expériences menées. **Le périmètre du grand 1 est
-fermé.**
+fermé.** `X3-prelim` (6 lignes) n'est pas une neuvième expérience à couvrir : c'est
+l'essai préliminaire que `X3` (505 lignes) remplace. Les figures le laissent de côté
+volontairement (`EXCLUDED_FROM_FIGURES` dans `api/routers/evidence.py`).
 
 ```
 P0 P1 P2 P3 P4 P5 P6 P7   ── livrés
@@ -358,8 +360,8 @@ Rien de bloquant. Par ordre de valeur :
 
 | | Chantier | Coût |
 |---|---|---|
-| R1 | **Rejouer et journaliser le sweep de calibration.** Les quatre chiffres du tableau « coût de la calibration » (n = 10, 50) portent un † dans le README : mesurés une fois, jamais passés par `tools.results.log()`, donc irreproductibles. Seuls chiffres du dépôt dans ce cas. | ½ j |
-| R2 | **Vérifier `GET /api/thermo/cop`.** Signalé comme physiquement faux par l'audit senior, jamais contrôlé depuis. Une route qui ment est pire qu'une route absente. | 2 h |
+| R1 | ~~Rejouer et journaliser le sweep de calibration.~~ **Fait** — `X1` / `LOMO-calibration-n{10,50}`. | — |
+| R2 | ~~Vérifier `GET /api/thermo/cop`.~~ **Fait** — Carnot chauffage, COP Normal par tranche, balayage à \(T_\mathrm{sink}-10\). | — |
 | R3 | **Trancher les 14 Mo de binaires** de la PR P7 (`FRONT_EVIDENCE.pdf` + 9 PNG) pour un `.git` de 53 Mo, et l'anglais/français mélangé dans l'UI. | 1 h |
 | R4 | **Modéliser la fuite de clapet** côté physique (`volumetric_efficiency_loss` dans `simulate_cycle`), la seule classe de `FaultType` retirée faute de physique. | 1 j |
 | R5 | **Corriger l'encrassement condenseur du simulateur**, seul défaut à 0,000 en sim2real. C'est le chantier le plus intéressant scientifiquement et le plus incertain. | ? |

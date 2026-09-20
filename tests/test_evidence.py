@@ -557,7 +557,7 @@ def test_evidence_reads_shipped_csv_without_joblib(tmp_path):
 
 
 def test_every_logged_experiment_has_a_figure():
-    from api.routers.evidence import covered_experiments
+    from api.routers.evidence import EXCLUDED_FROM_FIGURES, covered_experiments
     from tools.results import get
 
     canonical = {"X0", "X0b", "X1", "X2", "X3", "X4", "X5", "P5"}
@@ -567,3 +567,8 @@ def test_every_logged_experiment_has_a_figure():
     absent = sorted(canonical - logged)
     assert not missing, f"canonical experiments with no figure: {missing}"
     assert not absent, f"canonical experiments missing from results.csv: {absent}"
+    assert EXCLUDED_FROM_FIGURES == {"X3-prelim"}
+    assert "X3-prelim" in logged
+    assert "X3-prelim" not in selected
+    leftover = sorted(logged - selected - EXCLUDED_FROM_FIGURES)
+    assert not leftover, f"logged experiments with no figure and no exclusion: {leftover}"

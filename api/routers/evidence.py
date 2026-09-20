@@ -48,6 +48,9 @@ _KNN_FACET = re.compile(r"^(knn-k\d+)-median-unif$")
 _WILSON_RE = re.compile(r"\[(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\]")
 
 # Experiments a figure endpoint selects. The coverage test compares this to results.csv.
+# X3-prelim (6 rows) is deliberately not plotted: it is the preliminary pass that
+# X3 (505 rows) supersedes. Coverage is therefore 8 experiments out of 9.
+EXCLUDED_FROM_FIGURES = {"X3-prelim"}
 FIGURE_EXPERIMENTS = {
     "ladder": {"X0", "X0b", "X1", "X5"},
     "protocols": {"X0b"},
