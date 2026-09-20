@@ -94,21 +94,32 @@ Wilson 87,6 – 90,7, sept classes) mesure la séparabilité des signatures dans
 physique, pas une détection sur machine réelle. Le 99,6 % précédent était une fuite
 d'étiquette. Proposition :
 
-⚠️ **Cette formulation est provisoire** : elle cite 0,602 sans mentionner que ce chiffre suppose
-une référence saine aux conditions du défaut. À figer **après X3**, pas avant.
+**Figée**, X3 et X5 étant menées :
 
-> Signatures de défauts séparables à 89,3 % [87,6 – 90,7] en hold-out sur données simulées
-> (sept classes, sélection sur val, `Pipeline` sklearn). Méthode par résidus confrontée aux essais NIST :
-> 0,602 lorsque la référence saine est calibrée sur la machine cible, **0,318** sans cette
-> calibration, 0,95 en validation aléatoire — laquelle surestime largement.
+> Signatures de défauts séparables à **89,3 % [87,6 – 90,7]** en hold-out sur données simulées
+> (sept classes, sélection sur val, `Pipeline` sklearn) — une mesure de la séparabilité dans le
+> modèle physique, pas d'une détection sur machine.
+>
+> Confrontée aux 7375 essais NIST : **0,602** lorsque la référence saine est calibrée sur la
+> machine cible, **0,318** sans cette calibration (0,251 pour la classe majoritaire), et 0,95 en
+> validation aléatoire — laquelle surestime d'un facteur trois.
+>
+> Entraîné sur le simulateur et testé sur le réel : **0,454**, la charge frigorigène étant le
+> seul défaut qui transfère (F1 0,45–0,52) et l'encrassement condenseur ne transférant pas du
+> tout (F1 0,000).
 
-Moins spectaculaire, et défendable.
+Moins spectaculaire, et défendable. Les cinq marches sont affichées côte à côte sur la page
+Evidence du tableau de bord (P7), chacune avec son protocole.
 
 **B. Faut-il basculer sur les données réelles ?** Les 5386 essais NIST suffisent à réentraîner.
 Mais ça change le sujet : mode **froid**, machine **air/air**, taxonomie NIST. Le cadrage
 A7/W40 disparaît, et avec lui la distinction encrassement / ventilateur. Le simulateur ne
 serait pas jeté — il deviendrait le **modèle de référence sain**, son vrai rôle dans la méthode
 Li & Braun. Décision de fond, pas de refactor.
+
+La sous-question du tableau de bord est, elle, tranchée : **P7 en fait une pièce de preuve**,
+pas une vitrine. Six figures lisent `results.csv` par l'API, et un test interdit le moindre
+chiffre en dur dans le TSX.
 
 **C bis. Les grandeurs dérivées** — **fait, absorbé par P0.** Le bruit est appliqué aux
 capteurs, puis `COP`, `pressure_ratio`, `compression_ratio`, `delta_T_*` et `capacity_ratio`
@@ -184,6 +195,7 @@ metadata).
 | P4 | Décision D : produire la surcharge, trancher la fuite de clapet | **fait** |
 | P5 | Contrat de features : doublon retiré, résidus seuls mesurés et **rejetés** | **fait** |
 | P6 | Découper `api/app.py` — 4 routes d'inférence contre 17 de tableau de bord | **fait** |
+| P7 | Le tableau de bord lit `results.csv` : page Evidence, zéro chiffre en dur | **fait** |
 
 ### 1B. Les expériences
 
@@ -198,8 +210,8 @@ toutes, **numérotées dans l'ordre d'exécution** — pas dans l'ordre où l'id
 | **X1** | mesuré | mesuré, autre machine | **Quelles pannes** sont détectées | **fait** |
 | **X2** | — | mesuré, autre machine | Le ML bat-il une **table de règles** | **fait** |
 | **X3** | mesuré | mesuré, autre machine | Quel **estimateur de référence saine** est le meilleur | **fait** |
-| **X4** | simulé | simulé, **conditions non vues** | Le 91,9 % survit-il hors des points appris | à faire |
-| **X5** | simulé | **mesuré** | Le simulateur décrit-il la réalité | à faire |
+| **X4** | simulé | simulé, **conditions non vues** | Le 91,9 % survit-il hors des points appris | **fait** — oui pour le domaine, **non pour la sévérité** |
+| **X5** | simulé | **mesuré** | Le simulateur décrit-il la réalité | **fait** — **45,4 %**, encrassement condenseur à **0,000** |
 
 #### X1 — Quelles pannes sont réellement détectées · fait
 
@@ -255,80 +267,121 @@ s'améliore ; la classification baisse. Juger l'étage 1 en bout de chaîne.
 Le 0,602 **n'est pas remplacé** dans README / dossier / NIST_FINDINGS / `results.csv` (`X0b`)
 — PR séparée, listée dans `docs/NIST_FINDINGS.md`. Notebook : `EDA/EDA_NIST_reference_bench.ipynb`.
 
-#### X4 — Hold-out sur le domaine de fonctionnement · ½ j
+#### X4 — Hold-out sur le domaine de fonctionnement · **fait**
 
-Même jeu simulé, **découpage différent** : au lieu d'un tirage aléatoire sur les 5000 exemples,
-retirer une région entière du domaine — par exemple `T_sink > 48 °C` — entraîner sur le reste,
-tester dessus.
+Même jeu simulé, découpage par région au lieu du tirage aléatoire. Contrôle : le protocole X0
+rejoué dans les mêmes conditions (0,919).
 
-C'est le geste qui a tout révélé sur les données mesurées, appliqué cette fois au jeu simulé.
-**Si le score s'effondre, le 91,9 % est en partie de la mémorisation de points de
-fonctionnement.** Aucune donnée ni modèle nouveau.
+| Découpage | Accuracy | 95 % Wilson | n |
+|---|---|---|---|
+| Aléatoire (contrôle) | 0,919 | 0,904 – 0,931 | 1500 |
+| `speed > 0,85` | 0,920 | 0,902 – 0,935 | 1077 |
+| GroupKFold 5 plis | 0,911 | 0,903 – 0,919 | 5000 |
+| `T_amb < −5 °C` | 0,893 | 0,870 – 0,913 | 804 |
+| `T_sink > 48 °C` | 0,889 | 0,871 – 0,904 | 1366 |
 
-#### X5 — Simulé aux conditions NIST, testé sur le réel · 2 j
+**L'hypothèse est réfutée : le score ne s'effondre pas.** Retirer une région entière du domaine
+coûte au plus 3 points. Le 91,9 % n'était pas de la mémorisation de points de fonctionnement —
+c'est le seul résultat de la campagne qui donne raison au modèle.
 
-Le recouvrement de domaine de 5,3 % est **un obstacle de sampling, pas de physique** : il
-découle des plages de tirage choisies, pas d'une limite du simulateur. Vérification faite,
-celui-ci tourne aux conditions NIST et produit des valeurs plausibles — mais qui ne collent pas :
+La fragilité est ailleurs. Hold-out sur la **sévérité**, quatre classes, ventilateurs exclus :
 
-| Conditions | `P_evap` | `P_cond` | τ | COP |
-|---|---|---|---|---|
-| Simulé à 24/35 °C | 14,04 bar | 24,19 bar | 1,72 | 4,32 |
-| **Mesuré NIST, sain** | **10,5 bar** | **25,7 bar** | **2,37** | **3,41** |
+| Entraîné sur | Testé sur | Accuracy | F1 macro |
+|---|---|---|---|
+| Normal + sévère | défauts naissants | 0,428 | 0,496 |
+| Normal + naissants | défauts sévères | 0,469 | 0,540 |
 
-Aspiration surestimée de 35 %, taux de compression sous-estimé de 28 %, COP optimiste de 27 %.
-**Le simulateur est systématiquement optimiste.**
+En détection binaire seule, 0,762 et 0,887. **Le modèle sait qu'il se passe quelque chose, il
+ne sait plus quoi.** C'est la limite utile à annoncer : un FDD qui n'extrapole pas en sévérité
+ne sert pas à la maintenance préventive, qui vit précisément dans les défauts naissants.
 
-L'expérience : élargir les plages d'échantillonnage, régénérer un jeu simulé aux conditions
-NIST, entraîner dessus, tester sur les essais réels. Quatre classes se correspondent. C'est la
-seule expérience qui teste si le simulateur décrit la réalité.
+Mesures en 24 colonnes, donc antérieures à P5. Journalisées sous `X4`, huit protocoles.
 
-### Ordre recommandé
+#### X5 — Simulé aux conditions NIST, testé sur le réel · **fait**
+
+Le recouvrement de domaine de 5,3 % était **un obstacle de sampling, pas de physique**. Plages
+élargies, jeu régénéré aux conditions NIST, entraîné dessus, testé sur les essais réels.
+
+| | Accuracy | F1 macro |
+|---|---|---|
+| Hold-out simulé (référence) | 0,921 | 0,917 |
+| **sim2real** — entraîné simulé, testé mesuré | **0,454** | **0,343** |
+| LOMO sur mesuré seul (plafond atteignable) | 0,668 | 0,596 |
+
+Par classe, en sim2real :
+
+| Classe | F1 simulé | F1 sur le réel |
+|---|---|---|
+| Undercharge | 0,974 | 0,445 |
+| Overcharge | 0,936 | 0,522 |
+| Normal | 0,930 | 0,716 |
+| Evaporator_Fan_Fault | 0,998 | 0,031 |
+| **Condenser_Fouling** | 0,749 | **0,000** |
+
+**Le simulateur transfère sur la charge et sur rien d'autre.** L'encrassement condenseur, qu'il
+prétend séparer à 0,749, n'est jamais retrouvé sur les essais réels : sa signature simulée
+n'est pas celle d'un vrai encrassement. Le défaut de ventilateur d'évaporateur, à 0,998 en
+simulé, tombe à 0,031.
+
+C'est l'expérience la plus sévère de la campagne et la plus utile. Elle dit quelle partie du
+simulateur est publiable — la charge — et laquelle est un artefact de modélisation.
+
+### Où on en est
+
+Les sept chantiers sont livrés et les six expériences menées. **Le périmètre du grand 1 est
+fermé.**
 
 ```
-P0  ── fait (91,9 % [90,4 – 93,1], 6 classes)
-P4  ── fait (surcharge ; 89,3 % [87,6 – 90,7], 7 classes)
-P5 ──> X4 ──> X5
-P6                               parallèle
-X3                                   indépendant — données NIST seules
-G                                    indépendant — durcir les garde-fous
+P0 P1 P2 P3 P4 P5 P6 P7   ── livrés
+X0 X1 X2 X3 X4 X5         ── menées
+G  garde-fous             ── livré
 ```
 
-**P0 et P4 sont livrés.** X4 peut maintenant être menée sans que la fuite d'étiquette traverse
-le hold-out, et sans classes fantômes. P5 (contrat de features) reste un prérequis *utile*
-de X4, plus un bloquant.
+Ce que la campagne a établi, dans l'ordre où ça compte :
 
-**X3 est livré.** Sans les répliques du plan d'essais (dmin = 0,5 °C), le 0,602 tombe à
-**0,482**. Le chiffre de chambre n'est pas encore remplacé dans README / dossier — PR séparée.
+1. **Le protocole pèse plus que le modèle.** 0,954 en CV aléatoire contre 0,333 en
+   leave-one-machine-out, mêmes données, même classifieur. Tout chiffre du dépôt nomme
+   désormais son protocole.
+2. **Les résidus doublent le transfert** (0,333 → 0,602), mais seulement avec une référence
+   saine calibrée sur la machine cible. Référence transférée : 0,318, contre 0,251 pour la
+   classe majoritaire.
+3. **Le simulateur ne transfère que sur la charge.** X5 : 0,454 global, encrassement condenseur
+   à 0,000.
+4. **Le domaine n'est pas le problème, la sévérité l'est.** X4 : au plus 3 points perdus en
+   retirant une région entière du domaine, mais 0,43 en extrapolation de sévérité.
+5. **Le chiffre vitrine est passé de 99,6 % à 89,3 %** à mesure que les fuites tombaient, et
+   ces deux nombres sont publiés côte à côte.
 
-**G — durcir les garde-fous** (0,75 j), issu du §8 bis de l'audit :
-- un test qui compare les nombres des tableaux markdown à `results.csv` — sans lui, la « source
-  unique » est déclarative et le fichier n'est qu'une quatrième copie ;
-- une contrainte de **voisinage** sur le test protocole, qui ne peut pratiquement pas échouer
-  en l'état (le mot « validation » figure dans presque tout README) ;
-- `log()` atomique via `os.replace()`, plus un `log_many()` — la boucle actuelle réécrit tout
-  le fichier à chaque appel ;
-- brancher les notebooks sur `tools.results.log` au lieu de saisir à la main.
+### Ce qu'il reste
 
-X4 et X5 produiront vraisemblablement des résultats **négatifs**, et c'est leur intérêt. P0
-étant fermé, elles ne produiront plus un 0,99 de façade.
+Rien de bloquant. Par ordre de valeur :
+
+| | Chantier | Coût |
+|---|---|---|
+| R1 | **Rejouer et journaliser le sweep de calibration.** Les quatre chiffres du tableau « coût de la calibration » (n = 10, 50) portent un † dans le README : mesurés une fois, jamais passés par `tools.results.log()`, donc irreproductibles. Seuls chiffres du dépôt dans ce cas. | ½ j |
+| R2 | **Vérifier `GET /api/thermo/cop`.** Signalé comme physiquement faux par l'audit senior, jamais contrôlé depuis. Une route qui ment est pire qu'une route absente. | 2 h |
+| R3 | **Trancher les 14 Mo de binaires** de la PR P7 (`FRONT_EVIDENCE.pdf` + 9 PNG) pour un `.git` de 53 Mo, et l'anglais/français mélangé dans l'UI. | 1 h |
+| R4 | **Modéliser la fuite de clapet** côté physique (`volumetric_efficiency_loss` dans `simulate_cycle`), la seule classe de `FaultType` retirée faute de physique. | 1 j |
+| R5 | **Corriger l'encrassement condenseur du simulateur**, seul défaut à 0,000 en sim2real. C'est le chantier le plus intéressant scientifiquement et le plus incertain. | ? |
+
+R1 et R2 sont des dettes d'honnêteté : à faire avant toute présentation. R3 est cosmétique.
+R4 et R5 ouvrent un nouveau périmètre — ils ne rentrent **pas** dans le grand 1.
 
 ### Règle d'arrêt
 
-Chaque expérience menée jusqu'ici en a suggéré une nouvelle. C'est sain, et c'est sans fin.
+Chaque expérience menée en a suggéré une nouvelle. C'est sain, et c'est sans fin.
 
-**Le périmètre du grand 1 est figé à X4–X5 et P5–P6.** Toute question soulevée par ces
-expériences part dans une liste « suite », pas dans le périmètre courant. Sans cette règle, le
-projet ne sera jamais livré.
+**Le périmètre du grand 1 était figé à X0–X5 et P0–P7. Il est atteint.** Toute question
+soulevée depuis part dans « ce qu'il reste » ci-dessus, pas dans le périmètre courant.
 
-### Fin du grand 1
+### Ce que le projet livre
 
-Le grand 1 est terminé quand les six chantiers sont livrés, les trois expériences menées, et
-que chaque chiffre du dépôt est accompagné de son protocole.
+Pas un détecteur. **Une méthodologie de validation** : comment établir ce que vaut un modèle
+FDD entraîné sur simulateur, et ce qu'il en reste face à 7375 essais en chambre.
 
-À ce stade, la contribution du projet n'est pas un détecteur mais **une méthodologie de
-validation** : comment établir ce que vaut un modèle FDD entraîné sur simulateur, et son
-application à un cas concret. C'est ce qui doit être annoncé, plutôt qu'une performance.
+C'est ce qu'il faut annoncer. La performance brute — 89,3 % — est le chiffre le moins
+intéressant du dépôt, et le tableau de bord le montre maintenant à côté des cinq autres
+marches de l'échelle.
 
 ## GRAND 2 — Pronostic sur séries temporelles
 
