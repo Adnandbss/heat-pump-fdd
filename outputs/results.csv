@@ -63,6 +63,71 @@ X1,LOMO,training-machine,residuals,gradient-boosting,Overcharge,f1,0.786,942,
 X1,LOMO,training-machine,residuals,gradient-boosting,Undercharge,f1,0.481,1228,
 X1,LOMO,training-machine,residuals,gradient-boosting,__global__,accuracy,0.318,5386,
 X1,LOMO,training-machine,residuals,gradient-boosting,__global__,f1,0.29,5386,macro
+X2,LOMO,target-machine,residuals,decision-tree-d3,Cond_Blockage,f1,0.182566,497,"depth-3 tree, calibrated kNN"
+X2,LOMO,target-machine,residuals,decision-tree-d3,Evap_Airflow,f1,0.126571,774,"depth-3 tree, calibrated kNN"
+X2,LOMO,target-machine,residuals,decision-tree-d3,LiquidLine,f1,0.0867769,593,"depth-3 tree, calibrated kNN"
+X2,LOMO,target-machine,residuals,decision-tree-d3,No_Fault,f1,0.655471,1352,"depth-3 tree, calibrated kNN"
+X2,LOMO,target-machine,residuals,decision-tree-d3,Overcharge,f1,0.57606,942,"depth-3 tree, calibrated kNN"
+X2,LOMO,target-machine,residuals,decision-tree-d3,Undercharge,f1,0.904537,1228,"depth-3 tree, calibrated kNN"
+X2,LOMO,target-machine,residuals,decision-tree-d3,__global__,accuracy,0.5584,5386,"depth-3 tree, calibrated kNN"
+X2,LOMO,target-machine,residuals,decision-tree-d3,__global__,f1,0.421997,5386,"macro; depth-3 tree, calibrated kNN"
+X2,LOMO,target-machine,residuals,gradient-boosting,Cond_Blockage,f1,0.29902,497,calibrated kNN on the target machine
+X2,LOMO,target-machine,residuals,gradient-boosting,Evap_Airflow,f1,0.287631,774,calibrated kNN on the target machine
+X2,LOMO,target-machine,residuals,gradient-boosting,LiquidLine,f1,0.0404393,593,calibrated kNN on the target machine
+X2,LOMO,target-machine,residuals,gradient-boosting,No_Fault,f1,0.741006,1352,calibrated kNN on the target machine
+X2,LOMO,target-machine,residuals,gradient-boosting,Overcharge,f1,0.674468,942,calibrated kNN on the target machine
+X2,LOMO,target-machine,residuals,gradient-boosting,Undercharge,f1,0.832189,1228,calibrated kNN on the target machine
+X2,LOMO,target-machine,residuals,gradient-boosting,__global__,accuracy,0.602479,5386,calibrated kNN on the target machine
+X2,LOMO,target-machine,residuals,gradient-boosting,__global__,f1,0.479125,5386,macro; calibrated kNN on the target machine
+X2,LOMO,target-machine,residuals,rule-table,Cond_Blockage,f1,0.0717703,497,"sign table, calibrated kNN"
+X2,LOMO,target-machine,residuals,rule-table,Evap_Airflow,f1,0.102273,774,"sign table, calibrated kNN"
+X2,LOMO,target-machine,residuals,rule-table,LiquidLine,f1,0.135524,593,"sign table, calibrated kNN"
+X2,LOMO,target-machine,residuals,rule-table,No_Fault,f1,0.112977,1352,"sign table, calibrated kNN"
+X2,LOMO,target-machine,residuals,rule-table,Overcharge,f1,0.440218,942,"sign table, calibrated kNN"
+X2,LOMO,target-machine,residuals,rule-table,Undercharge,f1,0.594046,1228,"sign table, calibrated kNN"
+X2,LOMO,target-machine,residuals,rule-table,__global__,accuracy,0.364512,5386,"sign table, calibrated kNN"
+X2,LOMO,target-machine,residuals,rule-table,__global__,f1,0.242801,5386,"macro; sign table, calibrated kNN"
+X2,LOMO,train-healthy-median,residuals,decision-tree-d3,Cond_Blockage,f1,0.0453379,497,"depth-3 tree, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,decision-tree-d3,Evap_Airflow,f1,0.0801105,774,"depth-3 tree, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,decision-tree-d3,LiquidLine,f1,0.0997732,593,"depth-3 tree, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,decision-tree-d3,No_Fault,f1,0.415426,1352,"depth-3 tree, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,decision-tree-d3,Overcharge,f1,0.580902,942,"depth-3 tree, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,decision-tree-d3,Undercharge,f1,0.615268,1228,"depth-3 tree, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,decision-tree-d3,__global__,accuracy,0.339877,5386,"depth-3 tree, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,decision-tree-d3,__global__,f1,0.306136,5386,"macro; depth-3 tree, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,rule-table,Cond_Blockage,f1,0.0690789,497,"sign table, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,rule-table,Evap_Airflow,f1,0.261149,774,"sign table, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,rule-table,LiquidLine,f1,0.0805699,593,"sign table, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,rule-table,No_Fault,f1,0.101695,1352,"sign table, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,rule-table,Overcharge,f1,0.252079,942,"sign table, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,rule-table,Undercharge,f1,0.417651,1228,"sign table, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,rule-table,__global__,accuracy,0.245365,5386,"sign table, train-healthy global median"
+X2,LOMO,train-healthy-median,residuals,rule-table,__global__,f1,0.197037,5386,"macro; sign table, train-healthy global median"
+X2,LOMO,training-machine,residuals,decision-tree-d3,Cond_Blockage,f1,0.00627178,497,"depth-3 tree, transferred kNN"
+X2,LOMO,training-machine,residuals,decision-tree-d3,Evap_Airflow,f1,0.0039267,774,"depth-3 tree, transferred kNN"
+X2,LOMO,training-machine,residuals,decision-tree-d3,LiquidLine,f1,0.0185185,593,"depth-3 tree, transferred kNN"
+X2,LOMO,training-machine,residuals,decision-tree-d3,No_Fault,f1,0.459961,1352,"depth-3 tree, transferred kNN"
+X2,LOMO,training-machine,residuals,decision-tree-d3,Overcharge,f1,0.544121,942,"depth-3 tree, transferred kNN"
+X2,LOMO,training-machine,residuals,decision-tree-d3,Undercharge,f1,0.347985,1228,"depth-3 tree, transferred kNN"
+X2,LOMO,training-machine,residuals,decision-tree-d3,__global__,accuracy,0.286831,5386,"depth-3 tree, transferred kNN"
+X2,LOMO,training-machine,residuals,decision-tree-d3,__global__,f1,0.230131,5386,"macro; depth-3 tree, transferred kNN"
+X2,LOMO,training-machine,residuals,gradient-boosting,Cond_Blockage,f1,0.0667135,497,transferred kNN from the training machine
+X2,LOMO,training-machine,residuals,gradient-boosting,Evap_Airflow,f1,0.269447,774,transferred kNN from the training machine
+X2,LOMO,training-machine,residuals,gradient-boosting,LiquidLine,f1,0.00673854,593,transferred kNN from the training machine
+X2,LOMO,training-machine,residuals,gradient-boosting,No_Fault,f1,0.13063,1352,transferred kNN from the training machine
+X2,LOMO,training-machine,residuals,gradient-boosting,Overcharge,f1,0.785872,942,transferred kNN from the training machine
+X2,LOMO,training-machine,residuals,gradient-boosting,Undercharge,f1,0.481201,1228,transferred kNN from the training machine
+X2,LOMO,training-machine,residuals,gradient-boosting,__global__,accuracy,0.317796,5386,transferred kNN from the training machine
+X2,LOMO,training-machine,residuals,gradient-boosting,__global__,f1,0.2901,5386,macro; transferred kNN from the training machine
+X2,LOMO,training-machine,residuals,rule-table,Cond_Blockage,f1,0.085048,497,"sign table, transferred kNN"
+X2,LOMO,training-machine,residuals,rule-table,Evap_Airflow,f1,0.191877,774,"sign table, transferred kNN"
+X2,LOMO,training-machine,residuals,rule-table,LiquidLine,f1,0,593,"sign table, transferred kNN"
+X2,LOMO,training-machine,residuals,rule-table,No_Fault,f1,0.0497643,1352,"sign table, transferred kNN"
+X2,LOMO,training-machine,residuals,rule-table,Overcharge,f1,0.23658,942,"sign table, transferred kNN"
+X2,LOMO,training-machine,residuals,rule-table,Undercharge,f1,0.483813,1228,"sign table, transferred kNN"
+X2,LOMO,training-machine,residuals,rule-table,__global__,accuracy,0.25053,5386,"sign table, transferred kNN"
+X2,LOMO,training-machine,residuals,rule-table,__global__,f1,0.174514,5386,"macro; sign table, transferred kNN"
+X2,majority-class,none,,baseline,__global__,accuracy,0.251021,5386,most frequent class in the usable NIST rows
 X3,LOMO,global-mean-TT-dmin0,residuals,gradient-boosting,__global__,accuracy,0.327777,5386,fold-mean; F1=0.296; mae_h=38.3878
 X3,LOMO,global-mean-TT-dmin0,residuals,gradient-boosting,__global__,f1,0.295964,5386,macro; mean of two LOMO folds
 X3,LOMO,global-mean-TT-dmin0.1,residuals,gradient-boosting,__global__,accuracy,0.327908,5386,fold-mean; F1=0.296; mae_h=38.6743
