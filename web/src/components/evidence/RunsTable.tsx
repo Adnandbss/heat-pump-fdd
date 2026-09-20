@@ -60,17 +60,7 @@ export function RunsTable({ data, experiment, protocol, model, label, onFilter, 
             </a>
           </p>
         </div>
-        {rows[0] ? (
-          <ProtocolBadge
-            protocol={{
-              experiment: rows[0].experiment,
-              protocol: rows[0].protocol,
-              reference: rows[0].reference,
-              features: rows[0].features,
-              model: rows[0].model,
-            }}
-          />
-        ) : null}
+        <ProtocolBadge label="all logged runs" />
       </div>
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
         <SelectField
@@ -100,13 +90,18 @@ export function RunsTable({ data, experiment, protocol, model, label, onFilter, 
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
-          <thead className="text-white/40">
+          <caption className="sr-only">Logged measurements from outputs/results.csv</caption>
+          <thead className="text-white/60">
             <tr>
               {COLUMNS.map((col) => (
-                <th key={col.key} className="text-left font-medium pb-2 pr-3">
+                <th
+                  key={col.key}
+                  scope="col"
+                  className={`text-left font-medium pb-2 pr-3 ${col.key === "features" ? "hidden md:table-cell" : ""}`}
+                >
                   <button
                     type="button"
-                    className="hover:text-white/80"
+                    className="hover:text-white/80 transition-colors duration-150"
                     onClick={() =>
                       setSort((prev) => ({
                         key: col.key,
@@ -122,11 +117,14 @@ export function RunsTable({ data, experiment, protocol, model, label, onFilter, 
           </thead>
           <tbody>
             {rows.map((row, index) => (
-              <tr key={`${row.experiment}-${row.protocol}-${row.reference}-${row.features}-${row.model}-${row.label}-${row.metric}-${index}`} className="border-t border-white/8">
+              <tr
+                key={`${row.experiment}-${row.protocol}-${row.reference}-${row.features}-${row.model}-${row.label}-${row.metric}-${index}`}
+                className="border-t border-white/8 transition-colors duration-150 hover:bg-white/5"
+              >
                 <td className="py-1.5 pr-3">{row.experiment}</td>
                 <td className="py-1.5 pr-3">{row.protocol}</td>
                 <td className="py-1.5 pr-3 max-w-[9rem] truncate">{row.reference}</td>
-                <td className="py-1.5 pr-3">{row.features}</td>
+                <td className="py-1.5 pr-3 hidden md:table-cell">{row.features}</td>
                 <td className="py-1.5 pr-3">{row.model}</td>
                 <td className="py-1.5 pr-3">{row.label}</td>
                 <td className="py-1.5 pr-3">{row.metric}</td>
@@ -141,7 +139,7 @@ export function RunsTable({ data, experiment, protocol, model, label, onFilter, 
         <button
           type="button"
           onClick={onMore}
-          className="mt-4 rounded-full border border-white/18 bg-white/10 px-4 py-2 text-xs text-white/80 hover:bg-white/16"
+          className="mt-4 rounded-full border border-white/18 bg-white/10 px-4 py-2 text-xs text-white/80 hover:bg-white/16 transition-colors duration-150"
         >
           Load 50 more
         </button>

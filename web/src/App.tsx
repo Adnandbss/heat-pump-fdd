@@ -24,7 +24,7 @@ export default function App() {
 
   return (
     <div className="relative min-h-screen px-4 py-6 md:px-8 md:py-10">
-      <div className="mx-auto max-w-[1180px] flex gap-5 items-start">
+      <div className="mx-auto max-w-[1180px] flex flex-col sm:flex-row gap-5 items-stretch sm:items-start overflow-x-hidden">
         <Sidebar active={active} />
         <main className="glass-shell flex-1 min-w-0 p-5 md:p-8">
           <Header page={active} />

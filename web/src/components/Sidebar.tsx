@@ -32,17 +32,17 @@ type Props = {
 };
 
 const idle =
-  "h-11 w-11 rounded-2xl grid place-items-center text-white/70 hover:text-white hover:bg-white/10 transition";
+  "h-11 w-11 rounded-2xl grid place-items-center text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-150";
 const on =
   "h-11 w-11 rounded-2xl grid place-items-center bg-white text-slate-900 shadow-[0_8px_20px_rgba(255,255,255,0.18)]";
 
 export function Sidebar({ active }: Props) {
   return (
-    <aside className="glass-pill sticky top-10 flex flex-col items-center gap-4 px-2.5 py-5 h-fit">
-      <div className="h-10 w-10 rounded-full bg-white text-slate-900 grid place-items-center text-xs font-bold">
+    <aside className="glass-pill sticky top-4 sm:top-10 flex flex-row sm:flex-col items-center gap-3 sm:gap-4 px-2.5 py-3 sm:py-5 h-fit w-full sm:w-auto justify-center">
+      <div className="h-10 w-10 rounded-full bg-white text-slate-900 grid place-items-center text-xs font-bold shrink-0">
         HP
       </div>
-      <nav className="flex flex-col gap-1.5">
+      <nav className="flex flex-row sm:flex-col gap-1.5" aria-label="Primary">
         {items.map((item) => {
           const Icon = item.icon;
           return (
@@ -51,6 +51,8 @@ export function Sidebar({ active }: Props) {
               to={item.to}
               end={item.end === true}
               title={item.label}
+              aria-label={item.label}
+              aria-current={active === item.id ? "page" : undefined}
               className={({ isActive }) => (isActive || active === item.id ? on : idle)}
             >
               {({ isActive }) => (
@@ -59,7 +61,14 @@ export function Sidebar({ active }: Props) {
             </NavLink>
           );
         })}
-        <a href="/docs" target="_blank" rel="noreferrer" title="API docs" className={idle}>
+        <a
+          href="/docs"
+          target="_blank"
+          rel="noreferrer"
+          title="API docs"
+          aria-label="API docs"
+          className={idle}
+        >
           <BookOpen size={18} strokeWidth={1.7} />
         </a>
       </nav>

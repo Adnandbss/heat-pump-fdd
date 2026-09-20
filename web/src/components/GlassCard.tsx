@@ -7,7 +7,7 @@ type Props = HTMLAttributes<HTMLDivElement> & {
 
 export function GlassCard({ children, className = "", ...rest }: Props) {
   return (
-    <div className={`glass ${className}`} {...rest}>
+    <div className={`glass transition-opacity duration-200 ${className}`} {...rest}>
       {children}
     </div>
   );

@@ -27,6 +27,7 @@ import { CycleSchematic } from "../components/CycleSchematic";
 import { CycleShift } from "../components/CycleShift";
 import { GlassCard } from "../components/GlassCard";
 import { SelectField, SliderField } from "../components/Fields";
+import { Skeleton } from "../components/Skeleton";
 
 const TABS = ["P-h", "Schematic", "Load", "ASHRAE"] as const;
 const LOAD_TABS = ["Sweeps", "Envelope", "P-h shift"] as const;
@@ -136,6 +137,17 @@ export function ThermoPage() {
 
   const condPath = (condSweep?.points ?? []).map((row) => ({ T_evap: loadEvap, T_cond: row.T_cond }));
   const evapPath = (evapSweep?.points ?? []).map((row) => ({ T_evap: row.T_evap, T_cond: fixedCond }));
+  const loading = !ph && !cop && !error;
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-72" />
+        <Skeleton className="h-[28rem]" />
+        <Skeleton className="h-[18rem]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -148,7 +160,7 @@ export function ThermoPage() {
             className={
               tab === name
                 ? "px-4 py-2 rounded-full bg-white text-slate-900 text-sm font-semibold"
-                : "px-4 py-2 rounded-full glass text-sm text-white/70"
+                : "px-4 py-2 rounded-full glass text-sm text-white/70 transition-colors duration-150"
             }
           >
             {name}
