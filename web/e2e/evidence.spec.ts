@@ -4,6 +4,7 @@ test("evidence page renders figures without NaN", async ({ page }) => {
   await page.goto("/evidence");
   await expect(page.getByTestId("truth-ladder")).toBeVisible();
   await expect(page.getByTestId("protocol-slope")).toBeVisible();
+  await expect(page.getByTestId("calibration-budget")).toBeVisible();
   await expect(page.getByTestId("reference-benchmark")).toBeVisible();
   await expect(page.getByTestId("domain-severity")).toBeVisible();
   await expect(page.getByTestId("feature-contract")).toBeVisible();
@@ -15,4 +16,22 @@ test("evidence page renders figures without NaN", async ({ page }) => {
   const body = await page.locator("main").innerText();
   expect(body).not.toMatch(/\bNaN\b/);
   expect(body).not.toMatch(/\bundefined\b/);
+});
+
+test("tabbing through Evidence shows a visible focus ring", async ({ page }) => {
+  await page.goto("/evidence");
+  await expect(page.getByTestId("truth-ladder")).toBeVisible();
+  await page.locator("body").click({ position: { x: 4, y: 4 } });
+  let visibleStops = 0;
+  for (let i = 0; i < 16; i += 1) {
+    await page.keyboard.press("Tab");
+    const visible = await page.evaluate(() => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el || el === document.body || el === document.documentElement) return false;
+      const shadow = getComputedStyle(el).boxShadow;
+      return Boolean(shadow && shadow !== "none" && !shadow.startsWith("none"));
+    });
+    if (visible) visibleStops += 1;
+  }
+  expect(visibleStops).toBeGreaterThan(0);
 });

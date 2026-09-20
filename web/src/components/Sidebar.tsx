@@ -31,10 +31,12 @@ type Props = {
   active: string;
 };
 
+const focusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40";
 const idle =
-  "h-11 w-11 rounded-2xl grid place-items-center text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-150";
+  `h-11 w-11 rounded-2xl grid place-items-center text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-150 ${focusRing}`;
 const on =
-  "h-11 w-11 rounded-2xl grid place-items-center bg-white text-slate-900 shadow-[0_8px_20px_rgba(255,255,255,0.18)]";
+  `h-11 w-11 rounded-2xl grid place-items-center bg-white text-slate-900 shadow-[0_8px_20px_rgba(255,255,255,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/40`;
 
 export function Sidebar({ active }: Props) {
   return (
