@@ -5,6 +5,7 @@ import {
   Flame,
   FlaskConical,
   LayoutDashboard,
+  ListChecks,
   Stethoscope,
   type LucideIcon,
 } from "lucide-react";
@@ -19,6 +20,7 @@ type NavItem = {
 };
 
 const items: NavItem[] = [
+  { id: "fleet", to: "/fleet", icon: ListChecks, label: "Fleet triage" },
   { id: "insights", to: "/", icon: LayoutDashboard, label: "Insights", end: true },
   { id: "evidence", to: "/evidence", icon: FlaskConical, label: "Evidence" },
   { id: "live", to: "/live", icon: Activity, label: "Live" },

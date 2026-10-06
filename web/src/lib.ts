@@ -27,6 +27,11 @@ export const tooltipStyle = {
 };
 
 export const PAGE_COPY: Record<string, { eyebrow: string; title: string; subtitle: string }> = {
+  fleet: {
+    eyebrow: "Fleet",
+    title: "Fleet triage",
+    subtitle: "Which units need a visit · dispatch only on faults validated on measured units",
+  },
   insights: {
     eyebrow: "Overview",
     title: "HeatPump FDD",

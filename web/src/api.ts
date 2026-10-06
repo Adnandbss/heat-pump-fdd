@@ -526,3 +526,14 @@ export function fetchEvidenceRules(signal?: AbortSignal) {
 export function fetchEvidenceCalibration(signal?: AbortSignal) {
   return request<EvidenceCalibration>("/api/evidence/calibration", { signal });
 }
+
+export type FleetResponse = components["schemas"]["FleetResponse"];
+export type FleetUnit = components["schemas"]["FleetUnit"];
+
+export function fetchFleet(params: { size?: number; seed?: number } = {}, signal?: AbortSignal) {
+  const query = new URLSearchParams();
+  if (params.size != null) query.set("size", String(params.size));
+  if (params.seed != null) query.set("seed", String(params.seed));
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return request<FleetResponse>(`/api/fleet${suffix}`, { signal });
+}

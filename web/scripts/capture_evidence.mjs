@@ -21,6 +21,7 @@ const SHOTS = [
   "10-confusion.png",
   "11-runs.png",
   "00-full.png",
+  "12-fleet.png",
 ];
 
 function compressPng(path) {
@@ -75,6 +76,14 @@ await lite.page.setViewportSize({ width: 1440, height: 1600 });
 await lite.page.waitForTimeout(400);
 await lite.page.screenshot({ path: resolve(out, "00-full.png"), fullPage: false });
 console.log("wrote 00-full.png");
+
+await lite.page.setViewportSize({ width: 1440, height: 920 });
+await lite.page.goto(`${BASE}/fleet`, { waitUntil: "networkidle", timeout: 60_000 });
+await lite.page.waitForSelector("[data-testid='fleet-row']", { timeout: 30_000 });
+await lite.page.getByLabel("Show simulated ground truth").check();
+await lite.page.waitForTimeout(400);
+await lite.page.screenshot({ path: resolve(out, "12-fleet.png"), fullPage: false });
+console.log("wrote 12-fleet.png");
 await lite.context.close();
 await browser.close();
 
