@@ -16,3 +16,12 @@ web/node_modules/
 web/dist/
 /package.json
 /package-lock.json
+
+# Raw third-party datasets: hundreds of MB, never committed.
+DAT CSV LBNL_FDD_Dataset_SDAHU/
+
+# Working research notes, kept local.
+docs/*Research*.pdf
+docs/*Research*.docx
+docs/Recherche*
+docs/ROADMAP_PART2.pdf
