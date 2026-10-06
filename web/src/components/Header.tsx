@@ -1,4 +1,5 @@
 import { Bell } from "lucide-react";
+import { API_BASE } from "../api";
 import { PAGE_COPY } from "../lib";
 
 type Props = {
@@ -15,7 +16,7 @@ export function Header({ page }: Props) {
       </div>
       <div className="flex items-center gap-3">
         <a
-          href="/docs"
+          href={`${API_BASE}/docs`}
           target="_blank"
           rel="noreferrer"
           className="glass hidden sm:grid h-11 px-4 rounded-full place-items-center text-xs text-white/75"

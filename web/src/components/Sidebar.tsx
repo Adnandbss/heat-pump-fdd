@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { API_BASE } from "../api";
 
 type NavItem = {
   id: string;
@@ -66,7 +67,7 @@ export function Sidebar({ active }: Props) {
           );
         })}
         <a
-          href="/docs"
+          href={`${API_BASE}/docs`}
           target="_blank"
           rel="noreferrer"
           title="API docs"
