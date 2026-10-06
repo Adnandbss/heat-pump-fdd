@@ -13,7 +13,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-DOCS = sorted((ROOT / "docs").glob("*.md")) + [ROOT / "README.md"]
+PRODUCT_DOCS = sorted((ROOT / "docs" / "product").glob("*.md"))
+DOCS = sorted((ROOT / "docs").glob("*.md")) + PRODUCT_DOCS + [ROOT / "README.md"]
 
 # a path cited in backticks, e.g. `src/fdd/features.py` or `outputs/synthetic/`
 PATH_RE = re.compile(r"`((?:src|api|web|tests|tools|EDA|docs|outputs|models|data|scripts)/[\w./@-]+)`")
@@ -30,7 +31,11 @@ def _cited_paths(md: Path) -> set[str]:
     return found
 
 
-@pytest.mark.parametrize("md", DOCS, ids=lambda p: p.name)
+def _doc_id(path: Path) -> str:
+    return str(path.relative_to(ROOT))
+
+
+@pytest.mark.parametrize("md", DOCS, ids=_doc_id)
 def test_documentation_cites_no_dead_path(md):
     """Every repo path named in the docs must exist on disk."""
     if not md.exists():
@@ -216,6 +221,52 @@ def test_dossier_x0_matches_results_csv():
         pytest.skip("DOSSIER.md absent")
     text = dossier.read_text(encoding="utf-8")
     assert french in text, f"DOSSIER.md does not publish the logged hold-out accuracy {french} %"
+
+
+_STATUS = re.compile(
+    r"^> \*\*Status:\*\* (Measured|Hypothesis|Plan|Template|Desk research|Mixed)\b", re.M
+)
+_RESULT_FIGURE = re.compile(r"(?<![\w.])0\.\d+|\d+\.\d+\s*%")
+_FIGURE_SOURCE = re.compile(r"\bX\d+b?\b|results\.csv|fleet_policy")
+_TEST_REF = re.compile(r"`(tests/test_\w+\.py)::(\w+)`")
+
+
+@pytest.mark.parametrize("md", PRODUCT_DOCS, ids=_doc_id)
+def test_product_docs_declare_status(md):
+    """A product document says whether it is measured, a hypothesis or a plan.
+
+    Without it, a planned pilot reads like a result and an untested assumption
+    like a finding -- the product version of a number without its protocol.
+    """
+    head = "\n".join(md.read_text(encoding="utf-8").splitlines()[:5])
+    assert _STATUS.search(head), (
+        f"{md.name} has no '> **Status:** ...' line in its first five lines"
+    )
+
+
+@pytest.mark.parametrize("md", PRODUCT_DOCS, ids=_doc_id)
+def test_product_docs_numbers_name_their_source(md):
+    """A decimal result in a product document names the experiment or file it comes from."""
+    offenders = [
+        f"{md.name}:{line_no}: {line.strip()[:120]}"
+        for line_no, line in enumerate(md.read_text(encoding="utf-8").splitlines(), 1)
+        if _RESULT_FIGURE.search(line) and not _FIGURE_SOURCE.search(line)
+    ]
+    assert not offenders, (
+        "figures with no experiment id, results.csv or fleet_policy on the same line:\n"
+        + "\n".join(offenders)
+    )
+
+
+def test_product_docs_cite_tests_that_exist():
+    """An acceptance criterion that names a test must name one that runs."""
+    missing = []
+    for md in PRODUCT_DOCS:
+        for path, name in _TEST_REF.findall(md.read_text(encoding="utf-8")):
+            source = ROOT / path
+            if not source.exists() or not re.search(rf"^def {name}\(", source.read_text(), re.M):
+                missing.append(f"{md.name}: {path}::{name}")
+    assert not missing, "product docs cite tests that do not exist:\n" + "\n".join(missing)
 
 
 def test_web_tsx_has_no_hardcoded_result_percentages():
