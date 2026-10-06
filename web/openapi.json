@@ -1278,6 +1278,62 @@
           }
         }
       }
+    },
+    "/api/fleet": {
+      "get": {
+        "tags": [
+          "fleet"
+        ],
+        "summary": "Triage a simulated fleet: dispatch only on evidence-backed fault classes",
+        "operationId": "getFleet",
+        "parameters": [
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 24,
+              "title": "Size"
+            }
+          },
+          {
+            "name": "seed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 7,
+              "title": "Seed"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2666,6 +2722,238 @@
         ],
         "title": "FeatureVector",
         "description": "23-d cycle vector consumed by the classifier (P5: pressure_ratio dropped)."
+      },
+      "FleetEvidence": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "transfers",
+              "does_not_transfer",
+              "untested"
+            ],
+            "title": "Status"
+          },
+          "experiment": {
+            "type": "string",
+            "title": "Experiment"
+          },
+          "protocol": {
+            "type": "string",
+            "title": "Protocol"
+          },
+          "f1": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "F1"
+          },
+          "n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "experiment",
+          "protocol"
+        ],
+        "title": "FleetEvidence"
+      },
+      "FleetPolicy": {
+        "properties": {
+          "validated_only": {
+            "type": "boolean",
+            "title": "Validated Only"
+          },
+          "evidence_experiment": {
+            "type": "string",
+            "title": "Evidence Experiment"
+          },
+          "evidence_protocol": {
+            "type": "string",
+            "title": "Evidence Protocol"
+          },
+          "evidence_f1_min": {
+            "type": "number",
+            "title": "Evidence F1 Min"
+          },
+          "confidence_min": {
+            "type": "number",
+            "title": "Confidence Min"
+          }
+        },
+        "type": "object",
+        "required": [
+          "validated_only",
+          "evidence_experiment",
+          "evidence_protocol",
+          "evidence_f1_min",
+          "confidence_min"
+        ],
+        "title": "FleetPolicy"
+      },
+      "FleetResponse": {
+        "properties": {
+          "notice": {
+            "type": "string",
+            "title": "Notice"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/FleetPolicy"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/FleetSummary"
+          },
+          "units": {
+            "items": {
+              "$ref": "#/components/schemas/FleetUnit"
+            },
+            "type": "array",
+            "title": "Units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "notice",
+          "seed",
+          "policy",
+          "summary",
+          "units"
+        ],
+        "title": "FleetResponse"
+      },
+      "FleetSummary": {
+        "properties": {
+          "units": {
+            "type": "integer",
+            "title": "Units"
+          },
+          "dispatch": {
+            "type": "integer",
+            "title": "Dispatch"
+          },
+          "engineering_review": {
+            "type": "integer",
+            "title": "Engineering Review"
+          },
+          "monitor": {
+            "type": "integer",
+            "title": "Monitor"
+          },
+          "no_action": {
+            "type": "integer",
+            "title": "No Action"
+          },
+          "held_back": {
+            "type": "integer",
+            "title": "Held Back",
+            "description": "Units the policy would dispatch with the evidence gate off, and does not with it on."
+          }
+        },
+        "type": "object",
+        "required": [
+          "units",
+          "dispatch",
+          "engineering_review",
+          "monitor",
+          "no_action",
+          "held_back"
+        ],
+        "title": "FleetSummary"
+      },
+      "FleetUnit": {
+        "properties": {
+          "unit_id": {
+            "type": "string",
+            "title": "Unit Id"
+          },
+          "T_source": {
+            "type": "number",
+            "title": "T Source"
+          },
+          "T_sink": {
+            "type": "number",
+            "title": "T Sink"
+          },
+          "speed_ratio": {
+            "type": "number",
+            "title": "Speed Ratio"
+          },
+          "diagnosis": {
+            "type": "string",
+            "title": "Diagnosis"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/FleetEvidence"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "dispatch",
+              "engineering_review",
+              "monitor",
+              "no_action"
+            ],
+            "title": "Action"
+          },
+          "instruction": {
+            "type": "string",
+            "title": "Instruction"
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority"
+          },
+          "ground_truth": {
+            "type": "string",
+            "title": "Ground Truth",
+            "description": "Injected fault. Exists only because the fleet is simulated."
+          },
+          "ground_truth_severity": {
+            "type": "number",
+            "title": "Ground Truth Severity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit_id",
+          "T_source",
+          "T_sink",
+          "speed_ratio",
+          "diagnosis",
+          "confidence",
+          "evidence",
+          "action",
+          "instruction",
+          "priority",
+          "ground_truth",
+          "ground_truth_severity"
+        ],
+        "title": "FleetUnit"
       },
       "HTTPValidationError": {
         "properties": {
@@ -4138,6 +4426,10 @@
     {
       "name": "evidence",
       "description": "Logged experiment results from outputs/results.csv."
+    },
+    {
+      "name": "fleet",
+      "description": "Triage a simulated fleet, gated on logged evidence."
     }
   ]
 }

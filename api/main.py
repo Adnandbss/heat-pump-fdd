@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 from api.deps import MtimeCache
 from api.errors import ArtifactMissing, UnprocessableInput
-from api.routers import dashboard, evidence, inference, thermo
+from api.routers import dashboard, evidence, fleet, inference, thermo
 from api.settings import Settings
 from src.fdd.inference import FDDEngine
 from src.studies.synthetic.scenarios import SyntheticScenarios
@@ -47,6 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             {"name": "dashboard", "description": "Payloads that feed the React views."},
             {"name": "thermo", "description": "P-h diagram, COP curve, sweeps, ASHRAE table."},
             {"name": "evidence", "description": "Logged experiment results from outputs/results.csv."},
+            {"name": "fleet", "description": "Triage a simulated fleet, gated on logged evidence."},
         ],
     )
     application.state.settings = settings
@@ -74,4 +75,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(dashboard.router)
     application.include_router(thermo.router)
     application.include_router(evidence.router)
+    application.include_router(fleet.router)
     return application
