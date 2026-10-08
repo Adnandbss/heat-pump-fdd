@@ -9,6 +9,7 @@
 - **Given** a unit diagnosed with condenser fouling, evaporator fan fault or evaporator fouling at high confidence, **when** the gate is on, **then** its action is engineering review, not dispatch. — `tests/test_fleet.py::test_gate_never_dispatches_a_class_without_measured_evidence`
 - **Given** the same unit, **when** the gate is off, **then** it is dispatched and counted as held back by the gated policy. — same test
 - **Given** the fleet route, **when** it returns, **then** every dispatched unit has the evidence status *transfers*. — `tests/test_fleet.py::test_fleet_route_gates_dispatch_and_reports_what_it_held_back`, and in the browser `web/e2e/fleet.spec.ts`
+- **Given** a confident diagnosis of a class that does not transfer, **when** the queue is computed, **then** the agent proposed a dispatch, the rule refused it, and no forbidden dispatch remains. — `tests/test_fleet.py::test_forbidden_dispatches_are_zero_and_refusals_are_traced`
 
 ## S2. Evidence comes from the results log, not from code
 
@@ -23,6 +24,8 @@
 *As an installer, I want a dispatch to say what to check, so that I bring the right equipment.*
 
 - **Given** a confident undercharge diagnosis, **when** it is dispatched, **then** the instruction is the leak-search-and-recharge instruction. — `tests/test_fleet.py::test_validated_fault_with_confidence_is_dispatched_with_an_instruction`
+- **Given** no instruction model is configured, **when** a sentence is requested, **then** the fixed instruction is returned and the model is not called. — `tests/test_fleet.py::test_rewrite_is_a_noop_without_a_model`
+- **Given** a model that tries to change the action, **when** the sentence is rewritten, **then** the fixed instruction is kept. — `tests/test_fleet.py::test_rewrite_rejects_a_model_that_changes_the_action`
 
 ## S4. Do not act on, or clear, an uncertain diagnosis
 

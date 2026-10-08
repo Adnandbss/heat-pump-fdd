@@ -56,7 +56,9 @@ The Fleet triage page is the shipped prototype of this flow: summary counts, a q
 | FR-7 | Every dispatch carries a fault-specific installer instruction | `api/fleet_policy.py` |
 | FR-8 | The response says the fleet is simulated and exposes the injected fault as demo-only ground truth | `api/schemas/fleet.py` |
 | FR-9 | A flag switches the gate off, and the response counts the dispatches the gate held back | `api/settings.py` |
-| FR-10 | No result figure is hardcoded in the interface | `tests/test_docs.py` |
+| FR-10 | An eager agent may propose a dispatch the evidence rule then refuses, and that refusal is visible | `api/fleet_policy.py` |
+| FR-11 | A language model may rephrase the installer sentence and cannot change the decided action | `api/fleet_policy.py` |
+| FR-12 | No result figure is hardcoded in the interface | `tests/test_docs.py` |
 
 Acceptance criteria for each requirement: [USER_STORIES.md](USER_STORIES.md).
 

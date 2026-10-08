@@ -1073,6 +1073,11 @@ export interface components {
              * @description Units the policy would dispatch with the evidence gate off, and does not with it on.
              */
             held_back: number;
+            /**
+             * Overruled
+             * @description Units where the agent proposed a dispatch and the evidence rule refused it.
+             */
+            overruled: number;
         };
         /** FleetUnit */
         FleetUnit: {
@@ -1090,10 +1095,20 @@ export interface components {
             confidence: number;
             evidence: components["schemas"]["FleetEvidence"];
             /**
+             * Proposed Action
+             * @enum {string}
+             */
+            proposed_action: "dispatch" | "engineering_review" | "monitor" | "no_action";
+            /**
              * Action
              * @enum {string}
              */
             action: "dispatch" | "engineering_review" | "monitor" | "no_action";
+            /**
+             * Overruled
+             * @description True when the eager agent and the evidence rule disagree.
+             */
+            overruled: boolean;
             /** Instruction */
             instruction: string;
             /** Priority */

@@ -105,6 +105,12 @@ export function FleetPage() {
                   </span>
                 </div>
                 <p className="text-sm text-white/70 mt-2">{unit.instruction}</p>
+                {unit.overruled ? (
+                  <p className="text-xs text-amber-100/80 mt-1" data-testid="agent-refusal">
+                    The agent proposed {ACTION_LABEL[unit.proposed_action]}. The rule kept{" "}
+                    {ACTION_LABEL[unit.action]}.
+                  </p>
+                ) : null}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs">
                   <span
                     data-testid="evidence-badge"

@@ -95,6 +95,92 @@ def test_missing_results_log_dispatches_nothing():
     assert response.summary.dispatch == 0
 
 
+def test_forbidden_dispatches_are_zero_and_refusals_are_traced():
+    units = [
+        _unit("Condenser_Fouling", 0.99, "HP-001"),
+        _unit("Evaporator_Fan_Fault", 0.99, "HP-002"),
+        _unit("Evaporator_Fouling", 0.99, "HP-003"),
+        _unit("Refrigerant_Undercharge", 0.99, "HP-004"),
+        _unit("Condenser_Fouling", policy.CONFIDENCE_MIN - 0.1, "HP-005"),
+    ]
+    response = triage(units, _results(), validated_only=True, seed=0)
+    forbidden = [
+        unit for unit in response.units
+        if unit.action == policy.DISPATCH and unit.evidence.status != policy.TRANSFERS
+    ]
+    assert forbidden == []
+    refused = [unit for unit in response.units if unit.overruled and unit.proposed_action == policy.DISPATCH]
+    assert {unit.unit_id for unit in refused} == {"HP-001", "HP-002", "HP-003"}
+    assert all(unit.action != policy.DISPATCH for unit in refused)
+    assert response.summary.overruled == len(refused)
+    low = next(unit for unit in response.units if unit.unit_id == "HP-005")
+    assert low.proposed_action == policy.MONITOR
+    assert low.action == policy.ENGINEERING_REVIEW
+    assert low.overruled is True
+    assert response.summary.overruled == 3
+
+
+def test_a_better_logged_f1_removes_the_refusal():
+    results = _results()
+    row = (
+        (results["experiment"] == policy.EVIDENCE_EXPERIMENT)
+        & (results["protocol"] == policy.EVIDENCE_PROTOCOL)
+        & (results["metric"] == "f1")
+        & (results["label"] == "Condenser_Fouling")
+    )
+    results.loc[row, "value"] = policy.EVIDENCE_F1_MIN + 0.1
+    response = triage([_unit("Condenser_Fouling", 0.95)], results, validated_only=True, seed=0)
+    unit = response.units[0]
+    assert unit.action == policy.DISPATCH
+    assert unit.proposed_action == policy.DISPATCH
+    assert unit.overruled is False
+    assert response.summary.overruled == 0
+
+
+def test_rewrite_is_a_noop_without_a_model(monkeypatch):
+    monkeypatch.delenv("FDD_INSTRUCTION_MODEL", raising=False)
+    fallback = policy.instruction(policy.ENGINEERING_REVIEW, "Condenser_Fouling")
+
+    def explode(*_args):
+        raise AssertionError("the model must not be called")
+
+    assert policy.rewrite_instruction(
+        policy.ENGINEERING_REVIEW, "Condenser_Fouling", fallback, complete=explode
+    ) == fallback
+
+
+def test_rewrite_rejects_a_model_that_changes_the_action(monkeypatch):
+    monkeypatch.setenv("FDD_INSTRUCTION_MODEL", "test-model")
+    fallback = policy.instruction(policy.ENGINEERING_REVIEW, "Condenser_Fouling")
+
+    def change_action(_model, _action, _label, _fallback):
+        return "Dispatch an installer now."
+
+    assert policy.rewrite_instruction(
+        policy.ENGINEERING_REVIEW, "Condenser_Fouling", fallback, complete=change_action
+    ) == fallback
+
+    def keep_action(_model, action, _label, _fallback):
+        return f"{action}: look, but do not send a truck."
+
+    rewritten = policy.rewrite_instruction(
+        policy.ENGINEERING_REVIEW, "Condenser_Fouling", fallback, complete=keep_action
+    )
+    assert rewritten.startswith(policy.ENGINEERING_REVIEW)
+
+
+def test_rewrite_falls_back_when_the_model_fails(monkeypatch):
+    monkeypatch.setenv("FDD_INSTRUCTION_MODEL", "test-model")
+    fallback = policy.instruction(policy.DISPATCH, "Refrigerant_Undercharge")
+
+    def fail(_model, _action, _label, _fallback):
+        raise TimeoutError("model down")
+
+    assert policy.rewrite_instruction(
+        policy.DISPATCH, "Refrigerant_Undercharge", fallback, complete=fail
+    ) == fallback
+
+
 def test_summary_counts_match_rows_and_order_follows_priority():
     units = [
         _unit("Normal", 0.95, "HP-001"),

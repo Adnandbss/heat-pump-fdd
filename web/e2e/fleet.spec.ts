@@ -6,6 +6,7 @@ test("fleet triage lists units and routes unvalidated faults to review", async (
   await expect(page.getByTestId("fleet-row").first()).toBeVisible();
   expect(await page.getByTestId("fleet-row").count()).toBeGreaterThan(0);
   await expect(page.locator('[data-testid="action-pill"][data-action="engineering_review"]').first()).toBeVisible();
+  await expect(page.getByTestId("agent-refusal").first()).toBeVisible();
 
   const dispatched = page.locator('[data-testid="fleet-row"]', {
     has: page.locator('[data-action="dispatch"]'),

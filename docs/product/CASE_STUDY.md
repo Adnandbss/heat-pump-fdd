@@ -33,6 +33,8 @@ Each of these changed what the product may promise. Full record: [DECISION_LOG.m
 
 The evidence gate is the feature. A class that does not transfer to measured units never triggers a dispatch, and the queue shows the evidence behind every row. Because the gate reads `outputs/results.csv` at request time, an ML fix logged on `main` — for example a corrected condenser-fouling physics — changes the triage with no product code change. A feature flag switches the gate off, and the API reports how many dispatches it held back.
 
+The queue agent is eager: it proposes a dispatch whenever the diagnosis is confident. The rule refuses that proposal when the class does not transfer on X5/sim2real, and the row shows both the proposal and the refusal. A language model may rephrase the installer sentence. It cannot change the action. With no model configured, the sentence stays the fixed one.
+
 ## What I would do differently
 
 Discovery first. Five interviews with OEM service engineers before writing the simulator would have told me which faults they lose money on. I built the most accurate thing I could, and only then asked who would act on it.

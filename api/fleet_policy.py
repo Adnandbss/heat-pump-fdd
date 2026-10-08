@@ -3,13 +3,20 @@
 A fault class only triggers a dispatch when the logged evidence says the
 simulator-trained classifier still finds it on measured units. The two
 thresholds are product decisions, justified in docs/product/PRD.md.
+
+The queue agent is eager: it proposes the action it would take with the
+evidence gate off. The rule then keeps or refuses that proposal. A language
+model may rephrase the installer sentence. It cannot change the action.
 """
 
 from __future__ import annotations
 
+import json
 import math
+import os
+import urllib.request
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
 import pandas as pd
 
@@ -96,14 +103,76 @@ def decide(label: str, confidence: float, evidence: Evidence, validated_only: bo
 
 def service_decision(
     label: str, confidence: float, results: pd.DataFrame, validated_only: bool
-) -> tuple[str, str, Evidence]:
-    """Action, installer instruction, and evidence for one diagnosis."""
+) -> tuple[str, str, str, Evidence]:
+    """Allowed action, eager proposal, installer sentence, and evidence.
+
+    The proposal is what the agent wants with the gate off. The allowed action
+    is what the rule permits.
+    """
     evidence = evidence_for(label, evidence_by_class(results))
+    proposed = decide(label, confidence, evidence, validated_only=False)
     action = decide(label, confidence, evidence, validated_only)
-    return action, instruction(action, label), evidence
+    sentence = rewrite_instruction(action, label, instruction(action, label))
+    return action, proposed, sentence, evidence
 
 
 def instruction(action: str, label: str) -> str:
     if action == DISPATCH:
         return DISPATCH_INSTRUCTIONS.get(label, "Dispatch an installer to inspect the unit.")
     return INSTRUCTIONS[action]
+
+
+def rewrite_instruction(
+    action: str,
+    label: str,
+    fallback: str,
+    complete: Optional[Callable[[str, str, str, str], str]] = None,
+) -> str:
+    """Rephrase the installer sentence. The decided action is not negotiable.
+
+    With `FDD_INSTRUCTION_MODEL` unset, the fixed sentence is returned and
+    nothing is sent over the network.
+    """
+    model = os.environ.get("FDD_INSTRUCTION_MODEL", "").strip()
+    if not model:
+        return fallback
+    caller = complete or _complete_instruction
+    try:
+        rewritten = caller(model, action, label, fallback)
+    except Exception:
+        return fallback
+    if not rewritten or action not in rewritten:
+        return fallback
+    return rewritten
+
+
+def _complete_instruction(model: str, action: str, label: str, fallback: str) -> str:
+    """One chat completion. Used only when FDD_INSTRUCTION_MODEL is set."""
+    key = os.environ.get("FDD_INSTRUCTION_API_KEY", "").strip()
+    if not key:
+        raise RuntimeError("FDD_INSTRUCTION_API_KEY is not set")
+    url = os.environ.get("FDD_INSTRUCTION_API_URL", "https://api.openai.com/v1/chat/completions")
+    body = json.dumps({
+        "model": model,
+        "temperature": 0,
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "Rewrite the installer instruction in one sentence. "
+                    f"The decision is already {action}. Include that exact word. "
+                    "Do not recommend a different action."
+                ),
+            },
+            {"role": "user", "content": f"Fault: {label}. Instruction: {fallback}"},
+        ],
+    }).encode()
+    request = urllib.request.Request(
+        url,
+        data=body,
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=10) as response:
+        payload = json.loads(response.read().decode())
+    return str(payload["choices"][0]["message"]["content"]).strip()

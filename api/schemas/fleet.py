@@ -26,7 +26,9 @@ class FleetUnit(BaseModel):
     diagnosis: str
     confidence: float = Field(ge=0.0, le=1.0)
     evidence: FleetEvidence
+    proposed_action: FleetAction
     action: FleetAction
+    overruled: bool = Field(description="True when the eager agent and the evidence rule disagree.")
     instruction: str
     priority: int
     ground_truth: str = Field(description="Injected fault. Exists only because the fleet is simulated.")
@@ -41,6 +43,9 @@ class FleetSummary(BaseModel):
     no_action: int
     held_back: int = Field(
         description="Units the policy would dispatch with the evidence gate off, and does not with it on."
+    )
+    overruled: int = Field(
+        description="Units where the agent proposed a dispatch and the evidence rule refused it."
     )
 
 

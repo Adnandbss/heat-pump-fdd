@@ -85,7 +85,7 @@ def simulate(
         severity=body.severity,
     )
     diagnosis = payload["diagnosis"]
-    action, text, evidence = service_decision(
+    action, _proposed, text, evidence = service_decision(
         diagnosis["label"], diagnosis["confidence"], results, settings.fleet_validated_only
     )
     payload["service_decision"] = ServiceDecision(

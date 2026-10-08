@@ -112,15 +112,16 @@ def triage(
     units: List[SimulatedUnit], results: pd.DataFrame, validated_only: bool, seed: int
 ) -> FleetResponse:
     """Apply the evidence policy to diagnosed units. Pure: no simulation here."""
-    table = policy.evidence_by_class(results)
     rows: List[FleetUnit] = []
     held_back = 0
+    overruled = 0
     for unit in units:
-        evidence = policy.evidence_for(unit.diagnosis, table)
-        action = policy.decide(unit.diagnosis, unit.confidence, evidence, validated_only)
-        ungated = policy.decide(unit.diagnosis, unit.confidence, evidence, validated_only=False)
-        if ungated == policy.DISPATCH and action != policy.DISPATCH:
+        action, proposed, sentence, evidence = policy.service_decision(
+            unit.diagnosis, unit.confidence, results, validated_only
+        )
+        if proposed == policy.DISPATCH and action != policy.DISPATCH:
             held_back += 1
+            overruled += 1
         rows.append(
             FleetUnit(
                 unit_id=unit.unit_id,
@@ -136,8 +137,10 @@ def triage(
                     f1=evidence.f1,
                     n=evidence.n,
                 ),
+                proposed_action=proposed,
                 action=action,
-                instruction=policy.instruction(action, unit.diagnosis),
+                overruled=proposed != action,
+                instruction=sentence,
                 priority=policy.PRIORITY[action],
                 ground_truth=unit.injected,
                 ground_truth_severity=unit.severity,
@@ -162,6 +165,7 @@ def triage(
             monitor=counts[policy.MONITOR],
             no_action=counts[policy.NO_ACTION],
             held_back=held_back,
+            overruled=overruled,
         ),
         units=rows,
     )
