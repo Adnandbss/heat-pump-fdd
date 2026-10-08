@@ -3984,6 +3984,51 @@
         ],
         "title": "Scenario"
       },
+      "ServiceDecision": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "instruction": {
+            "type": "string",
+            "title": "Instruction"
+          },
+          "evidence_status": {
+            "type": "string",
+            "title": "Evidence Status"
+          },
+          "evidence_experiment": {
+            "type": "string",
+            "title": "Evidence Experiment"
+          },
+          "evidence_protocol": {
+            "type": "string",
+            "title": "Evidence Protocol"
+          },
+          "evidence_f1": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence F1"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "instruction",
+          "evidence_status",
+          "evidence_experiment",
+          "evidence_protocol"
+        ],
+        "title": "ServiceDecision",
+        "description": "What a service engineer should do with this diagnosis. Same policy as the fleet queue."
+      },
       "SeverityPair": {
         "properties": {
           "key": {
@@ -4121,6 +4166,9 @@
           },
           "diagnosis": {
             "$ref": "#/components/schemas/Diagnosis"
+          },
+          "service_decision": {
+            "$ref": "#/components/schemas/ServiceDecision"
           }
         },
         "type": "object",
@@ -4128,7 +4176,8 @@
           "conditions",
           "cycle",
           "features",
-          "diagnosis"
+          "diagnosis",
+          "service_decision"
         ],
         "title": "SimulateResponse"
       },

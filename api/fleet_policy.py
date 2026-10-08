@@ -94,6 +94,15 @@ def decide(label: str, confidence: float, evidence: Evidence, validated_only: bo
     return DISPATCH
 
 
+def service_decision(
+    label: str, confidence: float, results: pd.DataFrame, validated_only: bool
+) -> tuple[str, str, Evidence]:
+    """Action, installer instruction, and evidence for one diagnosis."""
+    evidence = evidence_for(label, evidence_by_class(results))
+    action = decide(label, confidence, evidence, validated_only)
+    return action, instruction(action, label), evidence
+
+
 def instruction(action: str, label: str) -> str:
     if action == DISPATCH:
         return DISPATCH_INSTRUCTIONS.get(label, "Dispatch an installer to inspect the unit.")

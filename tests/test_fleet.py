@@ -115,6 +115,21 @@ def test_summary_counts_match_rows_and_order_follows_priority():
 
 
 @needs_model
+def test_simulate_returns_the_same_service_decision_as_the_queue():
+    from api.app import app
+
+    client = TestClient(app)
+    response = client.post(
+        "/simulate",
+        json={"T_source": 7, "T_sink": 40, "speed_ratio": 0.7, "fault_type": "Condenser_Fouling"},
+    )
+    assert response.status_code == 200
+    decision = response.json()["service_decision"]
+    assert decision["action"] == "engineering_review"
+    assert decision["evidence_status"] == "does_not_transfer"
+
+
+@needs_model
 def test_fleet_is_deterministic_for_a_seed():
     from api.routers.fleet import build_fleet
     from src.fdd.inference import FDDEngine

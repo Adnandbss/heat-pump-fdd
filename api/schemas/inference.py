@@ -106,11 +106,23 @@ class HealthResponse(BaseModel):
     classes: List[str]
 
 
+class ServiceDecision(BaseModel):
+    """What a service engineer should do with this diagnosis. Same policy as the fleet queue."""
+
+    action: str
+    instruction: str
+    evidence_status: str
+    evidence_experiment: str
+    evidence_protocol: str
+    evidence_f1: Optional[float] = None
+
+
 class SimulateResponse(BaseModel):
     conditions: OperatingConditions
     cycle: CycleState
     features: FeatureVector
     diagnosis: Diagnosis
+    service_decision: ServiceDecision
 
 
 class LiveTracePoint(BaseModel):

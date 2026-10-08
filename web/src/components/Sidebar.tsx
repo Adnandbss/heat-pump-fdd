@@ -21,8 +21,8 @@ type NavItem = {
 };
 
 const items: NavItem[] = [
-  { id: "fleet", to: "/fleet", icon: ListChecks, label: "Fleet triage" },
-  { id: "insights", to: "/", icon: LayoutDashboard, label: "Insights", end: true },
+  { id: "fleet", to: "/", icon: ListChecks, label: "Fleet triage", end: true },
+  { id: "insights", to: "/insights", icon: LayoutDashboard, label: "Insights" },
   { id: "evidence", to: "/evidence", icon: FlaskConical, label: "Evidence" },
   { id: "live", to: "/live", icon: Activity, label: "Live" },
   { id: "diagnose", to: "/diagnose", icon: Stethoscope, label: "Diagnose" },
@@ -36,18 +36,19 @@ type Props = {
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40";
-const idle =
-  `h-11 w-11 rounded-2xl grid place-items-center text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-150 ${focusRing}`;
+const itemBase =
+  "h-11 rounded-2xl flex items-center justify-center sm:justify-start gap-2 sm:px-3 sm:w-full text-sm transition-colors duration-150";
+const idle = `${itemBase} w-11 text-white/70 hover:text-white hover:bg-white/10 ${focusRing}`;
 const on =
-  `h-11 w-11 rounded-2xl grid place-items-center bg-white text-slate-900 shadow-[0_8px_20px_rgba(255,255,255,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/40`;
+  `${itemBase} w-11 sm:w-full bg-white text-slate-900 shadow-[0_8px_20px_rgba(255,255,255,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/40`;
 
 export function Sidebar({ active }: Props) {
   return (
-    <aside className="glass-pill sticky top-4 sm:top-10 flex flex-row sm:flex-col items-center gap-3 sm:gap-4 px-2.5 py-3 sm:py-5 h-fit w-full sm:w-auto justify-center">
-      <div className="h-10 w-10 rounded-full bg-white text-slate-900 grid place-items-center text-xs font-bold shrink-0">
+    <aside className="glass-pill sticky top-4 sm:top-10 flex flex-row sm:flex-col items-center sm:items-stretch gap-3 sm:gap-4 px-2.5 py-3 sm:px-3 sm:py-5 h-fit w-full sm:w-44 justify-center">
+      <div className="h-10 w-10 rounded-full bg-white text-slate-900 grid place-items-center text-xs font-bold shrink-0 sm:mx-auto">
         HP
       </div>
-      <nav className="flex flex-row sm:flex-col gap-1.5" aria-label="Primary">
+      <nav className="flex flex-row sm:flex-col gap-1.5 sm:w-full" aria-label="Primary">
         {items.map((item) => {
           const Icon = item.icon;
           return (
@@ -61,7 +62,10 @@ export function Sidebar({ active }: Props) {
               className={({ isActive }) => (isActive || active === item.id ? on : idle)}
             >
               {({ isActive }) => (
-                <Icon size={18} strokeWidth={isActive || active === item.id ? 2.2 : 1.7} />
+                <>
+                  <Icon size={18} strokeWidth={isActive || active === item.id ? 2.2 : 1.7} />
+                  <span className="hidden sm:inline">{item.label}</span>
+                </>
               )}
             </NavLink>
           );
@@ -75,6 +79,7 @@ export function Sidebar({ active }: Props) {
           className={idle}
         >
           <BookOpen size={18} strokeWidth={1.7} />
+          <span className="hidden sm:inline">API docs</span>
         </a>
       </nav>
     </aside>

@@ -1480,6 +1480,24 @@ export interface components {
             /** Description */
             description: string;
         };
+        /**
+         * ServiceDecision
+         * @description What a service engineer should do with this diagnosis. Same policy as the fleet queue.
+         */
+        ServiceDecision: {
+            /** Action */
+            action: string;
+            /** Instruction */
+            instruction: string;
+            /** Evidence Status */
+            evidence_status: string;
+            /** Evidence Experiment */
+            evidence_experiment: string;
+            /** Evidence Protocol */
+            evidence_protocol: string;
+            /** Evidence F1 */
+            evidence_f1?: number | null;
+        };
         /** SeverityPair */
         SeverityPair: {
             /** Key */
@@ -1527,6 +1545,7 @@ export interface components {
             cycle: components["schemas"]["CycleState"];
             features: components["schemas"]["FeatureVector"];
             diagnosis: components["schemas"]["Diagnosis"];
+            service_decision: components["schemas"]["ServiceDecision"];
         };
         /** StatsResponse */
         StatsResponse: {

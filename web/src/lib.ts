@@ -50,7 +50,7 @@ export const PAGE_COPY: Record<string, { eyebrow: string; title: string; subtitl
   diagnose: {
     eyebrow: "Diagnosis",
     title: "Live diagnosis",
-    subtitle: "Simulate an operating point and read class probabilities",
+    subtitle: "One operating point, and the action a service engineer should take",
   },
   models: {
     eyebrow: "Models",

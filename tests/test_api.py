@@ -58,6 +58,12 @@ def test_api_health_and_simulate():
     body = response.json()
     assert "diagnosis" in body
     assert "cycle" in body
+    assert body["service_decision"]["action"] in {
+        "dispatch",
+        "engineering_review",
+        "monitor",
+        "no_action",
+    }
 
 
 @pytest.mark.skipif(not MODEL_PATH.exists(), reason="Train the model with main_analysis.py first")
@@ -249,7 +255,7 @@ def test_pydantic_contracts_reject_unknown_fault():
 
 
 def test_feature_vector_and_diagnosis_schemas():
-    from api.schemas import Diagnosis, FeatureVector, SimulateResponse
+    from api.schemas import Diagnosis, FeatureVector
     from src.fdd.inference import FDDEngine
     from src.studies.synthetic.scenarios import SyntheticScenarios
 
@@ -257,8 +263,8 @@ def test_feature_vector_and_diagnosis_schemas():
         pytest.skip("Train the model with main_analysis.py first")
 
     payload = SyntheticScenarios(FDDEngine()).simulate_cycle(fault_type="Normal")
-    parsed = SimulateResponse.model_validate(payload)
-    assert parsed.diagnosis.label == "Normal"
+    parsed = Diagnosis.model_validate(payload["diagnosis"])
+    assert parsed.label == "Normal"
     assert FeatureVector.model_validate(payload["features"]).COP > 0
     Diagnosis.model_validate(payload["diagnosis"])
     leaked = dict(payload["features"])

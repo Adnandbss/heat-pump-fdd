@@ -137,6 +137,14 @@ export type Diagnosis = {
     confidence: number;
     probabilities: Record<string, number>;
   };
+  service_decision: {
+    action: "dispatch" | "engineering_review" | "monitor" | "no_action";
+    instruction: string;
+    evidence_status: "transfers" | "does_not_transfer" | "untested";
+    evidence_experiment: string;
+    evidence_protocol: string;
+    evidence_f1?: number | null;
+  };
 };
 
 export type PhPayload = {
