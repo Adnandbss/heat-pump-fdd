@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     confusion_path: Optional[Path] = None
     importance_path: Optional[Path] = None
     results_path: Optional[Path] = None
+    # Fleet triage: dispatch only on fault classes that transfer to measured units.
+    fleet_validated_only: bool = True
 
     @field_validator("cors_origins", mode="before")
     @classmethod

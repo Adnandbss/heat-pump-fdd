@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { EvidenceRuns, RunRow } from "../../api";
+import { API_BASE, type EvidenceRuns, type RunRow } from "../../api";
 import { ProtocolBadge } from "../ProtocolBadge";
 import { GlassCard } from "../GlassCard";
 import { SelectField } from "../Fields";
@@ -55,7 +55,7 @@ export function RunsTable({ data, experiment, protocol, model, label, onFilter, 
           <h2 className="text-lg font-semibold">Logged measurements</h2>
           <p className="text-xs text-white/45 mt-1">
             {data ? `${data.total} rows in ` : ""}
-            <a className="underline decoration-white/20 hover:decoration-white/60" href="/api/evidence/runs?limit=50">
+            <a className="underline decoration-white/20 hover:decoration-white/60" href={`${API_BASE}/api/evidence/runs?limit=50`}>
               {data?.csv_path ?? "outputs/results.csv"}
             </a>
           </p>

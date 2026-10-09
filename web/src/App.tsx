@@ -4,18 +4,21 @@ import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
 import { DiagnosePage } from "./pages/DiagnosePage";
 import { EvidencePage } from "./pages/EvidencePage";
+import { FleetPage } from "./pages/FleetPage";
 import { InsightsPage } from "./pages/InsightsPage";
 import { LivePage } from "./pages/LivePage";
 import { ModelsPage } from "./pages/ModelsPage";
 import { ThermoPage } from "./pages/ThermoPage";
 
 function pageFromPath(pathname: string) {
+  if (pathname === "/" || pathname.startsWith("/fleet")) return "fleet";
+  if (pathname.startsWith("/insights")) return "insights";
   if (pathname.startsWith("/evidence")) return "evidence";
   if (pathname.startsWith("/live")) return "live";
   if (pathname.startsWith("/diagnose")) return "diagnose";
   if (pathname.startsWith("/models")) return "models";
   if (pathname.startsWith("/thermo")) return "thermo";
-  return "insights";
+  return "fleet";
 }
 
 export default function App() {
@@ -30,7 +33,9 @@ export default function App() {
           <Header page={active} />
           <ErrorBoundary key={location.pathname}>
             <Routes>
-              <Route path="/" element={<InsightsPage />} />
+              <Route path="/" element={<FleetPage />} />
+              <Route path="/fleet" element={<FleetPage />} />
+              <Route path="/insights" element={<InsightsPage />} />
               <Route path="/evidence" element={<EvidencePage />} />
               <Route path="/live" element={<LivePage />} />
               <Route path="/diagnose" element={<DiagnosePage />} />

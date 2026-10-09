@@ -1,0 +1,31 @@
+# Render Blueprint: the API and the dashboard as two free services.
+# If Render assigns a different hostname than the names below, update
+# VITE_API_URL and FDD_CORS_ORIGINS to the real URLs and redeploy both.
+services:
+  - type: web
+    name: heat-pump-fdd-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8000
+      # A JSON list: pydantic-settings decodes list fields as JSON from the environment.
+      - key: FDD_CORS_ORIGINS
+        value: '["https://heat-pump-fdd.onrender.com"]'
+      - key: FDD_FLEET_VALIDATED_ONLY
+        value: "true"
+
+  - type: web
+    name: heat-pump-fdd
+    runtime: static
+    buildCommand: cd web && npm ci && npm run build
+    staticPublishPath: ./web/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://heat-pump-fdd-api.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

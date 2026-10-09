@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, Depends
+import pandas as pd
+from fastapi import APIRouter, Depends, Request
 
-from api.deps import get_engine, get_scenarios
-from api.errors import InvalidFeatureVector
+from api.deps import get_engine, get_results, get_scenarios, get_settings
+from api.errors import ArtifactMissing, InvalidFeatureVector
+from api.fleet_policy import EVIDENCE_EXPERIMENT, EVIDENCE_PROTOCOL, service_decision
 from api.schemas.inference import (
     Diagnosis,
     HealthResponse,
@@ -15,9 +17,11 @@ from api.schemas.inference import (
     LiveResponse,
     LiveTracePoint,
     PredictRequest,
+    ServiceDecision,
     SimulateRequest,
     SimulateResponse,
 )
+from api.settings import Settings
 from src.fdd.inference import FDDEngine
 from src.studies.synthetic.scenarios import SyntheticScenarios
 
@@ -54,6 +58,13 @@ def predict(
         raise InvalidFeatureVector(str(exc)) from exc
 
 
+def _results_or_empty(request: Request, settings: Settings = Depends(get_settings)) -> pd.DataFrame:
+    try:
+        return get_results(request, settings)
+    except ArtifactMissing:
+        return pd.DataFrame()
+
+
 @router.post(
     "/simulate",
     response_model=SimulateResponse,
@@ -63,6 +74,8 @@ def predict(
 def simulate(
     body: SimulateRequest,
     scenarios: SyntheticScenarios = Depends(get_scenarios),
+    results: pd.DataFrame = Depends(_results_or_empty),
+    settings: Settings = Depends(get_settings),
 ) -> SimulateResponse:
     payload = scenarios.simulate_cycle(
         T_source=body.T_source,
@@ -70,6 +83,18 @@ def simulate(
         speed_ratio=body.speed_ratio,
         fault_type=body.fault_type.value,
         severity=body.severity,
+    )
+    diagnosis = payload["diagnosis"]
+    action, _proposed, text, evidence = service_decision(
+        diagnosis["label"], diagnosis["confidence"], results, settings.fleet_validated_only
+    )
+    payload["service_decision"] = ServiceDecision(
+        action=action,
+        instruction=text,
+        evidence_status=evidence.status,
+        evidence_experiment=EVIDENCE_EXPERIMENT,
+        evidence_protocol=EVIDENCE_PROTOCOL,
+        evidence_f1=evidence.f1,
     )
     return SimulateResponse.model_validate(payload)
 

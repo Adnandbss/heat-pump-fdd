@@ -14,6 +14,15 @@ The interesting result is how much a number moves when the protocol becomes hone
 
 Each figure on that page is read from `outputs/results.csv` and carries its validation protocol.
 
+## Product
+
+The same evidence, turned into a decision for one user: an OEM after-sales team triaging a
+connected heat-pump fleet. **Fleet triage** (`/fleet`) dispatches an installer only for fault
+classes the classifier still finds on measured units, and routes the rest to engineering review.
+
+- [Product case study](docs/product/CASE_STUDY.md) — problem, user, what the evidence forced, what is next.
+- [Product track](docs/product/README.md) — discovery, strategy, PRD, user stories, decision log, launch plan, each with its status.
+
 ## 60-second demo
 
 ```bash
@@ -44,6 +53,10 @@ docker compose up --build
 
 Then open `http://localhost:5173`. The browser talks to `http://localhost:8000`.
 
+Hosted demo: `render.yaml` is a Render Blueprint for the API (Docker) and the dashboard
+(static site), both on the free plan. The free API sleeps when idle; the first request
+after a pause takes about a minute.
+
 ## Why it exists
 
 Fouling, fan faults and refrigerant leaks all hurt COP, but the signatures overlap. Threshold rules misfire. This project:
@@ -52,7 +65,7 @@ Fouling, fan faults and refrigerant leaks all hurt COP, but the signatures overl
 - Decouples condenser **fouling** (pinch / subcooling) from **fan** faults (airflow, compressor work, discharge temperature).
 - Serves a classifier so Diagnosis / Live FDD show readable probabilities.
 
-**For PM interviews:** the unit of value is a decision — fault class + confidence — not a notebook metric.
+**For PM interviews:** the unit of value is a decision — dispatch an installer or not — not a notebook metric. See the [case study](docs/product/CASE_STUDY.md).
 **For ML interviews:** the interesting part is the physics features and class overlap, not stacking more estimators.
 
 ## Architecture
@@ -75,6 +88,8 @@ flowchart LR
 | `src/fdd/ml_models.py` | Random Forest (shipped) + tuned / calibrated Gradient Boosting |
 | `src/fdd/inference.py` | Load the model and diagnose a feature vector |
 | `api/app.py` | `GET /health`, `POST /predict`, `POST /simulate`, `POST /live`, `GET /api/*` |
+| `api/routers/fleet.py` | `GET /api/fleet`: triage a simulated fleet; dispatch policy in `api/fleet_policy.py` |
+| `docs/product/` | Product track: case study, PRD, user stories, decision log |
 | `web/` | Glassmorphism dashboard (primary UI) |
 | `models/synthetic/` | Serialized classifier + metadata |
 

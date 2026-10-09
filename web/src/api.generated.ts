@@ -548,6 +548,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Triage a simulated fleet: dispatch only on evidence-backed fault classes */
+        get: operations["getFleet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -999,6 +1016,111 @@ export interface components {
             /** D W Comp */
             d_W_comp: number;
         };
+        /** FleetEvidence */
+        FleetEvidence: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "transfers" | "does_not_transfer" | "untested";
+            /** Experiment */
+            experiment: string;
+            /** Protocol */
+            protocol: string;
+            /** F1 */
+            f1?: number | null;
+            /** N */
+            n?: number | null;
+        };
+        /** FleetPolicy */
+        FleetPolicy: {
+            /** Validated Only */
+            validated_only: boolean;
+            /** Evidence Experiment */
+            evidence_experiment: string;
+            /** Evidence Protocol */
+            evidence_protocol: string;
+            /** Evidence F1 Min */
+            evidence_f1_min: number;
+            /** Confidence Min */
+            confidence_min: number;
+        };
+        /** FleetResponse */
+        FleetResponse: {
+            /** Notice */
+            notice: string;
+            /** Seed */
+            seed: number;
+            policy: components["schemas"]["FleetPolicy"];
+            summary: components["schemas"]["FleetSummary"];
+            /** Units */
+            units: components["schemas"]["FleetUnit"][];
+        };
+        /** FleetSummary */
+        FleetSummary: {
+            /** Units */
+            units: number;
+            /** Dispatch */
+            dispatch: number;
+            /** Engineering Review */
+            engineering_review: number;
+            /** Monitor */
+            monitor: number;
+            /** No Action */
+            no_action: number;
+            /**
+             * Held Back
+             * @description Units the policy would dispatch with the evidence gate off, and does not with it on.
+             */
+            held_back: number;
+            /**
+             * Overruled
+             * @description Units where the agent proposed a dispatch and the evidence rule refused it.
+             */
+            overruled: number;
+        };
+        /** FleetUnit */
+        FleetUnit: {
+            /** Unit Id */
+            unit_id: string;
+            /** T Source */
+            T_source: number;
+            /** T Sink */
+            T_sink: number;
+            /** Speed Ratio */
+            speed_ratio: number;
+            /** Diagnosis */
+            diagnosis: string;
+            /** Confidence */
+            confidence: number;
+            evidence: components["schemas"]["FleetEvidence"];
+            /**
+             * Proposed Action
+             * @enum {string}
+             */
+            proposed_action: "dispatch" | "engineering_review" | "monitor" | "no_action";
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "dispatch" | "engineering_review" | "monitor" | "no_action";
+            /**
+             * Overruled
+             * @description True when the eager agent and the evidence rule disagree.
+             */
+            overruled: boolean;
+            /** Instruction */
+            instruction: string;
+            /** Priority */
+            priority: number;
+            /**
+             * Ground Truth
+             * @description Injected fault. Exists only because the fleet is simulated.
+             */
+            ground_truth: string;
+            /** Ground Truth Severity */
+            ground_truth_severity: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1373,6 +1495,24 @@ export interface components {
             /** Description */
             description: string;
         };
+        /**
+         * ServiceDecision
+         * @description What a service engineer should do with this diagnosis. Same policy as the fleet queue.
+         */
+        ServiceDecision: {
+            /** Action */
+            action: string;
+            /** Instruction */
+            instruction: string;
+            /** Evidence Status */
+            evidence_status: string;
+            /** Evidence Experiment */
+            evidence_experiment: string;
+            /** Evidence Protocol */
+            evidence_protocol: string;
+            /** Evidence F1 */
+            evidence_f1?: number | null;
+        };
         /** SeverityPair */
         SeverityPair: {
             /** Key */
@@ -1420,6 +1560,7 @@ export interface components {
             cycle: components["schemas"]["CycleState"];
             features: components["schemas"]["FeatureVector"];
             diagnosis: components["schemas"]["Diagnosis"];
+            service_decision: components["schemas"]["ServiceDecision"];
         };
         /** StatsResponse */
         StatsResponse: {
@@ -2348,6 +2489,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvidenceCalibration"];
+                };
+            };
+        };
+    };
+    getFleet: {
+        parameters: {
+            query?: {
+                size?: number;
+                seed?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

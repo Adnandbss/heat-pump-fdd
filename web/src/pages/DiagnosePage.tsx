@@ -73,8 +73,9 @@ export function DiagnosePage() {
   }, [catalog, scenario, tSource, tSink, speed]);
 
   const diagnosis = payload?.diagnosis;
+  const decision = payload?.service_decision;
   const cycle = payload?.cycle;
-  const healthy = diagnosis?.label === "Normal";
+  const healthy = decision?.action === "no_action";
 
   return (
     <div className="space-y-4">
@@ -125,23 +126,25 @@ export function DiagnosePage() {
 
       {error ? <GlassCard className="p-4 text-sm text-amber-200">{error}</GlassCard> : null}
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        <GlassCard className="p-6 xl:col-span-4">
-          <p className="text-xs uppercase tracking-wide text-white/45">Diagnosis</p>
-          <div className={`text-3xl font-semibold mt-4 ${healthy ? "text-emerald-300" : "text-violet-200"}`}>
-            {diagnosis ? pretty(diagnosis.label) : "—"}
-          </div>
-          <div className="grid grid-cols-3 gap-3 mt-6">
-            <Metric label="Confidence" value={diagnosis ? `${(diagnosis.confidence * 100).toFixed(1)}%` : "—"} />
-            <Metric label="COP" value={cycle ? cycle.COP.toFixed(2) : "—"} />
-            <Metric label="T_dis" value={cycle ? `${cycle.T_discharge.toFixed(1)}°` : "—"} />
-          </div>
-        </GlassCard>
-        <GlassCard className="p-6 xl:col-span-8">
-          <h2 className="text-sm font-semibold mb-4">Class probabilities</h2>
+      <GlassCard className="p-6">
+        <p className="text-xs uppercase tracking-wide text-white/45">Recommended action</p>
+        <div className={`text-3xl font-semibold mt-3 ${healthy ? "text-emerald-300" : "text-violet-200"}`}>
+          {decision ? actionLabel(decision.action) : "—"}
+        </div>
+        <p className="text-sm text-white/70 mt-3">{decision?.instruction ?? "Pick a scenario."}</p>
+        <p className="text-xs text-white/45 mt-4">
+          {diagnosis ? pretty(diagnosis.label) : "—"}
+          {diagnosis ? ` · ${(diagnosis.confidence * 100).toFixed(0)}% confidence` : ""}
+          {decision ? ` · ${evidenceLabel(decision.evidence_status)}` : ""}
+        </p>
+      </GlassCard>
+
+      <details className="rounded-2xl border border-white/10 px-4 py-3">
+        <summary className="cursor-pointer text-sm text-white/70">Class probabilities</summary>
+        <div className="mt-4">
           <ProbabilityBars payload={payload} />
-        </GlassCard>
-      </div>
+        </div>
+      </details>
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         <MetricCard label="P_evap" value={cycle ? `${cycle.P_evap.toFixed(2)} bar` : "—"} />
@@ -205,13 +208,17 @@ export function DiagnosePage() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-[11px] text-white/40">{label}</div>
-      <div className="text-lg font-semibold mt-1">{value}</div>
-    </div>
-  );
+function actionLabel(action: string) {
+  if (action === "dispatch") return "Dispatch";
+  if (action === "engineering_review") return "Engineering review";
+  if (action === "monitor") return "Monitor";
+  return "No action";
+}
+
+function evidenceLabel(status: string) {
+  if (status === "transfers") return "validated on measured units";
+  if (status === "does_not_transfer") return "does not transfer to measured units";
+  return "untested on measured units";
 }
 
 function MetricCard({ label, value }: { label: string; value: string }) {
