@@ -1,44 +1,43 @@
 ---
-title: "Faire entrer les résultats dans le tableau de bord"
-subtitle: "P7 — de la vitrine de démo à l'échelle de vérité, `outputs/results.csv` comme source unique"
-date: "Septembre 2026"
-lang: fr
+title: "Putting the results on the dashboard"
+subtitle: "P7 — from a demo shop window to the truth ladder, `outputs/results.csv` as the single source"
+date: "September 2026"
+lang: en
 ---
 
-# 0. Le problème et la contrainte fondatrice
+# 0. The problem and the founding constraint
 
-Le tableau de bord `web/` savait **appeler** un modèle. Il simule un point de
-fonctionnement, affiche des probabilités, trace un diagramme $P$-$h$. Il est joli.
-Il tourne.
+The `web/` dashboard knew how to **call** a model. It simulates an operating point,
+shows probabilities, draws a $P$-$h$ diagram. It looks good. It runs.
 
-Il ne montrait **rien** de ce que le dépôt a réellement établi. Les mesures de
-`outputs/results.csv`, les expériences X0→X5, le fait qu'un protocole honnête
-divise la performance par trois — tout cela n'existait que dans le README et
-dans [DOSSIER.md](DOSSIER.md).
+It showed **nothing** of what the repository has actually established. The measurements
+in `outputs/results.csv`, experiments X0→X5, the fact that an honest protocol divides
+performance by three — all of that existed only in the README and in
+[DOSSIER.md](DOSSIER.md).
 
-Un jury qui ouvre le front voyait un projet de démo. Un jury qui lit le dossier
-voyait un projet de recherche. C'est le même dépôt. P7 est le rattrapage :
-**le front doit afficher ce qu'on a mesuré**, y compris le chiffre qui dérange.
+A jury that opened the front saw a demo project. A jury that read the dossier saw a
+research project. It is the same repository. P7 is the catch-up: **the front must
+display what was measured**, including the figure that is uncomfortable.
 
-Ce document raconte ce qui a été livré, avec les captures du nouveau front.
+This document tells what was delivered, with captures of the new front.
 
-## Comment lire ce document
+## How to read this document
 
-Comme le dossier technique, chaque étape répond à trois questions :
+As in the technical dossier, each step answers three questions:
 
 | | |
 |---|---|
-| **Physique** | Quel phénomène (fuite de label, transfert de machine, fuite $k$NN) la figure rend visible |
-| **Apprentissage** | Quelle décision de protocole le chiffre engage |
-| **Ingénierie** | Pourquoi le chiffre ne vit pas dans le TSX |
+| **Physics** | Which phenomenon (label leak, machine transfer, $k$NN leak) the figure makes visible |
+| **Learning** | Which protocol decision the figure commits to |
+| **Engineering** | Why the figure does not live in the TSX |
 
-## Ce qui a changé dans le dépôt
+## What changed in the repository
 
 ```
 api/
-+-- routers/evidence.py      GET /api/evidence/* — pandas, pas le joblib
-+-- schemas/evidence.py      contrats Pydantic
-+-- deps.py                  get_results() + cache mtime
++-- routers/evidence.py      GET /api/evidence/* — pandas, not the joblib
++-- schemas/evidence.py      Pydantic contracts
++-- deps.py                  get_results() + mtime cache
 +-- settings.py              results_path → outputs/results.csv
 
 web/src/
@@ -47,293 +46,281 @@ web/src/
 +-- components/ErrorBoundary.tsx
 +-- components/evidence/     TruthLadder, ProtocolSlope, ReferenceBenchmark,
 |                            PerClassBars, ConfusionPanel, RunsTable
-+-- App.tsx                  react-router : /evidence, /models, …
++-- App.tsx                  react-router: /evidence, /models, …
 
-tests/test_evidence.py       CSV jouet, sans classifier.joblib
-web/e2e/evidence.spec.ts     Playwright : six figures, pas de NaN
+tests/test_evidence.py       toy CSV, without classifier.joblib
+web/e2e/evidence.spec.ts     Playwright: six figures, no NaN
 ```
 
-La règle d'import ne change pas. Evidence **n'importe pas** `FDDEngine`. Une
-page de résultats qui exigerait le classifieur pour s'afficher dirait le
-contraire de ce qu'elle raconte.
+The import rule does not change. Evidence **does not import** `FDDEngine`. A results
+page that required the classifier in order to render would say the opposite of what
+it tells.
 
-# 1. Le principe — zéro chiffre en dur
+# 1. The principle — zero hardcoded figures
 
-**Apprentissage.** Un nombre sans protocole n'est pas un résultat. C'est la
-leçon de X0b, mesurée : CV aléatoire 0,937 contre leave-one-machine-out 0,602
-sur les mêmes résidus (`X0b` / `residuals` / `gradient-boosting`,
-`outputs/results.csv`). Le front héritait du même piège que le README avant
-P5 : recopier « 89,3 % » dans un composant, c'est figer une capture d'écran.
+**Learning.** A number without a protocol is not a result. That is the lesson of X0b,
+measured: random CV 0.937 against leave-one-machine-out 0.602 on the same residuals
+(`X0b` / `residuals` / `gradient-boosting`, `outputs/results.csv`). The front inherited
+the same trap as the README before P5: copying "89.3%" into a component freezes a
+screenshot.
 
-**Ingénierie.** `tools/results.py` est déjà la source unique côté Python.
-Le garde `test_readme_results_percentages_are_logged` interdit au README
-d'afficher un pourcentage qui n'est pas journalisé. P7 étend la règle au
-TSX : **aucune valeur `xx.x %` n'est écrite dans** `web/src/**/*.tsx`.
-Tout circule :
+**Engineering.** `tools/results.py` is already the single source on the Python side.
+The guard `test_readme_results_percentages_are_logged` forbids the README from showing
+a percentage that is not logged. P7 extends the rule to TSX: **no `xx.x %` value is
+written in** `web/src`. Everything flows:
 
 ```
-outputs/results.csv  →  GET /api/evidence/*  →  composant React
+outputs/results.csv  →  GET /api/evidence/*  →  React component
 ```
 
-Rejouer une expérience et appeler `tools.results.log()` met le dashboard à
-jour tout seul. Un test CI, `test_web_tsx_has_no_hardcoded_result_percentages`,
-garde la règle.
+Replaying an experiment and calling `tools.results.log()` updates the dashboard on its
+own. A CI test, `test_web_tsx_has_no_hardcoded_result_percentages`, keeps the rule.
 
-Le tableau « coût de la calibration » du README (0 / 10 / 50 essais sains)
-n'avait **pas** de lignes dans le CSV — le garde ne voyait que les pourcentages
-suivis d'un `%`. Les décimaux nus 0,377 et 0,456 sont maintenant journalisés
-(`X1` / `LOMO-calibration-n10` et `n50`). **Il n'y a toujours pas de courbe
-de calibration dans le front** : le plan l'interdit tant que le principe
-n'admet aucune exception. Journaliser n'autorise pas à redessiner.
+The README "cost of calibration" table (0 / 10 / 50 healthy tests) had **no** rows in
+the CSV — the guard only saw percentages followed by a `%`. The bare decimals 0.377
+and 0.456 are now logged (`X1` / `LOMO-calibration-n10` and `n50`). **There is still
+no calibration curve on the front**: the plan forbids it until the principle admits no
+exception. Logging does not authorise redrawing.
 
-# 2. L'architecture — ce qui circule
+# 2. The architecture — what flows
 
 ## Backend — `GET /api/evidence/*`
 
-Nouveau routeur `api/routers/evidence.py`, schémas dans
-`api/schemas/evidence.py`, dépendance `get_results()` dans `api/deps.py`
-(lecture CSV + cache mtime, le motif de `get_dataset`).
+New router `api/routers/evidence.py`, schemas in `api/schemas/evidence.py`, dependency
+`get_results()` in `api/deps.py` (CSV read + mtime cache, the same pattern as
+`get_dataset`).
 
-| Endpoint | Rend | Figure |
+| Endpoint | Returns | Figure |
 |---|---|---|
-| `/api/evidence/summary` | 8 expériences, 660 mesures, 20 protocoles, headline 89,3 % et son protocole | bandeau |
-| `/api/evidence/ladder` | l'échelle de vérité, chaque barre portant sa cause | 1 |
-| `/api/evidence/protocols` | X0b : 4 jeux de grandeurs × 2 protocoles | 2 |
-| `/api/evidence/references` | X3 : grille famille × conditionnement × $d_{\min}$ | 3 |
-| `/api/evidence/per-class` | F1 par classe, trois régimes, classes alignées **côté serveur** | 4 |
-| `/api/evidence/confusion` | matrice hold-out (sim2real : 404 tant que l'artefact n'existe pas) | 5 |
-| `/api/evidence/runs` | les 660 lignes, filtrables, 50 par page | 6 |
+| `/api/evidence/summary` | 8 experiments, 660 measurements, 20 protocols, headline 89.3% and its protocol | banner |
+| `/api/evidence/ladder` | the truth ladder, each bar carrying its cause | 1 |
+| `/api/evidence/protocols` | X0b: 4 feature sets × 2 protocols | 2 |
+| `/api/evidence/references` | X3: family × conditioning × $d_{\min}$ grid | 3 |
+| `/api/evidence/per-class` | F1 by class, three regimes, classes aligned **server-side** | 4 |
+| `/api/evidence/confusion` | hold-out matrix (sim2real: 404 until the artefact exists) | 5 |
+| `/api/evidence/runs` | the 660 rows, filterable, 50 per page | 6 |
 
-Les routes sont des `def` : pandas est bloquant, FastAPI les pousse dans le
-threadpool. Pas d'`async` cosmétique. CSV absent → `ArtifactMissing` → 404,
-jamais une 500. Un test tourne sur un CSV jouet écrit dans `tmp_path`, via
-`create_app(Settings(results_path=...))`, **sans** le joblib livré.
+The routes are `def`: pandas blocks, FastAPI pushes them onto the threadpool. No
+cosmetic `async`. Missing CSV → `ArtifactMissing` → 404, never a 500. A test runs on
+a toy CSV written in `tmp_path`, via `create_app(Settings(results_path=...))`,
+**without** the shipped joblib.
 
-La correspondance des classes vit dans `_CLASS_ALIGN` de
-`api/routers/evidence.py`, pas dans le TSX. Le simulateur parle
-`Refrigerant_Overcharge` ; NIST parle `Overcharge`. Un zéro côté simulateur
-pour `LiquidLine` dirait « mesuré et nul ». Un trou dit « pas mesurable ».
-Le serveur envoie `null`. Le front dessine un emplacement vide.
+Class alignment lives in `_CLASS_ALIGN` in `api/routers/evidence.py`, not in the TSX.
+The simulator says `Refrigerant_Overcharge`; NIST says `Overcharge`. A zero on the
+simulator side for `LiquidLine` would say "measured and null". A hole says "not
+measurable". The server sends `null`. The front draws an empty slot.
 
-## Front — la page Evidence
+## Front — the Evidence page
 
-Septième item de sidebar, icône fiole, **deuxième position** — juste après
-Insights. Route partageable : `/evidence`.
+Seventh sidebar item, flask icon, **second position** — right after Insights.
+Shareable route: `/evidence`.
 
-Style : le verre existant. `GlassCard`, `tooltipStyle`, `recharts`, bordures
-`rgba(255,255,255,0.18)`. Pas de second langage visuel pour la moitié
-sérieuse de l'application.
+Style: the existing glass. `GlassCard`, `tooltipStyle`, `recharts`, borders
+`rgba(255,255,255,0.18)`. No second visual language for the serious half of the
+application.
 
-![La page Evidence : bandeau, échelle de vérité, badges de protocole](front/01-hero.png)
+![The Evidence page: banner, truth ladder, protocol badges](front/01-hero.png)
 
-Le bandeau affiche ce que le journal contient **aujourd'hui** : 8 expériences,
-660 mesures, 20 protocoles, accuracy headline **89,3 %** avec la puce
-`hold-out · simulated`. Ces quatre nombres ne sont pas dans le TSX.
+The banner shows what the log contains **today**: 8 experiments, 660 measurements,
+20 protocols, headline accuracy **89.3%** with the chip `hold-out · simulated`. Those
+four numbers are not in the TSX.
 
-### `ProtocolBadge` — le composant qui change tout
+### `ProtocolBadge` — the component that changes everything
 
-Une puce de verre, posée sur **chaque chiffre d'Evidence**, et sur le 89,3 %
-d'Insights et de Models :
+A glass chip, placed on **every Evidence figure**, and on the 89.3% of Insights and
+Models:
 
 ```
 [ hold-out · simulated ]   [ LOMO · NIST ]   [ random CV ⚠ ]
 ```
 
-Un jury qui voit 89,3 % sans savoir sur quoi ne peut rien en faire. La puce
-répond avant qu'il pose la question. C'est X0b rendue visible.
+A jury that sees 89.3% without knowing on what cannot do anything with it. The chip
+answers before the question is asked. It is X0b made visible.
 
-![Insights : le 89,3 % porte maintenant son protocole](front/08-insights.png)
+![Insights: the 89.3% now carries its protocol](front/08-insights.png)
 
-Le sous-titre d'Insights ne dit plus « calibrated Gradient Boosting ». Il dit
-**Random Forest**, le modèle livré. Models ne dit plus « 23 residual features » :
-les 23 colonnes ne sont pas toutes des résidus. `Refrigerant_Overcharge` a
-enfin une couleur propre dans `FAULT_COLORS` — le collisionneur P4 est fermé.
+The Insights subtitle no longer says "calibrated Gradient Boosting". It says
+**Random Forest**, the shipped model. Models no longer says "23 residual features":
+the 23 columns are not all residuals. `Refrigerant_Overcharge` finally has its own
+colour in `FAULT_COLORS` — the P4 collision is closed.
 
-![Models : Random Forest, pas Gradient Boosting, badge hold-out sur les jauges](front/09-models.png)
+![Models: Random Forest, not Gradient Boosting, hold-out badge on the gauges](front/09-models.png)
 
-# 3. Les six figures
+# 3. The six figures
 
-## Figure 1 — L'échelle de vérité
+## Figure 1 — The truth ladder
 
-C'est la figure la plus importante du dépôt. Barres horizontales, une seule
-teinte (magnitude, pas identité), chacune annotée de **ce qu'on a retiré**
-pour passer à la suivante.
+This is the most important figure in the repository. Horizontal bars, a single tint
+(magnitude, not identity), each annotated with **what was removed** to reach the next.
 
-![L'échelle de vérité : simulateur au-dessus du filet, NIST en-dessous, majorité en pointillé](front/02-ladder.png)
+![The truth ladder: simulator above the line, NIST below, majority as a dotted line](front/02-ladder.png)
 
-| Marche | Accuracy | Protocole | Cause |
+| Rung | Accuracy | Protocol | Cause |
 |---|---|---|---|
-| 99,6 % | `X0` / leaked-dCOP / 24-col | simulé | `d_COP` fuitait le label |
-| 91,9 % | `X0` / holdout-test-6class | simulé | 6 classes, dont une fantôme |
-| 89,3 % | `X0` / holdout-test / 23-col / RF | simulé | 7 classes, hold-out honnête |
-| — | filet | — | **frontière simulateur \| NIST** |
-| 60,2 % | `X0b` / LOMO / residuals / GB | machine cible | résidus, référence sur la cible |
-| 45,4 % | `X5` / sim2real / residuals / RF | mesuré | entraîné sur le simulateur |
-| 31,8 % | `X1` / LOMO / training-machine | transféré | référence d'une autre machine |
-| 25,1 % | `X0b` / majority-class | — | classe majoritaire |
+| 99.6% | `X0` / leaked-dCOP / 24-col | simulated | `d_COP` leaked the label |
+| 91.9% | `X0` / holdout-test-6class | simulated | 6 classes, one of them a ghost |
+| 89.3% | `X0` / holdout-test / 23-col / RF | simulated | 7 classes, honest hold-out |
+| — | the line | — | **simulator \| NIST boundary** |
+| 60.2% | `X0b` / LOMO / residuals / GB | target machine | residuals, reference on the target |
+| 45.4% | `X5` / sim2real / residuals / RF | measured | trained on the simulator |
+| 31.8% | `X1` / LOMO / training-machine | transferred | reference from another machine |
+| 25.1% | `X0b` / majority-class | — | majority class |
 
-Deux règles, non négociables, et tenues :
+Two rules, non-negotiable, and held:
 
-1. **Une séparation franche entre simulateur et NIST.** Ce ne sont pas les
-   mêmes données. Une rampe continue laisserait croire à une dégradation unique.
-2. **Une ligne pointillée à 25,1 %.** Sans elle, 31,8 % ressemble à un échec ;
-   avec elle, on voit que c'est au-dessus du hasard, à peine.
+1. **A clean split between simulator and NIST.** They are not the same data. A
+   continuous ramp would suggest a single degradation.
+2. **A dotted line at 25.1%.** Without it, 31.8% looks like a failure; with it, one
+   sees that it is above chance, barely.
 
-**Physique.** La chute 99,6 → 89,3 n'est pas un modèle plus faible : c'est
-`d_COP` qui **était** le label (`== 0` sur toutes les lignes saines, et sur
-aucune autre classe). La chute 89,3 → 60,2 n'est pas non plus un estimateur :
-c'est le passage d'un monde où le simulateur fabrique les questions **et**
-les réponses, à deux machines de chambre climatique.
+**Physics.** The drop 99.6 → 89.3 is not a weaker model: it is `d_COP` that **was**
+the label (`== 0` on every healthy row, and on no other class). The drop 89.3 → 60.2
+is not an estimator either: it is the passage from a world where the simulator
+manufactures the questions **and** the answers, to two climate-chamber machines.
 
-## Figure 2 — Le protocole pèse plus que le modèle
+## Figure 2 — The protocol weighs more than the model
 
-Slopegraph. Quatre jeux de grandeurs, deux colonnes (CV aléatoire, LOMO),
-un trait par jeu. La donnée intéressante est la **pente**, pas les hauteurs.
-Légende en bout de trait, pas de boîte.
+Slopegraph. Four feature sets, two columns (random CV, LOMO), one stroke per set.
+The interesting datum is the **slope**, not the heights. Legend at the end of the
+stroke, no box.
 
-![Slopegraph X0b : l'écart vertical (protocole) écrase l'écart entre jeux de grandeurs](front/03-slope.png)
+![X0b slopegraph: the vertical gap (protocol) swamps the gap between feature sets](front/03-slope.png)
 
-| Grandeurs | CV aléatoire | LOMO |
+| Features | Random CV | LOMO |
 |---|---|---|
-| `raw+residuals` | 0,973 | 0,562 |
-| `raw` | 0,954 | 0,333 |
-| `residuals+conditions` | 0,945 | 0,594 |
-| `residuals` | 0,937 | **0,602** |
+| `raw+residuals` | 0.973 | 0.562 |
+| `raw` | 0.954 | 0.333 |
+| `residuals+conditions` | 0.945 | 0.594 |
+| `residuals` | 0.937 | **0.602** |
 
-L'écart de protocole (~0,4) écrase l'écart de features (~0,04). `residuals`
-est le seul trait à peu près plat — et le seul à **monter** en LOMO. La puce
-`random CV ⚠` est là pour ça : ce n'est pas un score utilisable en champ.
+The protocol gap (~0.4) swamps the feature gap (~0.04). `residuals` is the only
+stroke that is roughly flat — and the only one that **rises** in LOMO. The
+`random CV ⚠` chip is there for that: it is not a field-usable score.
 
-## Figure 3 — Le benchmark des références saines (X3)
+## Figure 3 — The healthy-reference benchmark (X3)
 
-C'est le jeu le plus riche du dépôt, et il n'était publié nulle part. X3
-balaie une grille de modèles de référence sain : famille (`global-mean`,
-$k$NN $k\in\{1,5,10,20\}$, `poly2`), conditionnement (`TT` ou `TTdew`),
-$d_{\min} \in \{0; 0{,}1; 0{,}25; 0{,}5; 1; 2\}$ °C.
+This is the richest set in the repository, and it was published nowhere. X3 sweeps
+a grid of healthy-reference models: family (`global-mean`, $k$NN
+$k\in\{1,5,10,20\}$, `poly2`), conditioning (`TT` or `TTdew`),
+$d_{\min} \in \{0; 0.1; 0.25; 0.5; 1; 2\}$ °C.
 
-**Physique.** $d_{\min}$ n'est pas un hyperparamètre. C'est un garde-fou
-contre la fuite. À $d_{\min}=0$, un essai en défaut peut avoir son jumeau
-sain à 0,05 °C dans le jeu de référence — le $k$NN $k=1$ le retrouve et le
-score explose. C'est l'artefact qui a failli être publié comme une
-amélioration de +10 points.
+**Physics.** $d_{\min}$ is not a hyperparameter. It is a guard against leakage. At
+$d_{\min}=0$, a faulty test can have its healthy twin at 0.05 °C in the reference
+set — $k$NN $k=1$ finds it and the score explodes. That is the artefact that almost
+got published as a +10 point improvement.
 
-![Petits multiples X3 : kNN k=1 plonge quand dmin monte ; poly2 et global-mean restent plats](front/04-references.png)
+![X3 small multiples: kNN k=1 drops as dmin rises; poly2 and global-mean stay flat](front/04-references.png)
 
-Échelle Y identique sur toutes les facettes. Ligne pointillée à la classe
-majoritaire. Annotation journalisée : `knn-k5-median-unif` / `TT` /
-$d_{\min}=0$ donne 0,602 ; le même modèle à $d_{\min}=0{,}5$ donne 0,482.
-**La pente est le diagnostic de fuite.**
+Identical Y scale on every facet. Dotted line at the majority class. Logged
+annotation: `knn-k5-median-unif` / `TT` / $d_{\min}=0$ gives 0.602; the same model
+at $d_{\min}=0.5$ gives 0.482. **The slope is the leak diagnostic.**
 
-## Figure 4 — Par classe, trois régimes
+## Figure 4 — By class, three regimes
 
-Trois séries, trois lignes de journal, classes alignées côté serveur, tri
-sur le plafond NIST (référence machine cible).
+Three series, three log lines, classes aligned server-side, sorted on the NIST
+ceiling (target-machine reference).
 
-| Série | Source | Ce que c'est |
+| Series | Source | What it is |
 |---|---|---|
-| Simulateur | `X5` / holdout-test / simulated | le chiffre vitrine |
-| NIST, cible | `X1` / LOMO / target-machine | le plafond réaliste |
-| NIST, transféré | `X1` / LOMO / training-machine | machine réellement inconnue |
+| Simulator | `X5` / holdout-test / simulated | the shop-window figure |
+| NIST, target | `X1` / LOMO / target-machine | the realistic ceiling |
+| NIST, transferred | `X1` / LOMO / training-machine | a genuinely unknown machine |
 
-![F1 par classe : Overcharge monte au transfert ; LiquidLine et Evap_Airflow laissent un trou côté simulateur](front/05-perclass.png)
+![F1 by class: Overcharge rises on transfer; LiquidLine and Evap_Airflow leave a hole on the simulator side](front/05-perclass.png)
 
-Deux faits, parce que c'est ce que la figure révèle :
+Two facts, because that is what the figure reveals:
 
-- **Overcharge monte** quand la référence est transférée (0,674 → 0,786).
-  Une surcharge se voit sans calibration : sa signature est absolue, pas
-  relative à la machine. C'est le seul défaut déployable en l'état.
-- **LiquidLine est à 0,040.** Jamais détecté. Le simulateur ne le modélise
-  pas. On l'affiche quand même, avec un **trou** côté simulateur — pas un
-  zéro.
+- **Overcharge rises** when the reference is transferred (0.674 → 0.786). An
+  overcharge is visible without calibration: its signature is absolute, not relative
+  to the machine. It is the only fault deployable as it stands.
+- **LiquidLine is at 0.040.** Never detected. The simulator does not model it. It is
+  shown anyway, with a **hole** on the simulator side — not a zero.
 
-## Figure 5 — Matrice de confusion
+## Figure 5 — Confusion matrix
 
-Heatmap, rampe séquentielle une teinte, 2 px entre les cellules, valeurs
-écrites. Sélecteur de protocole au-dessus : hold-out simulé (artefact
-`outputs/synthetic/confusion_matrix.csv`) ou sim2real. Tant que la matrice
-sim2real n'est pas un CSV versionné, le sélecteur dit l'absence au lieu
-d'inventer des zéros.
+Heatmap, one-tint sequential ramp, 2 px between cells, values written. Protocol
+selector above: simulated hold-out (artefact `outputs/synthetic/confusion_matrix.csv`)
+or sim2real. Until the sim2real matrix is a versioned CSV, the selector states the
+absence instead of inventing zeros.
 
-![Matrice de confusion hold-out, jeu simulé : l'encrassement se mélange encore au Normal](front/06-confusion.png)
+![Hold-out confusion matrix, simulated set: fouling still mixes with Normal](front/06-confusion.png)
 
-**Apprentissage.** Les ventilateurs restent séparés (0,95 / 0,99).
-L'encrassage de condenseur perd 0,25 vers `Normal` — c'est la physique du
-pincement, pas un bug d'estimateur. Le dossier le dit déjà ; le front le
-montre.
+**Learning.** The fans stay separated (0.95 / 0.99). Condenser fouling loses 0.25
+toward `Normal` — that is the physics of the pinch, not an estimator bug. The
+dossier already says so; the front shows it.
 
-## Figure 6 — Les 660 mesures
+## Figure 6 — The 660 measurements
 
-Table filtrable (expérience / protocole / modèle / classe), triable, colonne
-$n$, 50 lignes, un bouton. C'est la pièce justificative : un jury sceptique
-doit pouvoir descendre de n'importe quel graphe jusqu'à la ligne de CSV.
+Filterable table (experiment / protocol / model / class), sortable, $n$ column,
+50 rows, one button. This is the supporting exhibit: a sceptical jury must be able
+to go down from any chart to the CSV row.
 
-![Les 660 lignes de outputs/results.csv, filtrables, 50 par page](front/07-runs.png)
+![The 660 rows of outputs/results.csv, filterable, 50 per page](front/07-runs.png)
 
-Le pied affiche `outputs/results.csv`. Modifier ce fichier et recharger
-`/evidence` change le dashboard, sans toucher au TSX.
+The footer shows `outputs/results.csv`. Editing that file and reloading `/evidence`
+changes the dashboard, without touching the TSX.
 
-# 4. La dette front soldée dans la foulée
+# 4. Front debt paid in the same pass
 
-Ces points étaient identifiés avant P7 ; les traiter ici évite une quatrième
-livraison orpheline.
+These points were identified before P7; treating them here avoids a fourth orphan
+delivery.
 
-| Point | Ce qui a été fait |
+| Point | What was done |
 |---|---|
-| Types dupliqués dans `api.ts` | `npm run gen:api` (`tools/export_openapi.py` + `openapi-typescript`), sortie versionnée `web/src/api.generated.ts` |
-| Pas d'`AbortController` | chaque `useEffect` qui fetch annule au cleanup — Insights en lance plusieurs en parallèle |
-| Pas d'`ErrorBoundary` | une frontière par route ; une exception de rendu ne vide plus l'écran |
-| Navigation `useState` | `react-router-dom` : `/`, `/evidence`, `/live`, `/diagnose`, `/models`, `/thermo` |
-| Pas d'ESLint | `eslint` + `typescript-eslint` + `react-hooks`, job CI `web` |
-| Pas de test front | Playwright ouvre `/evidence`, attend les 6 figures, refuse `NaN` / `undefined` |
+| Types duplicated in `api.ts` | `npm run gen:api` (`tools/export_openapi.py` + `openapi-typescript`), versioned output `web/src/api.generated.ts` |
+| No `AbortController` | every fetching `useEffect` aborts on cleanup — Insights fires several in parallel |
+| No `ErrorBoundary` | one boundary per route; a render exception no longer blanks the screen |
+| `useState` navigation | `react-router-dom`: `/`, `/evidence`, `/live`, `/diagnose`, `/models`, `/thermo` |
+| No ESLint | `eslint` + `typescript-eslint` + `react-hooks`, CI job `web` |
+| No front test | Playwright opens `/evidence`, waits for the 6 figures, rejects `NaN` / `undefined` |
 
-Le routeur conditionne le reste : sans URL, aucun graphe n'est envoyable à
-un jury.
+The router conditions the rest: without a URL, no chart can be sent to a jury.
 
-# 5. Ce que P7 ne prétend pas
+# 5. What P7 does not claim
 
-- **Ce n'est pas un modèle de RUL.** Le classifieur nomme l'état présent.
-  Le CSV iid n'a pas d'axe temporel de dégradation.
-- **Ce n'est pas la courbe de budget de calibration.** Les 0,377 / 0,456
-  sont journalisés pour le garde README ; ils n'ont pas de figure.
-- **Ce n'est pas X3 en entier.** L'API sert toute la grille accuracy ; le
-  front facette les familles que le plan nomme (`global-mean`, $k$NN
-  $k=1/5/10/20$, `poly2`). `ridge`, `lin`, les agrégateurs $k$NN autres
-  que `median-unif` restent dans la table §6.
-- **La puce n'est pas encore sur chaque COP de Diagnose.** Elle est sur
-  Evidence, et sur le 89,3 % d'Insights et de Models — là où un jury
-  confondrait un hold-out simulé avec un champ.
+- **This is not an RUL model.** The classifier names the present state. The iid CSV
+  has no degradation time axis.
+- **This is not the calibration-budget curve.** The 0.377 / 0.456 are logged for the
+  README guard; they have no figure.
+- **This is not all of X3.** The API serves the whole accuracy grid; the front
+  facets the families the plan names (`global-mean`, $k$NN $k=1/5/10/20$, `poly2`).
+  `ridge`, `lin`, and $k$NN aggregators other than `median-unif` stay in the table
+  in §6.
+- **The chip is not yet on every Diagnose COP.** It is on Evidence, and on the 89.3%
+  of Insights and Models — where a jury would confuse a simulated hold-out with the
+  field.
 
-# 6. Reproduire
+# 6. Reproduce
 
 ```bash
 .venv/bin/uvicorn api.app:app --reload          # http://127.0.0.1:8000/docs
 cd web && npm run dev                           # http://localhost:5173/evidence
 ```
 
-Evidence se charge **sans** `models/synthetic/classifier.joblib`. Les autres
-pages (Diagnose, Live) en ont besoin.
+Evidence loads **without** `models/synthetic/classifier.joblib`. The other pages
+(Diagnose, Live) need it.
 
 ```bash
 .venv/bin/python -m pytest tests/test_evidence.py tests/test_docs.py -q
 cd web && npm run lint && npm run build && npm run test:e2e
 ```
 
-Les captures de ce document se régénèrent, API et Vite allumés, par
+The captures in this document are regenerated, with the API and Vite running, by
 `web/scripts/capture_evidence.mjs`.
 
-## Où vit chaque chiffre
+## Where each figure lives
 
-| Chiffre | Ligne de `outputs/results.csv` |
+| Figure | Row of `outputs/results.csv` |
 |---|---|
-| 89,3 % | `X0` / holdout-test / 23-col / random-forest / accuracy |
-| 99,6 % | `X0` / leaked-dCOP |
-| 91,9 % | `X0` / holdout-test-6class |
-| 0,602 / 0,318 / 0,251 | `X0b` LOMO residuals, `X1` training-machine, majority-class |
-| 0,454 | `X5` / sim2real / measured-knn5 |
-| 0,937 vs 0,602 | `X0b` random-cv vs LOMO, residuals |
-| Overcharge 0,674 → 0,786 | `X1` LOMO target- vs training-machine, label Overcharge, f1 |
-| LiquidLine 0,040 | `X1` LOMO target-machine, label LiquidLine, f1 |
-| kNN k=5 $d_{\min}$ 0 → 0,5 | `X3` / `knn-k5-median-unif-TT-dmin0` et `dmin0.5` |
+| 89.3% | `X0` / holdout-test / 23-col / random-forest / accuracy |
+| 99.6% | `X0` / leaked-dCOP |
+| 91.9% | `X0` / holdout-test-6class |
+| 0.602 / 0.318 / 0.251 | `X0b` LOMO residuals, `X1` training-machine, majority-class |
+| 0.454 | `X5` / sim2real / measured-knn5 |
+| 0.937 vs 0.602 | `X0b` random-cv vs LOMO, residuals |
+| Overcharge 0.674 → 0.786 | `X1` LOMO target- vs training-machine, label Overcharge, f1 |
+| LiquidLine 0.040 | `X1` LOMO target-machine, label LiquidLine, f1 |
+| kNN k=5 $d_{\min}$ 0 → 0.5 | `X3` / `knn-k5-median-unif-TT-dmin0` and `dmin0.5` |
 
-Le dossier [DOSSIER.md](DOSSIER.md) raconte *pourquoi* ces protocoles existent.
-Cette page raconte *comment* un jury les voit sans ouvrir un CSV.
+The dossier [DOSSIER.md](DOSSIER.md) tells *why* these protocols exist. This page
+tells *how* a jury sees them without opening a CSV.

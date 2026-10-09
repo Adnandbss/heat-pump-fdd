@@ -1,440 +1,432 @@
-# Feuille de route
+# Roadmap
 
-Où en est le projet après le nettoyage d'architecture et la confrontation aux données NIST,
-et ce qu'il reste à faire. Les documents de référence restent en anglais
-([ARCHITECTURE](ARCHITECTURE.md), [NIST_MAPPING](NIST_MAPPING.md),
-[NIST_FINDINGS](NIST_FINDINGS.md)) ; cette feuille de route est un document de travail.
+Where the project stands after the architecture cleanup and the confrontation with the NIST
+data, and what is left. The reference documents are
+[ARCHITECTURE](ARCHITECTURE.md), [NIST_MAPPING](NIST_MAPPING.md), and
+[NIST_FINDINGS](NIST_FINDINGS.md). This roadmap is a working document.
 
-## Ce qui est fait
+## What is done
 
-**Setup** — `.gitignore` nettoyé, Docker, CI front, et surtout le pin `scikit-learn==1.6.1`
-sans lequel le `.joblib` commité ne se charge pas.
+**Setup** — `.gitignore` cleaned, Docker, front CI, and above all the pin `scikit-learn==1.6.1`,
+without which the committed `.joblib` does not load.
 
-**Architecture en couches** (PR #2, #3, #4) — `src/` est passé de neuf modules à plat à trois
-couches explicites :
+**Layered architecture** (PR #2, #3, #4) — `src/` went from nine flat modules to three
+explicit layers:
 
 ```
-physics/   le modèle physique        simulator · thermo_lab · thermodynamic_viz
-fdd/       la méthode, partagée      features · ml_models · inference · visualization
-studies/   les études                synthetic/ (generator · scenarios · taxonomy)
-outputs/<étude>/   models/<étude>/
+physics/   the physical model        simulator · thermo_lab · thermodynamic_viz
+fdd/       the shared method         features · ml_models · inference · visualization
+studies/   the studies               synthetic/ (generator · scenarios · taxonomy)
+outputs/<study>/   models/<study>/
 ```
 
-Règle : `studies/` → `fdd/` → `physics/`. Zéro violation aujourd'hui, et cinq tests la
-verrouillent (`test_engine_has_no_synthetic_study_api`, etc.).
+Rule: `studies/` → `fdd/` → `physics/`. Zero violations today, and five tests lock it
+(`test_engine_has_no_synthetic_study_api`, and the rest).
 
-**76 tests** passent (dont les gardes d'étanchéité P0 et la cohérence de taxonomie P4). L'équivalence de comportement a été
-vérifiée à chaque étape du refactor en comparant les sorties avant/après octet pour octet.
+**76 tests** pass (including the P0 integrity guards and the P4 taxonomy check). Behavioural
+equivalence was checked at every refactor step by comparing outputs before and after, byte
+for byte.
 
-**Confrontation aux essais NIST** — quatre notebooks dans `EDA/` (descriptif, modèle,
-référence, calibration), résultats dans `docs/NIST_FINDINGS.md`.
+**Confrontation with the NIST tests** — four notebooks in `EDA/` (descriptive, model,
+reference, calibration), results in `docs/NIST_FINDINGS.md`.
 
-**Quatre défauts de physique corrigés** — surcharge non modélisée, sous-refroidissement inversé
-sur l'encrassement condenseur, surchauffe et refoulement inversés sur le ventilateur
-d'évaporateur, plafond de refoulement jamais appliqué. L'accord des sens de variation avec les
-essais mesurés passe de **12/16 à 20/22**, et l'accuracy simulée de 99,8 % à 99,6 % — baisse
-attendue, le modèle n'apprend plus sur des cycles impossibles. **P0** a ensuite fermé quatre
-fuites du pipeline : le chiffre simulé honnête est **91,9 % [90,4 – 93,1]** (hold-out,
-sélection sur val).
+**Four physics bugs fixed** — overcharge not modelled, subcooling reversed on condenser
+fouling, superheat and discharge reversed on the evaporator fan, discharge ceiling declared
+and never applied. Agreement of the signs of variation with the measured tests goes from
+**12/16 to 20/22**, and simulated accuracy from 99.8% to 99.6% — an expected drop: the model
+no longer learns impossible cycles. **P0** then closed four pipeline leaks: the honest
+simulated figure is **91.9% [90.4 – 93.1]** (hold-out, selection on val).
 
-**Dossier de présentation** — `docs/DOSSIER.md` et son PDF : le système module par module,
-équations, figures commentées, et les limites connues.
+**Presentation dossier** — `docs/DOSSIER.md` and its PDF: the system module by module,
+equations, commented figures, and the known limits.
 
-## Ce que les données NIST ont appris
+## What the NIST data taught
 
-Détail et méthode dans [NIST_FINDINGS](NIST_FINDINGS.md). Trois choses comptent ici.
+Detail and method in [NIST_FINDINGS](NIST_FINDINGS.md). Three things matter here.
 
-**1. Le protocole de validation change tout.** Sur 5386 essais réels, six classes, même
-modèle :
+**1. The validation protocol changes everything.** On 5386 real tests, six classes, the same
+model:
 
-| Validation | Référence saine | Accuracy |
+| Validation | Healthy reference | Accuracy |
 |---|---|---|
-| CV aléatoire (mélange les machines) | machine cible | **0,95** |
-| Leave-one-machine-out | machine cible (calibrée) | **0,602** |
-| Leave-one-machine-out | machine d'entraînement (transférée) | **0,318** |
+| Random CV (mixes the machines) | target machine | **0.95** |
+| Leave-one-machine-out | target machine (calibrated) | **0.602** |
+| Leave-one-machine-out | training machine (transferred) | **0.318** |
 
-⚠️ **Le 0,602 est lui-même conditionnel.** Il suppose une mesure saine aux conditions quasi
-identiques à celles du défaut — vrai dans la campagne NIST, répliquée par construction, faux
-sur une machine en service. En interdisant les voisins à moins de 0,5 °C, il tombe à **0,482**
-(X3). README / dossier / `NIST_FINDINGS` / `results.csv` (`X0b`) le citent encore sans cet
-avertissement : PR séparée.
+The **0.602 is itself conditional.** It assumes a healthy measurement at nearly the same
+conditions as the fault — true in the NIST campaign, replicated by construction, false on a
+machine in service. Forbidding neighbours closer than 0.5 °C drops it to **0.482** (X3).
+README / dossier / `NIST_FINDINGS` / `results.csv` (`X0b`) still cite it without that warning:
+a separate PR.
 
-Un split aléatoire mesure l'installation autant que le défaut. C'est le même problème que
-d'entraîner et tester depuis le même simulateur — mais ici il est **mesuré**.
+A random split measures the installation as much as the fault. It is the same problem as
+training and testing on the same simulator — except here it is **measured**.
 
-**2. Le design en résidus est validé, et c'est le meilleur argument du projet.** Les résidus
-font passer la détection de **0,333 à 0,602 lorsque la référence saine est calibrée sur la
-machine cible**, pour 1,7 point perdu en CV aléatoire. Sans cette calibration, le transfert
-plafonne à **0,318**. La méthode Li & Braun que nomme `src/fdd/features.py` tient sur des
-mesures réelles.
+**2. The residual design is validated, and it is the project's best argument.** Residuals
+take detection from **0.333 to 0.602 when the healthy reference is calibrated on the target
+machine**, for 1.7 points lost in random CV. Without that calibration, transfer caps at
+**0.318**. The Li & Braun method named in `src/fdd/features.py` holds on real measurements.
 
-Corollaire : **ajouter les grandeurs brutes aux résidus dégrade le transfert** (0,602 → 0,562),
-parce que les valeurs absolues laissent le modèle ré-identifier la machine.
+Corollary: **adding the raw quantities to the residuals degrades transfer** (0.602 → 0.562),
+because the absolute values let the model re-identify the machine.
 
-**3. Quatre erreurs de physique dans `simulator.py`**, trouvées en comparant les signes des
-signatures mesurées et simulées. Corrigées : l'accord passe de **12/16 à 20/22**.
+**3. Four physics errors in `simulator.py`**, found by comparing the signs of the measured
+and simulated signatures. Fixed: agreement goes from **12/16 to 20/22**.
 
-| Défaut | Ce qui clochait | Après correctif |
+| Fault | What was wrong | After the fix |
 |---|---|---|
-| Surcharge | non modélisée — pentes toutes nulles | `subcooling +`, `W_comp +`, `P_cond +`, `superheat −` |
-| Obstruction condenseur | `subcooling` inversé | monte, comme mesuré |
-| Débit évaporateur | `superheat` et `T_discharge` inversés | les deux descendent |
-| `T_discharge_max = 130` | déclaré, jamais appliqué (319 °C à −10/55) | capé sur tout le domaine d'entraînement |
+| Overcharge | not modelled — all slopes zero | `subcooling +`, `W_comp +`, `P_cond +`, `superheat −` |
+| Condenser blockage | `subcooling` reversed | rises, as measured |
+| Evaporator airflow | `superheat` and `T_discharge` reversed | both fall |
+| `T_discharge_max = 130` | declared, never applied (319 °C at −10/55) | capped over the whole training domain |
 
-Deux désaccords restent : `W_comp` sous-charge, `COP` surcharge. La surcharge est désormais
-dans le mix (500 / 5000). La fuite de clapet n'est pas modélisée : il faudrait un paramètre
-`volumetric_efficiency_loss` (gaz chaud du refoulement vers l'aspiration) — dette du
-simulateur, pas un flag du générateur.
+Two disagreements remain: `W_comp` undercharge, `COP` overcharge. Overcharge is now in the
+mix (500 / 5000). Valve leak is not modelled: it would need a `volumetric_efficiency_loss`
+parameter (hot discharge gas back to suction) — simulator debt, not a generator flag.
 
-## Les décisions qui t'appartiennent
+## Decisions that belong to you
 
-**A. Comment annoncer la performance.** C'est le point le plus urgent, et le seul qu'un jury
-démontera en une question. Le 89,3 % actuel (hold-out 30 %, sélection sur val, intervalle
-Wilson 87,6 – 90,7, sept classes) mesure la séparabilité des signatures dans le modèle
-physique, pas une détection sur machine réelle. Le 99,6 % précédent était une fuite
-d'étiquette. Proposition :
+**A. How to announce performance.** This is the most urgent point, and the only one a jury
+will take apart in one question. The current 89.3% (30% hold-out, selection on val, Wilson
+interval 87.6 – 90.7, seven classes) measures how separable the signatures are inside the
+physical model, not detection on a real machine. The previous 99.6% was a label leak.
+Proposal:
 
-**Figée**, X3 et X5 étant menées :
+**Frozen**, now that X3 and X5 have been run:
 
-> Signatures de défauts séparables à **89,3 % [87,6 – 90,7]** en hold-out sur données simulées
-> (sept classes, sélection sur val, `Pipeline` sklearn) — une mesure de la séparabilité dans le
-> modèle physique, pas d'une détection sur machine.
+> Fault signatures separable at **89.3% [87.6 – 90.7]** in hold-out on simulated data
+> (seven classes, selection on val, sklearn `Pipeline`) — a measure of separability inside the
+> physical model, not of detection on a machine.
 >
-> Confrontée aux 7375 essais NIST : **0,602** lorsque la référence saine est calibrée sur la
-> machine cible, **0,318** sans cette calibration (0,251 pour la classe majoritaire), et 0,95 en
-> validation aléatoire — laquelle surestime d'un facteur trois.
+> Confronted with the 7375 NIST tests: **0.602** when the healthy reference is calibrated on
+> the target machine, **0.318** without that calibration (0.251 for the majority class), and
+> 0.95 in random validation — which overstates by a factor of three.
 >
-> Entraîné sur le simulateur et testé sur le réel : **0,454**, la charge frigorigène étant le
-> seul défaut qui transfère (F1 0,45–0,52) et l'encrassement condenseur ne transférant pas du
-> tout (F1 0,000).
+> Trained on the simulator and tested on the real tests: **0.454**, refrigerant charge being
+> the only fault that transfers (F1 0.45–0.52) and condenser fouling transferring not at all
+> (F1 0.000).
 
-Moins spectaculaire, et défendable. Les cinq marches sont affichées côte à côte sur la page
-Evidence du tableau de bord (P7), chacune avec son protocole.
+Less spectacular, and defensible. The five rungs are shown side by side on the dashboard
+Evidence page (P7), each with its protocol.
 
-**B. Faut-il basculer sur les données réelles ?** Les 5386 essais NIST suffisent à réentraîner.
-Mais ça change le sujet : mode **froid**, machine **air/air**, taxonomie NIST. Le cadrage
-A7/W40 disparaît, et avec lui la distinction encrassement / ventilateur. Le simulateur ne
-serait pas jeté — il deviendrait le **modèle de référence sain**, son vrai rôle dans la méthode
-Li & Braun. Décision de fond, pas de refactor.
+**B. Should the project switch to the real data?** The 5386 NIST tests are enough to retrain.
+But that changes the subject: **cooling** mode, **air-to-air** machine, NIST taxonomy. The
+A7/W40 framing disappears, and with it the fouling / fan distinction. The simulator would not
+be thrown away — it would become the **healthy reference model**, its real role in the Li &
+Braun method. A substantive decision, not a refactor.
 
-La sous-question du tableau de bord est, elle, tranchée : **P7 en fait une pièce de preuve**,
-pas une vitrine. Six figures lisent `results.csv` par l'API, et un test interdit le moindre
-chiffre en dur dans le TSX.
+The dashboard sub-question is settled: **P7 makes it a piece of evidence**, not a shop window.
+Six figures read `results.csv` through the API, and a test forbids any hardcoded figure in
+the TSX.
 
-**C bis. Les grandeurs dérivées** — **fait, absorbé par P0.** Le bruit est appliqué aux
-capteurs, puis `COP`, `pressure_ratio`, `compression_ratio`, `delta_T_*` et `capacity_ratio`
-sont recalculés, et la référence saine des `d_*` est bruitée indépendamment. Un test
-permanent vérifie `compression_ratio = P_cond / P_evap` et qu'aucun résidu n'est identiquement
-nul sur une classe. `pressure_ratio` (doublon) a été retiré en **P5**.
+**C bis. Derived quantities** — **done, absorbed by P0.** Noise is applied to the sensors,
+then `COP`, `pressure_ratio`, `compression_ratio`, `delta_T_*` and `capacity_ratio` are
+recomputed, and the healthy reference of the `d_*` residuals is noised independently. A
+permanent test checks `compression_ratio = P_cond / P_evap` and that no residual is
+identically zero on a class. `pressure_ratio` (a duplicate) was removed in **P5**.
 
-**C. `FEATURE_COLUMNS` en résidus seuls ?** — **mesuré, non appliqué (P5).** Sur NIST, les
-résidus seuls battent brutes + résidus parce qu'il y a deux machines. Ici il n'y en a qu'une.
-Les résidus seuls perdent sept points (0,823 contre 0,893). On garde le contrat à 23 colonnes.
+**C. `FEATURE_COLUMNS` as residuals only?** — **measured, not applied (P5).** On NIST,
+residuals alone beat raw + residuals because there are two machines. Here there is only one.
+Residuals alone lose seven points (0.823 against 0.893). The contract stays at 23 columns.
 
-**D. Les deux défauts fantômes** — **fait, P4.** `REFRIGERANT_OVERCHARGE` est produite
-(500 / 5000), après retrait du `condenser_fouling` parasite dans la branche d'injection.
-`COMPRESSOR_VALVE_LEAK` est retirée : le simulateur n'expose pas de perte de rendement
-volumétrique, et l'ancienne branche était un mélange de deux autres pannes. Chiffre livré :
-**89,3 % [87,6 – 90,7]** (sept classes), contre 91,9 % [90,4 – 93,1] sur six.
+**D. The two ghost faults** — **done, P4.** `REFRIGERANT_OVERCHARGE` is produced
+(500 / 5000), after removing the parasitic `condenser_fouling` in the injection branch.
+`COMPRESSOR_VALVE_LEAK` is removed: the simulator does not expose a volumetric-efficiency
+loss, and the old branch was a mix of two other faults. Delivered figure:
+**89.3% [87.6 – 90.7]** (seven classes), against 91.9% [90.4 – 93.1] on six.
 
-## GRAND 1 — Diagnostic (FDD)
+## GRAND 1 — Diagnosis (FDD)
 
-Tout ce qui suit relève du diagnostic : nommer une panne présente. Le grand 2 — le pronostic
-sur séries temporelles — ne démarre **qu'une fois le grand 1 terminé**, et seulement si un jeu
-de données adapté existe.
+Everything below is diagnosis: naming a fault that is present. Grand 2 — prognosis on time
+series — starts **only once grand 1 is finished**, and only if a suitable dataset exists.
 
-### 1A bis. P0 — Étanchéité du pipeline · **fait**
+### 1A bis. P0 — Pipeline integrity · **done**
 
-Quatre fuites mesurées sur le 99,6 % — corrigées, jeu régénéré, modèle réentraîné
-(`scikit-learn==1.6.1`). Chiffre publié : **91,9 % [90,4 – 93,1]** hold-out test,
-Random Forest sélectionné sur val (GB à 0,002 de F1, départagé sur l'inférence).
+Four leaks measured on the 99.6% — fixed, dataset regenerated, model retrained
+(`scikit-learn==1.6.1`). Published figure: **91.9% [90.4 – 93.1]** hold-out test,
+Random Forest selected on val (GB within 0.002 F1, split on inference).
 
-| | Fuite | Correction |
+| | Leak | Fix |
 |---|---|---|
-| 1 | `d_COP == 0` pour les 2000 `Normal`, et eux seuls | dérivées recalculées après bruitage ; référence saine bruitée |
-| 2 | `scaler.fit_transform(X)` avant `cross_val_score` | `Pipeline([scaler, clf])` |
-| 3 | CV finale sur `df` complet | 5-fold sur `X_train` seul — F1 0,914 ± 0,009 |
-| 4 | Sélection sur le test (5ᵉ décimale) | train / val / test ; sélection sur val ; Wilson à côté du score |
+| 1 | `d_COP == 0` for the 2000 `Normal` rows, and only those | derived quantities recomputed after noise; healthy reference noised |
+| 2 | `scaler.fit_transform(X)` before `cross_val_score` | `Pipeline([scaler, clf])` |
+| 3 | Final CV on the full `df` | 5-fold on `X_train` only — F1 0.914 ± 0.009 |
+| 4 | Selection on the test (5th decimal) | train / val / test; selection on val; Wilson next to the score |
 
-Gardes dans `tests/test_pipeline_integrity.py` : dérivées cohérentes, aucun résidu nul sur une
-classe, `d_COP` n'est plus un détecteur parfait, labels mélangés → score de la classe
-majoritaire.
+Guards in `tests/test_pipeline_integrity.py`: consistent derived quantities, no residual
+identically zero on a class, `d_COP` is no longer a perfect detector, shuffled labels →
+majority-class score.
 
-X4 peut maintenant être menée sans que la fuite d'étiquette traverse le hold-out.
-P5 (contrat résidus + conditions, retirer le doublon `pressure_ratio`) n'est plus bloqué par
-le bruit des dérivées.
+X4 can now be run without the label leak crossing the hold-out.
+P5 (residuals + conditions contract, drop the duplicate `pressure_ratio`) is no longer
+blocked by the noise on the derived quantities.
 
-### 1A ter. P4 — Les deux classes fantômes · **fait**
+### 1A ter. P4 — The two ghost classes · **done**
 
-`FaultType` déclarait huit classes, le jeu en produisait six.
+`FaultType` declared eight classes; the dataset produced six.
 
-**Surcharge — produite.** P3 lui avait donné une physique (pression haute, sous-refroidissement
-qui monte, surchauffe qui baisse). X1 a montré que c'est la seule panne NIST détectée à 0,786
-sans calibration. Le correctif important n'est pas de l'ajouter : c'est de retirer
-`condenser_fouling = severity * 0.2` de la branche d'injection, vestige de l'époque où la
-surcharge n'avait pas de physique. Sans ça, chaque surcharge contenait un vrai encrassement.
+**Overcharge — produced.** P3 had given it a physics (high pressure, subcooling rising,
+superheat falling). X1 showed it is the only NIST fault detected at 0.786 without
+calibration. The important fix is not adding it: it is removing
+`condenser_fouling = severity * 0.2` from the injection branch, a leftover from when
+overcharge had no physics. Without that, every overcharge contained a real fouling.
 
-**Fuite de clapet — retirée.** Pas de paramètre `volumetric_efficiency_loss` dans
-`simulate_cycle`. L'ancienne branche mélangeait sous-charge et encrassement évaporateur.
-La générer aurait créé une classe qui est littéralement deux autres. À modéliser plus tard,
-côté physique.
+**Valve leak — removed.** No `volumetric_efficiency_loss` parameter in `simulate_cycle`.
+The old branch mixed undercharge and evaporator fouling. Generating it would have created a
+class that is literally two others. To be modelled later, on the physics side.
 
-Après régénération (5000 lignes, 7 classes) : **89,3 % [87,6 – 90,7]**, F1 0,872. Avant
-(6 classes) : 91,9 % [90,4 – 93,1]. La surcharge est détectée (F1 0,88). Confusion avec
-l'encrassement condenseur : 11 / 150 et 9 / 150 — résidu physique (les deux élèvent P_cond),
-pas le couplage artificiel. Garde : `tests/test_fault_taxonomy.py` (FaultType == dataset ==
-metadata).
+After regeneration (5000 rows, 7 classes): **89.3% [87.6 – 90.7]**, F1 0.872. Before
+(6 classes): 91.9% [90.4 – 93.1]. Overcharge is detected (F1 0.88). Confusion with condenser
+fouling: 11 / 150 and 9 / 150 — a physical residue (both raise P_cond), not the artificial
+coupling. Guard: `tests/test_fault_taxonomy.py` (FaultType == dataset == metadata).
 
-### 1A. Vérité et hygiène
+### 1A. Truth and hygiene
 
-| | Chantier | État |
+| | Work | State |
 |---|---|---|
-| P1 | Vérité des chiffres dans la documentation | fait |
-| P2 | Budget de calibration mesuré | fait |
-| P3 | Quatre défauts de physique corrigés, accord des signes 12/16 → 20/22 | fait |
-| P4 | Décision D : produire la surcharge, trancher la fuite de clapet | **fait** |
-| P5 | Contrat de features : doublon retiré, résidus seuls mesurés et **rejetés** | **fait** |
-| P6 | Découper `api/app.py` — 4 routes d'inférence contre 17 de tableau de bord | **fait** |
-| P7 | Le tableau de bord lit `results.csv` : page Evidence, zéro chiffre en dur | **fait** |
+| P1 | Truth of the figures in the documentation | done |
+| P2 | Calibration budget measured | done |
+| P3 | Four physics bugs fixed, sign agreement 12/16 → 20/22 | done |
+| P4 | Decision D: produce overcharge, settle valve leak | **done** |
+| P5 | Feature contract: duplicate removed, residuals-only measured and **rejected** | **done** |
+| P6 | Split `api/app.py` — 4 inference routes against 17 dashboard routes | **done** |
+| P7 | The dashboard reads `results.csv`: Evidence page, zero hardcoded figures | **done** |
 
-### 1B. Les expériences
+### 1B. The experiments
 
-Le projet n'avait mené que la plus facile des expériences possibles. Cette section les nomme
-toutes, **numérotées dans l'ordre d'exécution** — pas dans l'ordre où l'idée est venue.
+The project had only run the easiest experiment available. This section names them all,
+**numbered in execution order** — not in the order the idea appeared.
 
-« Détecter une panne » n'est pas une expérience, c'en est plusieurs :
+"Detect a fault" is not one experiment. It is several:
 
-| | Entraîné sur | Testé sur | Ce que ça mesure | État |
+| | Trained on | Tested on | What it measures | State |
 |---|---|---|---|---|
-| **X0** | simulé | simulé, hold-out | Un classifieur peut-il inverser le simulateur | fait — **89,3 % [87,6 – 90,7]** (7 cl.) |
-| **X1** | mesuré | mesuré, autre machine | **Quelles pannes** sont détectées | **fait** |
-| **X2** | — | mesuré, autre machine | Le ML bat-il une **table de règles** | **fait** |
-| **X3** | mesuré | mesuré, autre machine | Quel **estimateur de référence saine** est le meilleur | **fait** |
-| **X4** | simulé | simulé, **conditions non vues** | Le 91,9 % survit-il hors des points appris | **fait** — oui pour le domaine, **non pour la sévérité** |
-| **X5** | simulé | **mesuré** | Le simulateur décrit-il la réalité | **fait** — **45,4 %**, encrassement condenseur à **0,000** |
+| **X0** | simulated | simulated, hold-out | Can a classifier invert the simulator | done — **89.3% [87.6 – 90.7]** (7 cl.) |
+| **X1** | measured | measured, other machine | **Which faults** are detected | **done** |
+| **X2** | — | measured, other machine | Does ML beat a **rule table** | **done** |
+| **X3** | measured | measured, other machine | Which **healthy-reference estimator** is best | **done** |
+| **X4** | simulated | simulated, **unseen conditions** | Does the 91.9% survive outside the learned points | **done** — yes for the domain, **no for severity** |
+| **X5** | simulated | **measured** | Does the simulator describe reality | **done** — **45.4%**, condenser fouling at **0.000** |
 
-#### X1 — Quelles pannes sont réellement détectées · fait
+#### X1 — Which faults are actually detected · done
 
-Le 0,602 moyen cachait un système très inégal :
+The mean 0.602 hid a very uneven system:
 
-| Panne | F1, référence calibrée |
+| Fault | F1, calibrated reference |
 |---|---|
-| Sous-charge | **0,832** |
-| Sans défaut | 0,741 |
-| Surcharge | **0,674** |
-| Obstruction condenseur | 0,299 |
-| Débit intérieur | 0,288 |
-| Ligne liquide | **0,040** |
+| Undercharge | **0.832** |
+| No fault | 0.741 |
+| Overcharge | **0.674** |
+| Condenser blockage | 0.299 |
+| Indoor airflow | 0.288 |
+| Liquid line | **0.040** |
 
-**Les défauts de charge portent tout le résultat.** La ligne liquide n'est jamais détectée —
-huit vrais positifs sur 492 essais dans un sens — et c'est aussi la seule panne que le
-simulateur ne modélise pas. Débit d'air et ligne liquide se confondent massivement : les deux
-affament l'évaporateur, donc se ressemblent sur les grandeurs mesurées.
+**Charge faults carry the whole result.** The liquid line is never detected — eight true
+positives out of 492 tests in one direction — and it is also the only fault the simulator
+does not model. Airflow and liquid line confuse each other heavily: both starve the
+evaporator, so they look alike on the measured quantities.
 
-Et **la surcharge est mieux détectée sans calibration qu'avec** (0,786 contre 0,674), cohérent
-dans les deux sens de transfert. Le budget de calibration dépend donc de la panne cherchée, et
-pour l'une d'elles il est nul.
+And **overcharge is detected better without calibration than with it** (0.786 against
+0.674), consistent in both transfer directions. The calibration budget therefore depends on
+the fault being sought, and for one of them it is zero.
 
-Notebook : `EDA/EDA_NIST_perclass.ipynb`.
+Notebook: `EDA/EDA_NIST_perclass.ipynb`.
 
-#### X2 — Le modèle bat-il une table de règles · **fait**
+#### X2 — Does the model beat a rule table · **done**
 
-Le boosting gagne sa place : 0,602 / 0,479 contre 0,365 / 0,243 pour la table de signes
-(référence calibrée). Un arbre de profondeur 3 n'est que 4 points d'accuracy derrière.
-Sans référence saine appariée, la table retombe sur la classe majoritaire (0,245). Détail
-et figure : `docs/NIST_FINDINGS.md`, `EDA/EDA_NIST_rules.ipynb`.
+Boosting earns its place: 0.602 / 0.479 against 0.365 / 0.243 for the sign table
+(calibrated reference). A depth-3 tree is only 4 accuracy points behind. Without a paired
+healthy reference, the table falls back to the majority class (0.245). Detail and figure:
+`docs/NIST_FINDINGS.md`, `EDA/EDA_NIST_rules.ipynb`.
 
-#### X3 — Benchmark de l'estimateur de référence saine · **fait**
+#### X3 — Benchmark of the healthy-reference estimator · **done**
 
-Le 0,602 est un kNN k=5 médiane, machine cible. Contrôle reproduit exactement. Sans
-conditionner (médiane globale) : **0,337**. L'essentiel du gain est de comparer **à condition
-équivalente**, pas la soustraction.
+The 0.602 is a kNN k=5 median, target machine. The control is reproduced exactly. Without
+conditioning (global median): **0.337**. Most of the gain is comparing **at equivalent
+conditions**, not the subtraction itself.
 
-**La courbe `dmin → accuracy` est le résultat.** 28 % des essais défaillants ont un sain à
-moins de 0,1 °C. En interdisant les voisins à moins de 0,5 °C :
+**The `dmin → accuracy` curve is the result.** 28% of faulty tests have a healthy neighbour
+within 0.1 °C. Forbidding neighbours closer than 0.5 °C:
 
-| Estimateur | Répliques autorisées | dmin = 0,5 °C |
+| Estimator | Replicates allowed | dmin = 0.5 °C |
 |---|---|---|
-| kNN k=1 | 0,650 | 0,501 |
-| kNN k=5 — **publié** | **0,602** | **0,482** |
+| kNN k=1 | 0.650 | 0.501 |
+| kNN k=5 — **published** | **0.602** | **0.482** |
 
-Le petit `k` ne gagne que grâce au plan d'essais. Le 0,602 de chambre tombe à **0,482** sur
-une machine en service. L'exploration disait 0,511 ; la mesure propre est 0,482.
+The small `k` only wins because of the test plan. The chamber 0.602 falls to **0.482** on a
+machine in service. Exploration said 0.511; the clean measurement is 0.482.
 
-Point de rosée dans le kNN des deux étages : **0,602 → 0,576**. L'erreur de régression
-s'améliore ; la classification baisse. Juger l'étage 1 en bout de chaîne.
+Dew point in the two-stage kNN: **0.602 → 0.576**. The regression error improves;
+classification falls. Judge stage 1 at the end of the chain.
 
-Le 0,602 **n'est pas remplacé** dans README / dossier / NIST_FINDINGS / `results.csv` (`X0b`)
-— PR séparée, listée dans `docs/NIST_FINDINGS.md`. Notebook : `EDA/EDA_NIST_reference_bench.ipynb`.
+The 0.602 **is not replaced** in README / dossier / NIST_FINDINGS / `results.csv` (`X0b`) —
+a separate PR, listed in `docs/NIST_FINDINGS.md`. Notebook:
+`EDA/EDA_NIST_reference_bench.ipynb`.
 
-#### X4 — Hold-out sur le domaine de fonctionnement · **fait**
+#### X4 — Hold-out on the operating domain · **done**
 
-Même jeu simulé, découpage par région au lieu du tirage aléatoire. Contrôle : le protocole X0
-rejoué dans les mêmes conditions (0,919).
+Same simulated set, split by region instead of a random draw. Control: the X0 protocol
+replayed in the same conditions (0.919).
 
-| Découpage | Accuracy | 95 % Wilson | n |
+| Split | Accuracy | 95% Wilson | n |
 |---|---|---|---|
-| Aléatoire (contrôle) | 0,919 | 0,904 – 0,931 | 1500 |
-| `speed > 0,85` | 0,920 | 0,902 – 0,935 | 1077 |
-| GroupKFold 5 plis | 0,911 | 0,903 – 0,919 | 5000 |
-| `T_amb < −5 °C` | 0,893 | 0,870 – 0,913 | 804 |
-| `T_sink > 48 °C` | 0,889 | 0,871 – 0,904 | 1366 |
+| Random (control) | 0.919 | 0.904 – 0.931 | 1500 |
+| `speed > 0.85` | 0.920 | 0.902 – 0.935 | 1077 |
+| GroupKFold 5 folds | 0.911 | 0.903 – 0.919 | 5000 |
+| `T_amb < −5 °C` | 0.893 | 0.870 – 0.913 | 804 |
+| `T_sink > 48 °C` | 0.889 | 0.871 – 0.904 | 1366 |
 
-**L'hypothèse est réfutée : le score ne s'effondre pas.** Retirer une région entière du domaine
-coûte au plus 3 points. Le 91,9 % n'était pas de la mémorisation de points de fonctionnement —
-c'est le seul résultat de la campagne qui donne raison au modèle.
+**The hypothesis is refuted: the score does not collapse.** Removing an entire region of the
+domain costs at most 3 points. The 91.9% was not memorisation of operating points — it is
+the only result of the campaign that vindicates the model.
 
-La fragilité est ailleurs. Hold-out sur la **sévérité**, quatre classes, ventilateurs exclus :
+The fragility is elsewhere. Hold-out on **severity**, four classes, fans excluded:
 
-| Entraîné sur | Testé sur | Accuracy | F1 macro |
+| Trained on | Tested on | Accuracy | F1 macro |
 |---|---|---|---|
-| Normal + sévère | défauts naissants | 0,428 | 0,496 |
-| Normal + naissants | défauts sévères | 0,469 | 0,540 |
+| Normal + severe | emerging faults | 0.428 | 0.496 |
+| Normal + emerging | severe faults | 0.469 | 0.540 |
 
-En détection binaire seule, 0,762 et 0,887. **Le modèle sait qu'il se passe quelque chose, il
-ne sait plus quoi.** C'est la limite utile à annoncer : un FDD qui n'extrapole pas en sévérité
-ne sert pas à la maintenance préventive, qui vit précisément dans les défauts naissants.
+Binary detection alone: 0.762 and 0.887. **The model knows something is happening. It no
+longer knows what.** That is the useful limit to announce: an FDD that does not extrapolate
+in severity is useless for preventive maintenance, which lives precisely in emerging faults.
 
-Mesures en 24 colonnes, donc antérieures à P5. Journalisées sous `X4`, huit protocoles.
+Measurements in 24 columns, so they predate P5. Logged under `X4`, eight protocols.
 
-#### X5 — Simulé aux conditions NIST, testé sur le réel · **fait**
+#### X5 — Simulated at NIST conditions, tested on the real tests · **done**
 
-Le recouvrement de domaine de 5,3 % était **un obstacle de sampling, pas de physique**. Plages
-élargies, jeu régénéré aux conditions NIST, entraîné dessus, testé sur les essais réels.
+The 5.3% domain overlap was **a sampling obstacle, not a physics one**. Ranges widened,
+dataset regenerated at NIST conditions, trained on it, tested on the real tests.
 
 | | Accuracy | F1 macro |
 |---|---|---|
-| Hold-out simulé (référence) | 0,921 | 0,917 |
-| **sim2real** — entraîné simulé, testé mesuré | **0,454** | **0,343** |
-| LOMO sur mesuré seul (plafond atteignable) | 0,668 | 0,596 |
+| Simulated hold-out (reference) | 0.921 | 0.917 |
+| **sim2real** — trained simulated, tested measured | **0.454** | **0.343** |
+| LOMO on measured alone (reachable ceiling) | 0.668 | 0.596 |
 
-Par classe, en sim2real :
+By class, in sim2real:
 
-| Classe | F1 simulé | F1 sur le réel |
+| Class | Simulated F1 | F1 on the real tests |
 |---|---|---|
-| Undercharge | 0,974 | 0,445 |
-| Overcharge | 0,936 | 0,522 |
-| Normal | 0,930 | 0,716 |
-| Evaporator_Fan_Fault | 0,998 | 0,031 |
-| **Condenser_Fouling** | 0,749 | **0,000** |
+| Undercharge | 0.974 | 0.445 |
+| Overcharge | 0.936 | 0.522 |
+| Normal | 0.930 | 0.716 |
+| Evaporator_Fan_Fault | 0.998 | 0.031 |
+| **Condenser_Fouling** | 0.749 | **0.000** |
 
-**Le simulateur transfère sur la charge et sur rien d'autre.** L'encrassement condenseur, qu'il
-prétend séparer à 0,749, n'est jamais retrouvé sur les essais réels : sa signature simulée
-n'est pas celle d'un vrai encrassement. Le défaut de ventilateur d'évaporateur, à 0,998 en
-simulé, tombe à 0,031.
+**The simulator transfers on charge and on nothing else.** Condenser fouling, which it claims
+to separate at 0.749, is never found on the real tests: its simulated signature is not that
+of a real fouling. The evaporator fan fault, at 0.998 in simulation, falls to 0.031.
 
-C'est l'expérience la plus sévère de la campagne et la plus utile. Elle dit quelle partie du
-simulateur est publiable — la charge — et laquelle est un artefact de modélisation.
+This is the harshest experiment of the campaign and the most useful. It says which part of
+the simulator is publishable — charge — and which is a modelling artefact.
 
-### Où on en est
+### Where things stand
 
-Les sept chantiers sont livrés et les six expériences menées. **Le périmètre du grand 1 est
-fermé.** `X3-prelim` (6 lignes) n'est pas une neuvième expérience à couvrir : c'est
-l'essai préliminaire que `X3` (505 lignes) remplace. Les figures le laissent de côté
-volontairement (`EXCLUDED_FROM_FIGURES` dans `api/routers/evidence.py`).
+The seven work items are delivered and the six experiments have been run. **The scope of
+grand 1 is closed.** `X3-prelim` (6 rows) is not a ninth experiment to cover: it is the
+preliminary pass that `X3` (505 rows) replaces. The figures leave it out on purpose
+(`EXCLUDED_FROM_FIGURES` in `api/routers/evidence.py`).
 
 ```
-P0 P1 P2 P3 P4 P5 P6 P7   ── livrés
-X0 X1 X2 X3 X4 X5         ── menées
-G  garde-fous             ── livré
+P0 P1 P2 P3 P4 P5 P6 P7   ── delivered
+X0 X1 X2 X3 X4 X5         ── run
+G  guards                 ── delivered
 ```
 
-Ce que la campagne a établi, dans l'ordre où ça compte :
+What the campaign established, in the order that matters:
 
-1. **Le protocole pèse plus que le modèle.** 0,954 en CV aléatoire contre 0,333 en
-   leave-one-machine-out, mêmes données, même classifieur. Tout chiffre du dépôt nomme
-   désormais son protocole.
-2. **Les résidus doublent le transfert** (0,333 → 0,602), mais seulement avec une référence
-   saine calibrée sur la machine cible. Référence transférée : 0,318, contre 0,251 pour la
-   classe majoritaire.
-3. **Le simulateur ne transfère que sur la charge.** X5 : 0,454 global, encrassement condenseur
-   à 0,000.
-4. **Le domaine n'est pas le problème, la sévérité l'est.** X4 : au plus 3 points perdus en
-   retirant une région entière du domaine, mais 0,43 en extrapolation de sévérité.
-5. **Le chiffre vitrine est passé de 99,6 % à 89,3 %** à mesure que les fuites tombaient, et
-   ces deux nombres sont publiés côte à côte.
+1. **The protocol weighs more than the model.** 0.954 in random CV against 0.333 in
+   leave-one-machine-out, same data, same classifier. Every figure in the repository now
+   names its protocol.
+2. **Residuals double transfer** (0.333 → 0.602), but only with a healthy reference
+   calibrated on the target machine. Transferred reference: 0.318, against 0.251 for the
+   majority class.
+3. **The simulator transfers only on charge.** X5: 0.454 overall, condenser fouling at
+   0.000.
+4. **The domain is not the problem. Severity is.** X4: at most 3 points lost by removing an
+   entire region of the domain, but 0.43 when extrapolating severity.
+5. **The shop-window figure went from 99.6% to 89.3%** as the leaks fell, and both numbers
+   are published side by side.
 
-### Ce qu'il reste
+### What remains
 
-Rien de bloquant. Par ordre de valeur :
+Nothing blocking. In order of value:
 
-| | Chantier | Coût |
+| | Work | Cost |
 |---|---|---|
-| R1 | ~~Rejouer et journaliser le sweep de calibration.~~ **Fait** — `X1` / `LOMO-calibration-n{10,50}`. | — |
-| R2 | ~~Vérifier `GET /api/thermo/cop`.~~ **Fait** — Carnot chauffage, COP Normal par tranche, balayage à \(T_\mathrm{sink}-10\). | — |
-| R3 | **Trancher les 14 Mo de binaires** de la PR P7 (`FRONT_EVIDENCE.pdf` + 9 PNG) pour un `.git` de 53 Mo, et l'anglais/français mélangé dans l'UI. | 1 h |
-| R4 | **Modéliser la fuite de clapet** côté physique (`volumetric_efficiency_loss` dans `simulate_cycle`), la seule classe de `FaultType` retirée faute de physique. | 1 j |
-| R5 | **Corriger l'encrassement condenseur du simulateur**, seul défaut à 0,000 en sim2real. C'est le chantier le plus intéressant scientifiquement et le plus incertain. | ? |
+| R1 | ~~Replay and log the calibration sweep.~~ **Done** — `X1` / `LOMO-calibration-n{10,50}`. | — |
+| R2 | ~~Check `GET /api/thermo/cop`.~~ **Done** — heating Carnot, Normal COP by bin, sweep at \(T_\mathrm{sink}-10\). | — |
+| R3 | **Settle the 14 MB of binaries** from the P7 PR (`FRONT_EVIDENCE.pdf` + 9 PNGs) for a 53 MB `.git`, and the mixed English/French in the UI. | 1 h |
+| R4 | **Model valve leak** on the physics side (`volumetric_efficiency_loss` in `simulate_cycle`), the only `FaultType` class removed for lack of physics. | 1 day |
+| R5 | **Fix condenser fouling in the simulator**, the only fault at 0.000 in sim2real. The most interesting scientific item, and the most uncertain. | ? |
 
-R1 et R2 sont des dettes d'honnêteté : à faire avant toute présentation. R3 est cosmétique.
-R4 et R5 ouvrent un nouveau périmètre — ils ne rentrent **pas** dans le grand 1.
+R1 and R2 are debts of honesty: to do before any presentation. R3 is cosmetic.
+R4 and R5 open a new scope — they do **not** fit inside grand 1.
 
-### Règle d'arrêt
+### Stopping rule
 
-Chaque expérience menée en a suggéré une nouvelle. C'est sain, et c'est sans fin.
+Every experiment suggested a new one. That is healthy, and it is endless.
 
-**Le périmètre du grand 1 était figé à X0–X5 et P0–P7. Il est atteint.** Toute question
-soulevée depuis part dans « ce qu'il reste » ci-dessus, pas dans le périmètre courant.
+**The scope of grand 1 was frozen at X0–X5 and P0–P7. It is reached.** Any question raised
+since then goes into "what remains" above, not into the current scope.
 
-### Ce que le projet livre
+### What the project delivers
 
-Pas un détecteur. **Une méthodologie de validation** : comment établir ce que vaut un modèle
-FDD entraîné sur simulateur, et ce qu'il en reste face à 7375 essais en chambre.
+Not a detector. **A validation methodology**: how to establish what an FDD model trained on
+a simulator is worth, and what remains of it against 7375 chamber tests.
 
-C'est ce qu'il faut annoncer. La performance brute — 89,3 % — est le chiffre le moins
-intéressant du dépôt, et le tableau de bord le montre maintenant à côté des cinq autres
-marches de l'échelle.
+That is what should be announced. The raw performance — 89.3% — is the least interesting
+figure in the repository, and the dashboard now shows it next to the other five rungs of
+the ladder.
 
-## GRAND 2 — Pronostic sur séries temporelles
+## GRAND 2 — Prognosis on time series
 
-**Non démarré, et conditionné à l'obtention d'un jeu de données adapté.**
+**Not started, and conditional on obtaining a suitable dataset.**
 
-Les essais NIST sont **stationnaires** : un défaut imposé et maintenu, mesuré à l'équilibre. Il
-n'y a ni horloge, ni dégradation progressive, ni instant de défaillance. Y appliquer un modèle
-temporel reviendrait à inventer un axe du temps qui n'existe pas — exactement le type de
-résultat que ce projet s'attache à ne pas produire.
+The NIST tests are **stationary**: a fault imposed and held, measured at equilibrium. There
+is no clock, no progressive degradation, and no failure instant. Applying a temporal model
+to them would invent a time axis that does not exist — exactly the kind of result this
+project is built not to produce.
 
-Critères éliminatoires d'un jeu utilisable : horodatage régulier sur des mois, au moins un
-événement terminal daté par unité, conditions extérieures enregistrées, plusieurs unités.
+Eliminating criteria for a usable dataset: regular timestamps over months, at least one
+dated terminal event per unit, outdoor conditions recorded, several units.
 
-Sources acceptables par ordre de préférence : historique de terrain ou banc instrumenté ; à
-défaut un jeu de référence hors domaine, clairement étiqueté comme étude de méthode ; en
-dernier recours une dégradation **simulée**, présentée comme telle.
+Acceptable sources, in order of preference: field history or an instrumented bench; failing
+that, an out-of-domain reference dataset, clearly labelled as a method study; as a last
+resort a **simulated** degradation, presented as such.
 
-Le pronostic n'est pas un modèle différent du diagnostic, c'est une **donnée** différente.
+Prognosis is not a different model from diagnosis. It is a different **dataset**.
 
-## Règles de travail
+## Working rules
 
-**Les chiffres.** Toute valeur mesurée s'écrit dans `outputs/results.csv` via `tools.results.log`,
-jamais seulement dans une sortie de notebook. Les colonnes `protocol` et `reference` sont
-obligatoires : **un chiffre sans son protocole n'est pas un résultat**, et ce projet a mesuré à
-quel point ça compte (0,95 contre 0,60 selon le découpage ; 0,602 contre 0,482 selon la
-structure du plan d'essais).
+**The figures.** Every measured value is written to `outputs/results.csv` via
+`tools.results.log`, never left only in a notebook output. The `protocol` and `reference`
+columns are mandatory: **a number without its protocol is not a result**, and this project
+has measured how much that matters (0.95 against 0.60 depending on the split; 0.602 against
+0.482 depending on the structure of the test plan).
 
-La documentation cite ce fichier plutôt que de recopier les valeurs. Les deux contradictions
-qu'il a fallu réparer — le dossier contre la feuille de route, puis le 0,602 annoncé sans sa
-condition — venaient toutes deux de la recopie manuelle.
+Documentation cites that file rather than retyping the values. The two contradictions that
+had to be repaired — the dossier against the roadmap, then the 0.602 announced without its
+condition — both came from manual copying.
 
-**Les figures.** Un notebook coûteux écrit ses résultats avant de tracer. La courbe de budget de
-calibration a dû être retracée ; sans le tableau resté par chance dans une sortie de cellule, il
-aurait fallu relancer 280 entraînements pour corriger une légende.
+**The plots.** An expensive notebook writes its results before it plots. The calibration
+budget curve had to be redrawn; without the table that happened to remain in a cell output,
+280 trainings would have been needed to fix a legend.
 
-**Les gardes automatiques.**
+**The automatic guards.**
 
-| Test | Ce qu'il empêche |
+| Test | What it prevents |
 |---|---|
-| `tests/test_docs.py` | qu'un document cite un fichier disparu après un refactor |
-| `tests/test_docs.py` | qu'une performance soit annoncée sans nommer son protocole |
-| `tests/test_results_log.py` | qu'une mesure soit loggée sans protocole, ou deux fois avec deux valeurs |
+| `tests/test_docs.py` | a document citing a file that disappeared after a refactor |
+| `tests/test_docs.py` | a performance announced without naming its protocol |
+| `tests/test_results_log.py` | a measurement logged without a protocol, or twice with two values |
 
-**Le dépôt.**
+**The repository.**
 
-
-
-
-1. Une PR = une idée, commit par commit.
-2. `pytest` vert avant et après chaque PR — 43 aujourd'hui.
-3. Rien qui casse le clone-and-run.
-4. Le pin `scikit-learn==1.6.1` est **porteur** : le `.joblib` commité ne se charge qu'avec
-   cette version. La changer impose de réentraîner via `main_analysis.py`.
-5. `scripts/` n'est couvert par aucun test — le vérifier à la main après tout déplacement.
+1. One PR = one idea, commit by commit.
+2. `pytest` green before and after each PR — 43 today.
+3. Nothing that breaks clone-and-run.
+4. The pin `scikit-learn==1.6.1` is **load-bearing**: the committed `.joblib` loads only
+   with that version. Changing it requires retraining via `main_analysis.py`.
+5. `scripts/` is covered by no test — check it by hand after any move.

@@ -215,12 +215,12 @@ def test_dossier_x0_matches_results_csv():
         label="__global__",
         features="23-col",
     )
-    french = f"{acc * 100:.1f}".replace(".", ",")
+    pct = f"{acc * 100:.1f}"
     dossier = ROOT / "docs" / "DOSSIER.md"
     if not dossier.exists():
         pytest.skip("DOSSIER.md absent")
     text = dossier.read_text(encoding="utf-8")
-    assert french in text, f"DOSSIER.md does not publish the logged hold-out accuracy {french} %"
+    assert pct in text, f"DOSSIER.md does not publish the logged hold-out accuracy {pct} %"
 
 
 _STATUS = re.compile(

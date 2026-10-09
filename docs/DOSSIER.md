@@ -1,1189 +1,1184 @@
 ---
-title: "Anatomie d'un système de diagnostic de pannes"
-subtitle: "De l'équation thermodynamique au tableau de bord — physique, apprentissage et architecture"
-date: "Septembre 2026"
-lang: fr
+title: "Anatomy of a fault-diagnosis system"
+subtitle: "From the thermodynamic equation to the dashboard — physics, learning, and architecture"
+date: "September 2026"
+lang: en
 ---
 
-# 0. Le problème et la contrainte fondatrice
+# 0. The problem and the founding constraint
 
-Une pompe à chaleur tombe rarement en panne d'un coup. Elle se dégrade. Le condenseur
-s'encrasse, une fuite lente vide une partie du fluide, un ventilateur faiblit. La machine
-continue de chauffer, et consomme de plus en plus pour le même service. Le **COP** — la chaleur
-fournie divisée par l'électricité consommée — glisse de 4,0 à 3,2 en quelques mois. Personne ne
-le voit ; la facture monte de 25 %.
+A heat pump rarely fails all at once. It degrades. The condenser fouls, a slow leak empties
+part of the charge, a fan weakens. The machine keeps heating, and uses more and more
+electricity for the same service. The **COP** — heat delivered divided by electricity
+consumed — slips from 4.0 to 3.2 over a few months. Nobody sees it; the bill rises by 25%.
 
-Le technicien n'a pas besoin d'apprendre qu'il y a un problème. Il a besoin de savoir
-**lequel**. Et c'est difficile parce que des pannes très différentes se ressemblent : un
-condenseur encrassé et un ventilateur de condenseur défaillant font tous deux monter la
-pression haute et chuter le COP. L'un se règle avec un nettoyage, l'autre avec une pièce.
+The technician does not need to learn that there is a problem. They need to know
+**which one**. That is hard because very different faults look alike: a fouled condenser and
+a failed condenser fan both raise the high-side pressure and drop the COP. One is fixed
+with a cleaning, the other with a part.
 
-## La contrainte qui commande tout le reste
+## The constraint that governs everything else
 
-Pour apprendre à nommer une panne, il faut des exemples étiquetés. Or ces données sont **rares
-et chères** : il faut délibérément encrasser un condenseur, retirer de la charge, brider un
-ventilateur, et instrumenter la machine pendant qu'on l'abîme. Peu de laboratoires le font.
+To learn to name a fault, labelled examples are required. Those data are **rare and
+expensive**: a condenser has to be fouled on purpose, charge removed, a fan restricted, and
+the machine instrumented while it is being damaged. Few laboratories do it.
 
-Ce projet répond par la simulation. Ce n'est pas un contournement, c'est **la réponse standard
-du domaine** — le NIST et l'ASHRAE procèdent de même, et la rareté des données de défaut est
-précisément ce qui motive leurs campagnes d'essais.
+This project answers with simulation. That is not a workaround. It is **the standard answer
+in the field** — NIST and ASHRAE do the same, and the scarcity of fault data is precisely
+what motivates their test campaigns.
 
-Mais ce choix crée une tension qu'il faut annoncer d'emblée : **si le même modèle fabrique les
-questions et les réponses, que mesure-t-on exactement ?** La seconde moitié de ce document ne
-traite que de cela.
+But the choice creates a tension that has to be stated at the outset: **if the same model
+manufactures the questions and the answers, what exactly is being measured?** The second
+half of this document is about nothing else.
 
-## Comment lire ce document
+## How to read this document
 
-Le système est parcouru module par module, dans l'ordre où circule une mesure. À chaque étape,
-trois questions :
+The system is walked through module by module, in the order a measurement travels. At each
+step, three questions:
 
 | | |
 |---|---|
-| **Physique** | Quel phénomène est modélisé, avec quelle équation |
-| **Apprentissage** | Quelle décision de modélisation cela impose |
-| **Ingénierie** | Pourquoi ce code vit ici et pas ailleurs |
+| **Physics** | Which phenomenon is modelled, with which equation |
+| **Learning** | Which modelling decision that imposes |
+| **Engineering** | Why this code lives here and not elsewhere |
 
-## Structure du dépôt
+## Repository layout
 
 ```
 heat-pump-fdd/
 |
 +-- src/
-|   +-- physics/                 le modèle physique — n'importe rien du projet
-|   |   +-- simulator.py           cycle R-410A, injection des défauts
-|   |   +-- thermo_lab.py          balayages COP, enveloppes
-|   |   +-- thermodynamic_viz.py   diagrammes pression-enthalpie
+|   +-- physics/                 the physical model — imports nothing from the project
+|   |   +-- simulator.py           R-410A cycle, fault injection
+|   |   +-- thermo_lab.py          COP sweeps, envelopes
+|   |   +-- thermodynamic_viz.py   pressure-enthalpy diagrams
 |   |
-|   +-- fdd/                     la méthode — partagée par toutes les études
-|   |   +-- features.py            contrat des 23 grandeurs, résidus
-|   |   +-- ml_models.py           entraînement, sélection de modèle
-|   |   +-- inference.py           FDDEngine : charger, diagnostiquer
-|   |   +-- visualization.py       figures d'entraînement
+|   +-- fdd/                     the method — shared by every study
+|   |   +-- features.py            the 23-quantity contract, residuals
+|   |   +-- ml_models.py           training, model selection
+|   |   +-- inference.py           FDDEngine: load, diagnose
+|   |   +-- visualization.py       training figures
 |   |
-|   +-- studies/                 les jeux de données
+|   +-- studies/                 the datasets
 |       +-- synthetic/
-|           +-- generator.py       tirage, injection, assemblage
-|           +-- taxonomy.py        les classes de panne de cette étude
-|           +-- scenarios.py       la démo : simulate_cycle, live_trace
-|           +-- paths.py           source unique des chemins d'artefacts
+|           +-- generator.py       sampling, injection, assembly
+|           +-- taxonomy.py        the fault classes of this study
+|           +-- scenarios.py       the demo: simulate_cycle, live_trace
+|           +-- paths.py           single source of artefact paths
 |
-+-- api/            FastAPI — 4 routes d'inférence, 17 de tableau de bord
-+-- web/            React — lit la liste des grandeurs depuis l'API
-+-- tests/          43 tests, dont 5 gardes d'architecture
-+-- EDA/            notebooks de confrontation aux essais mesurés
-+-- docs/           documentation technique et ce dossier
++-- api/            FastAPI — 4 inference routes, 17 dashboard routes
++-- web/            React — reads the feature list from the API
++-- tests/          43 tests, including 5 architecture guards
++-- EDA/            notebooks confronting the measured tests
++-- docs/           technical documentation and this dossier
 |
-+-- outputs/synthetic/   jeu de données et figures, par étude
-+-- models/synthetic/    modèle sérialisé et ses métadonnées
++-- outputs/synthetic/   dataset and figures, per study
++-- models/synthetic/    serialised model and its metadata
 ```
 
-La règle d'import est à sens unique et vérifiée par des tests :
+The import rule is one-directional and checked by tests:
 
 $$\texttt{studies/} \;\longrightarrow\; \texttt{fdd/} \;\longrightarrow\; \texttt{physics/}$$
 
-# 1. La physique — `src/physics/`
+# 1. The physics — `src/physics/`
 
-## `simulator.py` — la source de vérité
+## `simulator.py` — the source of truth
 
-Ce module calcule un cycle à compression de vapeur au R-410A. Il est la racine de la
-dépendance : tout s'appuie sur lui, il ne s'appuie sur rien. Les propriétés du fluide viennent
-de CoolProp, avec des corrélations de repli.
+This module computes an R-410A vapour-compression cycle. It is the root of the dependency:
+everything rests on it, it rests on nothing. Fluid properties come from CoolProp, with
+fallback correlations.
 
-Trois entrées définissent un point de fonctionnement :
+Three inputs define an operating point:
 
-| Entrée | Plage | Sens |
+| Input | Range | Meaning |
 |---|---|---|
-| $T_{source}$ | −10 à 20 °C | Air extérieur, côté froid |
-| $T_{sink}$ | 30 à 55 °C | Eau de chauffage, côté chaud |
-| $n$ | 0,3 à 1,0 | Régime du compresseur |
+| $T_{source}$ | −10 to 20 °C | Outdoor air, cold side |
+| $T_{sink}$ | 30 to 55 °C | Heating water, hot side |
+| $n$ | 0.3 to 1.0 | Compressor speed ratio |
 
-Le point nominal est **A7/W40** : air à 7 °C, eau à 40 °C.
+The nominal point is **A7/W40**: air at 7 °C, water at 40 °C.
 
-### Le modèle d'échangeur, et l'exposant qui fait tout
+### The heat-exchanger model, and the exponent that does the work
 
-$$UA_{evap} = UA_{evap}^{nom}\,\bigl(1 - 0{,}50\,\varphi_{evap}\bigr)\; r_{evap}^{\,1{,}45}$$
+$$UA_{evap} = UA_{evap}^{nom}\,\bigl(1 - 0.50\,\varphi_{evap}\bigr)\; r_{evap}^{\,1.45}$$
 
-$$UA_{cond} = UA_{cond}^{nom}\,\bigl(1 - 0{,}50\,\varphi_{cond}\bigr)\; r_{cond}^{\,1{,}45}$$
+$$UA_{cond} = UA_{cond}^{nom}\,\bigl(1 - 0.50\,\varphi_{cond}\bigr)\; r_{cond}^{\,1.45}$$
 
-avec $UA_{evap}^{nom} = 500$ W/K et $UA_{cond}^{nom} = 600$ W/K ; $\varphi$ l'encrassement
-(0 = propre) et $r$ le débit d'air rapporté au nominal.
+with $UA_{evap}^{nom} = 500$ W/K and $UA_{cond}^{nom} = 600$ W/K; $\varphi$ the fouling
+(0 = clean) and $r$ the airflow relative to nominal.
 
-**Physique.** $UA$ est le coefficient global d'échange : combien de chaleur passe par degré
-d'écart. L'encrassement dépose une couche isolante et le dégrade **linéairement**. Une perte de
-débit d'air le dégrade avec un **exposant 1,45**, parce que la convection côté air s'effondre
-plus vite que proportionnellement au débit.
+**Physics.** $UA$ is the overall heat-transfer coefficient: how much heat passes per degree
+of difference. Fouling lays down an insulating layer and degrades it **linearly**. A loss of
+airflow degrades it with an **exponent 1.45**, because air-side convection collapses faster
+than in proportion to the flow.
 
-**Apprentissage. C'est le cœur du projet.** Les deux pannes dégradent la même grandeur, mais
-par deux lois différentes. C'est *cette* différence qui rend les classes séparables. Sans elle,
-il n'y a pas de problème de classification — seulement deux noms pour un même symptôme.
+**Learning. This is the heart of the project.** The two faults degrade the same quantity,
+but by two different laws. *That* difference is what makes the classes separable. Without
+it there is no classification problem — only two names for one symptom.
 
-L'écart de température aux bornes de l'échangeur, le *pincement*, en découle :
+The temperature difference across the exchanger, the *pinch*, follows:
 
 $$\Delta_{evap} = 5 + 7\left(1 - \frac{UA_{evap}}{UA_{evap}^{nom}}\right)$$
 
 $$\Delta_{cond} = 5 + 7\left(1 - \frac{UA_{cond}}{UA_{cond}^{nom}}\right) + 8\,(1 - r_{cond})$$
 
-puis les températures de changement d'état :
+then the phase-change temperatures:
 
 $$T_{evap} = T_{source} - \Delta_{evap} \qquad T_{cond} = T_{sink} + \Delta_{cond}$$
 
-**À retenir : le condenseur est du côté du puits chaud.** Cette convention deviendra un piège
-au moment de confronter le modèle à des essais mesurés en mode refroidissement, où c'est
-l'unité extérieure qui joue ce rôle.
+**Remember: the condenser is on the hot-sink side.** That convention becomes a trap when
+the model is confronted with cooling-mode measurements, where the outdoor unit plays that
+role.
 
-### Le compresseur
+### The compressor
 
-Le rendement isentropique suit une corrélation de compresseur scroll, maximale autour d'un taux
-de compression $\tau = 3$ :
+Isentropic efficiency follows a scroll-compressor correlation, maximum around a pressure
+ratio $\tau = 3$:
 
-$$\eta_{is} = 0{,}75 \cdot f(\tau) \cdot g(n), \qquad
-f(\tau) = \mathrm{borne}\bigl(1 - 0{,}05\,(\tau-3)^2,\; 0{,}4,\; 1\bigr), \qquad
-g(n) = 1 - 0{,}30\,(n - 0{,}7)^2$$
+$$\eta_{is} = 0.75 \cdot f(\tau) \cdot g(n), \qquad
+f(\tau) = \mathrm{clamp}\bigl(1 - 0.05\,(\tau-3)^2,\; 0.4,\; 1\bigr), \qquad
+g(n) = 1 - 0.30\,(n - 0.7)^2$$
 
-$$\eta_{vol} = 1 - 0{,}05\left(\tau^{1/k} - 1\right), \qquad \tau = \frac{P_{cond}}{P_{evap}}$$
+$$\eta_{vol} = 1 - 0.05\left(\tau^{1/k} - 1\right), \qquad \tau = \frac{P_{cond}}{P_{evap}}$$
 
-**Lecture utile** : un défaut qui écarte $\tau$ de son optimum dégrade le COP **deux fois** —
-par la thermodynamique, et par la chute du rendement du compresseur.
+**Useful reading**: a fault that moves $\tau$ away from its optimum degrades the COP
+**twice** — through the thermodynamics, and through the drop in compressor efficiency.
 
-La température de refoulement suit une loi polytropique corrigée par ce rendement :
+Discharge temperature follows a polytropic law corrected by that efficiency:
 
-$$T_{ref}^{\,ideal} = \bigl(T_{asp} + 273{,}15\bigr)\,\tau^{\frac{k-1}{k}} - 273{,}15
+$$T_{dis}^{\,ideal} = \bigl(T_{suc} + 273.15\bigr)\,\tau^{\frac{k-1}{k}} - 273.15
 \qquad
-T_{ref} = T_{asp} + \frac{T_{ref}^{\,ideal} - T_{asp}}{\eta_{is}}$$
+T_{dis} = T_{suc} + \frac{T_{dis}^{\,ideal} - T_{suc}}{\eta_{is}}$$
 
-Un compresseur moins efficace transforme davantage de travail en chaleur : il refoule plus
-chaud. C'est pourquoi la température de refoulement est un indicateur de santé si sensible.
+A less efficient compressor turns more work into heat: it discharges hotter. That is why
+discharge temperature is so sensitive a health indicator.
 
-### Puissances et COP
+### Powers and COP
 
 $$Q_{cond} = \dot m\,(h_2 - h_3) \qquad
-W_{comp} = 1{,}10 \cdot \dot m\,\Delta h_{reel} \qquad
+W_{comp} = 1.10 \cdot \dot m\,\Delta h_{real} \qquad
 COP = \frac{Q_{cond}}{W_{comp}}$$
 
-Le facteur 1,10 couvre les pertes mécaniques et électriques. Le détail des enthalpies est en
-annexe B.
+The factor 1.10 covers mechanical and electrical losses. Enthalpy detail is in appendix B.
 
-### Le défaut n'est pas du bruit
+### A fault is not noise
 
-Un défaut est un **paramètre physique dégradé en amont** — $\varphi_{cond}$, $r_{cond}$, la
-charge $c$ — et toutes les grandeurs en découlent de façon cohérente. Une ligne change dans
-l'appel, le cycle entier est recalculé.
+A fault is a **physical parameter degraded upstream** — $\varphi_{cond}$, $r_{cond}$, the
+charge $c$ — and every quantity follows consistently. One line changes in the call, and the
+whole cycle is recomputed.
 
-**Ingénierie.** C'est ce qui permet d'explorer un défaut de façon continue, à n'importe quelle
-sévérité et dans n'importe quelles conditions — ce qu'aucun jeu d'essais réels ne permet.
+**Engineering.** That is what makes it possible to explore a fault continuously, at any
+severity and in any conditions — which no set of real tests allows.
 
-### Ce que la confrontation aux mesures a révélé
+### What the confrontation with measurements revealed
 
-![Enveloppe de fonctionnement du compresseur simulé](../outputs/synthetic/compressor_envelope.png)
+![Operating envelope of the simulated compressor](../outputs/synthetic/compressor_envelope.png)
 
-Quatre défauts de modélisation, trouvés en comparant les signatures simulées à des essais
-mesurés, puis corrigés :
+Four modelling faults, found by comparing simulated signatures with measured tests, then
+fixed:
 
-| Défaut trouvé | Conséquence |
+| Fault found | Consequence |
 |---|---|
-| Surcharge sans branche de calcul | Une classe déclarée qui ne produisait aucun effet |
-| Sous-refroidissement inversé sur l'encrassement condenseur | Une grandeur du vecteur variait à l'envers |
-| Surchauffe et refoulement inversés sur le ventilateur d'évaporateur | Deux grandeurs à l'envers |
-| Plafond de refoulement déclaré mais jamais appliqué | Des cycles à 319 °C dans les données d'apprentissage |
+| Overcharge with no calculation branch | A declared class that produced no effect |
+| Subcooling reversed on condenser fouling | One feature varied the wrong way |
+| Superheat and discharge reversed on the evaporator fan | Two features the wrong way |
+| Discharge ceiling declared but never applied | Cycles at 319 °C in the training data |
 
-Le dernier est le plus instructif : $T_{ref}^{max} = 130$ °C figurait dans le code, mais
-n'était utilisé que pour afficher une alerte — jamais pour borner la valeur. Une partie des
-exemples décrivait des machines qui ne peuvent pas exister.
+The last is the most instructive: $T_{dis}^{max} = 130$ °C was in the code, but used only
+to display a warning — never to bound the value. Part of the examples described machines
+that cannot exist.
 
-## `thermodynamic_viz.py` et `thermo_lab.py` — des vues, pas de la physique
+## `thermodynamic_viz.py` and `thermo_lab.py` — views, not physics
 
-Diagrammes pression-enthalpie et balayages de COP. Ils vivent dans `physics/` parce qu'ils
-manipulent les mêmes propriétés du fluide, mais sont importés par l'API et **jamais par le
-pipeline d'apprentissage**. Une visualisation n'entre pas dans un vecteur de features.
+Pressure-enthalpy diagrams and COP sweeps. They live in `physics/` because they handle the
+same fluid properties, but they are imported by the API and **never by the learning
+pipeline**. A visualisation does not enter a feature vector.
 
-# 2. Du cycle au vecteur — `src/fdd/features.py`
+# 2. From the cycle to the vector — `src/fdd/features.py`
 
-## Le problème de représentation
+## The representation problem
 
-Un résultat de cycle n'est pas un vecteur exploitable. Il faut décider **quoi** montrer au
-modèle — et ce choix pèse plus lourd que celui de l'algorithme.
+A cycle result is not a usable vector. One has to decide **what** to show the model — and
+that choice weighs more than the choice of algorithm.
 
-Le contrat compte 23 colonnes : 3 conditions, 15 grandeurs mesurées ou dérivées, 5 **résidus**.
-`pressure_ratio` a été retiré : c'était le même nombre que `compression_ratio`.
+The contract has 23 columns: 3 conditions, 15 measured or derived quantities, 5
+**residuals**. `pressure_ratio` was removed: it was the same number as `compression_ratio`.
 
-## Les résidus, ou l'analogie de la fièvre
+## Residuals, or the fever analogy
 
-Dire « 37,8 °C » ne veut rien dire tant qu'on ignore de qui l'on parle. Dire « 0,9 °C au-dessus
-de sa température habituelle » est un signal, quel que soit l'individu.
+Saying "37.8 °C" means nothing until one knows who is being talked about. Saying "0.9 °C
+above their usual temperature" is a signal, whoever the person is.
 
-$$\tilde{x} = x_{observe} - \hat{x}_{sain}\bigl(T_{source},\, T_{sink},\, n\bigr)$$
+$$\tilde{x} = x_{observed} - \hat{x}_{healthy}\bigl(T_{source},\, T_{sink},\, n\bigr)$$
 
-Une surchauffe de 12 K ne dit rien : elle dépend de la machine, de la saison, de la charge. Une
-surchauffe **1,7 K au-dessus de ce que cette machine-ci ferait en bonne santé, maintenant** est
-une signature de sous-charge.
+A superheat of 12 K says nothing: it depends on the machine, the season, the load. A
+superheat **1.7 K above what this machine would do when healthy, right now** is an
+undercharge signature.
 
-**Apprentissage.** C'est la méthode des résidus de Li et Braun : un modèle de référence prédit
-le comportement sain, le classifieur travaille sur l'écart. Le docstring du module la nomme.
+**Learning.** This is the Li and Braun residual method: a reference model predicts healthy
+behaviour, and the classifier works on the gap. The module docstring names it.
 
-## La couture qui rend toute la validation possible
+## The seam that makes the whole validation possible
 
 ```python
 def cycle_to_features(result, ..., baseline=None, ...):
     if baseline is None:
-        baseline = healthy_cycle(T_source, T_sink, speed_ratio)   # <- simule
+        baseline = healthy_cycle(T_source, T_sink, speed_ratio)   # <- simulates
 ```
 
-**Par défaut, le cycle sain de référence est calculé par le simulateur.** Les deux termes de la
-soustraction sortent de la même machine à calculer : c'est là qu'est la circularité annoncée en
-ouverture.
+**By default, the healthy reference cycle is computed by the simulator.** Both terms of the
+subtraction come out of the same calculating machine: that is the circularity announced at
+the start.
 
-Mais le paramètre `baseline` est exposé. Passer un cycle sain **mesuré** transforme les cinq
-résidus en écarts réels, sans modifier une ligne du reste du pipeline.
+But the `baseline` parameter is exposed. Passing a **measured** healthy cycle turns the five
+residuals into real gaps, without changing a line of the rest of the pipeline.
 
-**Ingénierie.** Une seule ligne de signature est ce qui a rendu possible toute la confrontation
-décrite en partie 7. C'est l'exemple le plus net, dans ce projet, de ce qu'un bon point
-d'extension fait gagner.
+**Engineering.** A single line of signature is what made the confrontation in part 7
+possible. It is the clearest example, in this project, of what a good extension point buys.
 
-## Une redondance
+## A redundancy
 
-$\texttt{compression\_ratio}$ et $\texttt{pressure\_ratio}$ étaient **le même nombre**, vérifié à
-la précision machine sur 100 % des 5000 lignes. `pressure_ratio` a été retiré du contrat (P5).
-Passer aux résidus seuls ferait perdre sept points : il n'y a qu'une machine simulée, rien à
-ré-identifier.
+$\texttt{compression\_ratio}$ and $\texttt{pressure\_ratio}$ were **the same number**,
+checked to machine precision on 100% of the 5000 rows. `pressure_ratio` was removed from
+the contract (P5). Switching to residuals alone would lose seven points: there is only one
+simulated machine, nothing to re-identify.
 
-# 3. Fabriquer un jeu de données — `src/studies/synthetic/`
+# 3. Building a dataset — `src/studies/synthetic/`
 
-## Pourquoi une couche « études » séparée
+## Why a separate "studies" layer
 
-Un jeu de données n'est pas un fichier. C'est un triplet : **des données, une taxonomie de
-pannes, un emplacement d'artefacts**. Le jour où une seconde source arrive, rien de la méthode
-ne doit bouger. C'est la justification du découpage architectural, et elle est vérifiable.
+A dataset is not a file. It is a triplet: **data, a fault taxonomy, an artefact location**.
+The day a second source arrives, nothing in the method should move. That is the
+justification of the architectural split, and it is checkable.
 
-| Module | Rôle |
+| Module | Role |
 |---|---|
-| `generator.py` | Tirage des conditions, injection des défauts, assemblage |
-| `taxonomy.py` | Les classes de panne et leurs paramètres — propre à l'étude |
-| `scenarios.py` | La démo : `simulate_cycle`, `live_trace` — pas la méthode |
-| `paths.py` | Source unique des chemins, aucun chemin en dur ailleurs |
+| `generator.py` | Sampling conditions, injecting faults, assembling |
+| `taxonomy.py` | Fault classes and their parameters — specific to the study |
+| `scenarios.py` | The demo: `simulate_cycle`, `live_trace` — not the method |
+| `paths.py` | Single source of paths, no hardcoded path elsewhere |
 
-Les conditions sont tirées uniformément dans le domaine, un défaut est choisi puis injecté à
-une sévérité tirée, et le cycle est recalculé.
+Conditions are drawn uniformly in the domain, a fault is chosen then injected at a drawn
+severity, and the cycle is recomputed.
 
-![Distribution des grandeurs dans le jeu synthétique](../outputs/synthetic/data_distribution.png)
+![Distribution of quantities in the synthetic set](../outputs/synthetic/data_distribution.png)
 
-Sept classes sont produites : sain, encrassement de condenseur, encrassement d'évaporateur,
-sous-charge, **surcharge**, ventilateur de condenseur, ventilateur d'évaporateur. La surcharge
-est générée depuis P4, après retrait d'un `condenser_fouling` parasite qui contaminait chaque
-échantillon. La fuite de clapet a été **retirée** : le simulateur n'a pas de paramètre de
-rendement volumétrique, et l'ancienne branche était un mélange de sous-charge et
-d'encrassement évaporateur.
+Seven classes are produced: healthy, condenser fouling, evaporator fouling, undercharge,
+**overcharge**, condenser fan, evaporator fan. Overcharge has been generated since P4,
+after removing a parasitic `condenser_fouling` that contaminated every sample. Valve leak
+was **removed**: the simulator has no volumetric-efficiency parameter, and the old branch
+was a mix of undercharge and evaporator fouling.
 
-## Le bruit de mesure
+## Measurement noise
 
-Un bruit gaussien est ajouté aux grandeurs qu'un capteur mesure : 0,5 °C sur les températures,
-2 % sur les pressions, 3 % sur les puissances. Il ne modélise ni dérive de capteur, ni biais,
-ni régime transitoire.
+Gaussian noise is added to the quantities a sensor measures: 0.5 °C on temperatures, 2% on
+pressures, 3% on powers. It models neither sensor drift, nor bias, nor transient regime.
 
-**Les grandeurs dérivées sont recalculées après ce bruit**, et la référence saine des résidus
-`d_*` est bruitée indépendamment. Sur les 5000 exemples, chaque ligne vérifie
-$\texttt{pressure\_ratio} = P_{cond}/P_{evap}$ et $COP = Q_{cond}/W_{comp}$.
+**Derived quantities are recomputed after that noise**, and the healthy reference of the
+`d_*` residuals is noised independently. On the 5000 examples, every row satisfies
+$\texttt{compression\_ratio} = P_{cond}/P_{evap}$ and $COP = Q_{cond}/W_{comp}$.
 
-Avant cette correction, `d_COP` n'était bruité d'aucun côté : il valait exactement 0 pour les
-2000 essais sains, et pour eux seuls. Un arbre à une feuille séparait défaut de sain à 100 %.
-C'était l'étiquette de détection en clair dans le vecteur d'entrée. Le 99,6 % publié alors
-était invalide. Le chiffre honnête, après fermeture des quatre fuites du pipeline, était
-**91,9 % [90,4 – 93,1]** sur six classes. P4 a ajouté la surcharge : le chiffre livré est
-**89,3 % [87,6 – 90,7]** (hold-out, sélection sur val, sept classes).
+Before that correction, `d_COP` was noised on neither side: it was exactly 0 for the 2000
+healthy tests, and for them alone. A one-leaf tree separated fault from healthy at 100%.
+That was the detection label in clear text inside the input vector. The 99.6% published
+then was invalid. The honest figure, after the four pipeline leaks were closed, was
+**91.9% [90.4 – 93.1]** on six classes. P4 added overcharge: the delivered figure is
+**89.3% [87.6 – 90.7]** (hold-out, selection on val, seven classes).
 
-La portée de ce qui reste dans le modèle — partie suivante.
+What remains inside the model is the next part.
 
-# 4. Le modèle — `src/fdd/ml_models.py` et `inference.py`
+# 4. The model — `src/fdd/ml_models.py` and `inference.py`
 
-## Le choix d'algorithme, et pourquoi il compte peu
+## The choice of algorithm, and why it matters little
 
-Forêt aléatoire, sélectionnée sur le jeu de validation. Gradient Boosting à égalité
-sur val (ΔF1 = 0,002) — départagé sur l'inférence et
-l'interprétabilité. Scaler et classifieur dans un `sklearn.Pipeline`. Split 2625 / 875 /
-1500 (train / val / test). Le test ne sert jamais à choisir.
+Random forest, selected on the validation set. Gradient boosting tied on val
+(ΔF1 = 0.002) — split on inference and interpretability. Scaler and classifier live in a
+`sklearn.Pipeline`. Split 2625 / 875 / 1500 (train / val / test). The test is never used
+to choose.
 
-| Modèle | Accuracy test | IC 95 % | F1 test | F1 val |
+| Model | Test accuracy | 95% CI | Test F1 | Val F1 |
 |---|---|---|---|---|
-| **Forêt aléatoire (livré)** | **89,3 %** | 87,7 – 90,8 | 0,871 | 0,905 |
-| Gradient Boosting | 89,9 % | 88,2 – 91,3 | 0,879 | 0,902 |
+| **Random forest (shipped)** | **89.3%** | 87.7 – 90.8 | 0.871 | 0.905 |
+| Gradient boosting | 89.9% | 88.2 – 91.3 | 0.879 | 0.902 |
 
-Validation croisée 5 plis **sur le train seulement** : F1 0,881 ± 0,017.
+5-fold cross-validation **on the train set only**: F1 0.881 ± 0.017.
 
-**Pourquoi pas douze algorithmes.** Les deux candidats sont à égalité sur val (ΔF1 = 0,003).
-Empiler des algorithmes aurait donné une **illusion de rigueur**. Le travail utile était dans
-le protocole : ne pas choisir sur le test, publier un intervalle.
+**Why not twelve algorithms.** The two candidates are tied on val (ΔF1 = 0.003). Stacking
+algorithms would have given an **illusion of rigour**. The useful work was in the protocol:
+do not choose on the test, publish an interval.
 
-![Matrice de confusion, jeu simulé](../outputs/synthetic/confusion_matrix.png)
+![Confusion matrix, simulated set](../outputs/synthetic/confusion_matrix.png)
 
-La matrice de confusion n'est plus quasi parfaite. Les ventilateurs restent séparés (F1 0,97) ;
-la surcharge est détectée (F1 0,88) et ne se confond pas avec l'encrassement condenseur
-(11 / 150 et 9 / 150 dans les deux sens) une fois le couplage artificiel retiré. Les deux
-encrassements restent les classes difficiles (0,71 et 0,79). C'est de la physique : les deux
-élèvent la pression haute.
+The confusion matrix is no longer nearly perfect. The fans stay separated (F1 0.97);
+overcharge is detected (F1 0.88) and is not confused with condenser fouling (11 / 150 and
+9 / 150 in the two directions) once the artificial coupling is removed. The two foulings
+remain the hard classes (0.71 and 0.79). That is physics: both raise the high-side
+pressure.
 
-## Ce dont le modèle se sert réellement
+## What the model actually uses
 
-![Importance des variables](../outputs/synthetic/feature_importance.png)
+![Feature importance](../outputs/synthetic/feature_importance.png)
 
-Cette figure est la plus instructive du jeu simulé, pour deux raisons.
+This figure is the most instructive of the simulated set, for two reasons.
 
-**D'abord, 18 des 24 grandeurs ont une importance quasi nulle.** Le modèle en utilise six. Le
-contrat de features est donc largement surdimensionné, ce qui prépare une simplification (P5).
+**First, 18 of the 24 quantities have almost zero importance.** The model uses six. The
+feature contract is therefore largely oversized, which prepares a simplification (P5).
 
-**Ensuite, `d_COP` n'est plus le pilier de la décision.**
+**Second, `d_COP` is no longer the pillar of the decision.**
 
-| Rang | Grandeur | Importance |
+| Rank | Quantity | Importance |
 |---|---|---|
-| 1 | `delta_T_cond` | 0,140 |
-| 2 | `delta_T_evap` | 0,131 |
-| 3 | `superheat` | 0,129 |
-| 4 | `d_T_discharge` | 0,118 |
-| 5 | `subcooling` | 0,088 |
-| 6 | `d_W_comp` | 0,078 |
-| 9 | `d_COP` | **0,036** |
+| 1 | `delta_T_cond` | 0.140 |
+| 2 | `delta_T_evap` | 0.131 |
+| 3 | `superheat` | 0.129 |
+| 4 | `d_T_discharge` | 0.118 |
+| 5 | `subcooling` | 0.088 |
+| 6 | `d_W_comp` | 0.078 |
+| 9 | `d_COP` | **0.036** |
 
-Avant correction, `d_COP` + `delta_T_cond` + `delta_T_evap` portaient 76 % de l'importance, et
-les trois étaient exempts de bruit. Après recalcul des dérivées, `d_COP` tombe à 3,6 %. Les
-pinches restent utiles — ils sont désormais cohérents avec les températures bruitées.
+Before the correction, `d_COP` + `delta_T_cond` + `delta_T_evap` carried 76% of the
+importance, and all three were free of noise. After the derived quantities are recomputed,
+`d_COP` falls to 3.6%. The pinches stay useful — they are now consistent with the noised
+temperatures.
 
-## `FDDEngine` — charger et diagnostiquer, rien d'autre
+## `FDDEngine` — load and diagnose, nothing else
 
-Le moteur charge un modèle et attribue une classe à un vecteur. Il ne sait pas simuler un
-défaut : cela appartient à l'étude.
+The engine loads a model and assigns a class to a vector. It does not know how to simulate
+a fault: that belongs to the study.
 
-Cette séparation n'a pas toujours existé. Le moteur contenait initialement le générateur de
-défauts, ce qui faisait dépendre la couche partagée d'une étude particulière et interdisait
-d'en ajouter une seconde. Le découplage a été fait **avant** tout déplacement de fichier, et
-cinq tests l'empêchent de revenir.
+That separation did not always exist. The engine originally contained the fault generator,
+which made the shared layer depend on one particular study and forbade adding a second.
+The decoupling was done **before** any file was moved, and five tests stop it coming back.
 
-## Le modèle versionné et le pin porteur
+## The versioned model and the load-bearing pin
 
-Le modèle entraîné est **sérialisé et versionné dans le dépôt**, pour que le projet se clone et
-tourne sans réentraînement. Ce format dépend de la version exacte de la bibliothèque, épinglée
-à `scikit-learn==1.6.1`. Une autre version rend le modèle illisible, avec une erreur qui ne
-ressemble pas à un problème de version :
+The trained model is **serialised and versioned in the repository**, so the project clones
+and runs without retraining. That format depends on the exact library version, pinned at
+`scikit-learn==1.6.1`. Another version makes the model unreadable, with an error that does
+not look like a version problem:
 
 ```
 ModuleNotFoundError: No module named '_loss'
 ```
 
-L'image Docker est protégée puisqu'elle installe depuis le fichier de dépendances ; un
-environnement local qui a dérivé ne l'est pas.
+The Docker image is protected because it installs from the dependency file; a local
+environment that has drifted is not.
 
-# 5. Servir — `api/` et `web/`
+# 5. Serving — `api/` and `web/`
 
-| Famille | Nombre | Rôle |
+| Family | Count | Role |
 |---|---|---|
-| Inférence | 4 | `/health`, `/predict`, `/simulate`, `/live` |
-| Tableau de bord | 17 | `/api/*` — alimenter les vues |
+| Inference | 4 | `/health`, `/predict`, `/simulate`, `/live` |
+| Dashboard | 17 | `/api/*` — feed the views |
 
-Vingt-et-une routes dans un module de 582 lignes, pour deux responsabilités : la couture d'un
-découpage à venir est nette.
+Twenty-one routes in a 582-line module, for two responsibilities: the seam of a future
+split is clear.
 
-![Le tableau de bord pendant une injection d'encrassement](live-fdd.png)
+![The dashboard during a fouling injection](live-fdd.png)
 
-P7 ajoute une page **Evidence** (`/evidence`) qui n'appelle plus le classifieur : elle lit
-`outputs/results.csv` et affiche l'échelle de vérité 99,6 % → 89,3 % → 60,2 % → 31,8 %.
-Récit, captures et protocoles : [FRONT_EVIDENCE.md](FRONT_EVIDENCE.md)
+P7 adds an **Evidence** page (`/evidence`) that no longer calls the classifier: it reads
+`outputs/results.csv` and shows the truth ladder 99.6% → 89.3% → 60.2% → 31.8%.
+Narrative, captures, and protocols: [FRONT_EVIDENCE.md](FRONT_EVIDENCE.md)
 ([PDF](FRONT_EVIDENCE.pdf)).
 
-**Le contrat d'entrée est strict.** `/predict` énumère les 23 grandeurs et refuse tout champ
-inconnu — une grandeur mal nommée est rejetée plutôt qu'ignorée. Cela fait de toute évolution
-du contrat une **rupture de compatibilité**.
+**The input contract is strict.** `/predict` enumerates the 23 quantities and refuses any
+unknown field — a misnamed quantity is rejected rather than ignored. That makes any
+evolution of the contract a **compatibility break**.
 
-**Le front est générique** : il lit la liste des grandeurs depuis l'API. Il suivra une
-évolution sans modification.
+**The front is generic**: it reads the feature list from the API. It will follow an
+evolution without a change.
 
-# 6. La règle qui tient l'ensemble
+# 6. The rule that holds the whole thing
 
 $$\texttt{studies/} \;\longrightarrow\; \texttt{fdd/} \;\longrightarrow\; \texttt{physics/}$$
 
-`physics/` n'importe rien du projet ; `fdd/` peut importer `physics/` ; seule `studies/` peut
-importer les deux.
+`physics/` imports nothing from the project; `fdd/` may import `physics/`; only `studies/`
+may import both.
 
-**Ce que la règle interdit** : que la méthode dépende d'un jeu de données particulier.
+**What the rule forbids**: that the method depend on one particular dataset.
 
-**Ce qui la maintient** : cinq tests qui échouent si le couplage revient — le moteur ne doit
-pas exposer d'interface de simulation, le module de features ne doit pas contenir de taxonomie
-d'étude, l'entraîneur ne doit pas importer de générateur.
+**What maintains it**: five tests that fail if the coupling comes back — the engine must
+not expose a simulation interface, the features module must not contain a study taxonomy,
+the trainer must not import a generator.
 
-## Le récit du refactor
+## The story of the refactor
 
-L'ordre a compté plus que le contenu :
+The order mattered more than the content:
 
-1. **Découpler d'abord**, sans déplacer un fichier.
-2. **Déplacer ensuite**, sans changer une ligne de logique.
-3. **Ranger les artefacts par étude** en dernier.
+1. **Decouple first**, without moving a file.
+2. **Move next**, without changing a line of logic.
+3. **File artefacts by study** last.
 
-Inverser les deux premières étapes aurait noyé une décision d'architecture dans une dizaine de
-renommages.
+Reversing the first two steps would have drowned an architecture decision in a dozen
+renames.
 
-**L'équivalence de comportement a été vérifiée à chaque étape** en comparant les sorties avant
-et après — six types de défaut, leurs 24 grandeurs, la classe prédite, la confiance, une trace
-temporelle. Identiques octet pour octet.
+**Behavioural equivalence was checked at every step** by comparing outputs before and
+after — six fault types, their 24 quantities, the predicted class, the confidence, a time
+trace. Identical byte for byte.
 
-> **Pour le jury.** Un refactor ne se juge pas sur l'élégance du résultat mais sur la preuve
-> que rien n'a bougé. Ici la preuve est une comparaison binaire des sorties, pas une suite de
-> tests verte : les tests disent que le contrat tient, pas que les nombres sont les mêmes.
+> **For the jury.** A refactor is not judged on the elegance of the result but on the proof
+> that nothing moved. Here the proof is a binary comparison of the outputs, not a green
+> test suite: the tests say the contract holds, not that the numbers are the same.
 
-# 7. Les données mesurées
+# 7. The measured data
 
-La validation s'appuie sur une campagne publique du NIST : des pompes à chaleur résidentielles
-en chambre climatique, avec défauts imposés et maintenus.
+Validation rests on a public NIST campaign: residential heat pumps in a climate chamber,
+with faults imposed and held.
 
 | | |
 |---|---|
-| Essais | 7375 |
-| Grandeurs | 98 colonnes, côté air et côté fluide |
-| Machines | Deux, de performances différentes |
-| Retenus | 5386 essais à défaut unique, 6 classes |
-| Mode | Refroidissement |
+| Tests | 7375 |
+| Quantities | 98 columns, air side and refrigerant side |
+| Machines | Two, of different performance |
+| Kept | 5386 single-fault tests, 6 classes |
+| Mode | Cooling |
 
-Deux machines plutôt qu'une : c'est décisif, car cela permet de tester si un modèle appris sur
-l'une fonctionne sur l'autre.
+Two machines rather than one: that is decisive, because it makes it possible to test
+whether a model learned on one works on the other.
 
-![Les six classes reconstruites à partir des colonnes de niveau de défaut](figures/classes.png)
+![The six classes rebuilt from the fault-level columns](figures/classes.png)
 
-Les classes ne sont pas données : elles sont **implicites**, réparties sur cinq colonnes de
-niveau où 100 % signifie nominal. Un défaut compte comme actif dès que son niveau s'écarte de
-plus de 2 % — seuil qui reproduit exactement les effectifs publiés, ce qui permet de l'inscrire
-en assertion dans le code.
+The classes are not given: they are **implicit**, spread across five level columns where
+100% means nominal. A fault counts as active as soon as its level departs by more than
+2% — a threshold that reproduces exactly the published counts, which lets it be written as
+an assertion in the code.
 
-## Trois obstacles méthodologiques
+## Three methodological obstacles
 
-**Le mode est inversé.** Les essais sont en refroidissement, le simulateur en chauffage. En
-refroidissement, c'est l'unité **extérieure** qui condense — l'inverse de la convention du
-simulateur. Apparier les pannes sans vérifier ce point conduit à comparer des sens opposés et à
-conclure que le modèle est faux alors que c'est l'appariement qui l'est.
+**The mode is reversed.** The tests are in cooling, the simulator in heating. In cooling,
+the **outdoor** unit condenses — the opposite of the simulator's convention. Pairing faults
+without checking that point leads to comparing opposite directions and concluding that the
+model is wrong when the pairing is.
 
-**Un capteur n'est pas instrumenté sur une des deux machines.**
+**One sensor is not instrumented on one of the two machines.**
 
-![La colonne d'aspiration piégée, et son remplacement](figures/capteur.png)
+![The trapped suction column, and its replacement](figures/capteur.png)
 
-La colonne nommée « pression au port d'aspiration » contient en réalité la pression de
-refoulement sur l'une des deux machines, soit 55 % des essais. Le rapport de pression y vaut
-exactement 1,00 — physiquement impossible — sans qu'aucune erreur ne soit levée. Le panneau de
-gauche montre le pic à 1,00 ; celui de droite, la colonne de remplacement, cohérente sur les
-deux machines.
+The column named "suction-port pressure" actually contains the discharge pressure on one of
+the two machines, 55% of the tests. The pressure ratio there is exactly 1.00 — physically
+impossible — without any error being raised. The left panel shows the peak at 1.00; the
+right panel, the replacement column, consistent on both machines.
 
-**Les domaines se recouvrent à 5,3 %.**
+**The domains overlap by 5.3%.**
 
-![Conditions NIST et domaine d'entraînement du simulateur](figures/domaine.png)
+![NIST conditions and the simulator's training domain](figures/domaine.png)
 
-Le rectangle est le domaine sur lequel le simulateur a été entraîné ; les points sont les
-essais mesurés. Ils tombent presque entièrement à l'extérieur. **Comparer des valeurs absolues
-est donc exclu** ; seules les tendances sont comparables.
+The rectangle is the domain the simulator was trained on; the points are the measured
+tests. They fall almost entirely outside. **Comparing absolute values is therefore ruled
+out**; only the trends are comparable.
 
-Enfin, les colonnes de niveau de défaut sont la réponse à trouver : les inclure parmi les
-entrées reviendrait à distribuer le corrigé avec l'énoncé. Elles sont exclues, et un test le
-vérifie.
+Finally, the fault-level columns are the answer to be found: including them among the
+inputs would hand out the solution with the question. They are excluded, and a test checks
+it.
 
-# 8. Les protocoles de validation
+# 8. The validation protocols
 
-Un score n'a aucun sens sans son protocole.
+A score means nothing without its protocol.
 
-**Validation croisée aléatoire** : on mélange tous les essais, on en cache une partie. Standard,
-et trompeur ici, car les essais des deux machines se retrouvent des deux côtés — le modèle peut
-apprendre à reconnaître *l'installation* plutôt que *la panne*.
+**Random cross-validation**: all tests are mixed, and part of them is hidden. Standard, and
+misleading here, because tests from both machines end up on both sides — the model can
+learn to recognise *the installation* rather than *the fault*.
 
-**Validation par machine** (*leave-one-machine-out*) : on entraîne sur une machine, on teste
-sur l'autre, puis on inverse.
+**Validation by machine** (*leave-one-machine-out*): train on one machine, test on the
+other, then reverse.
 
-L'analogie est celle d'un élève. Réviser les annales puis composer sur un sujet tiré des mêmes
-annales donne une bonne note. Composer sur le sujet d'un autre établissement mesure ce qu'il a
-compris.
+The analogy is a student. Revising past papers and then sitting an exam drawn from the same
+papers gives a good mark. Sitting another school's paper measures what was understood.
 
-![Quatre jeux de grandeurs, deux protocoles](figures/features.png)
+![Four feature sets, two protocols](figures/features.png)
 
-| Jeu de grandeurs | CV aléatoire | Par machine |
+| Feature set | Random CV | By machine |
 |---|---|---|
-| Grandeurs brutes | 0,954 | 0,333 |
-| Brutes et résidus | 0,973 | 0,562 |
-| Résidus seuls | 0,937 | 0,602 |
-| Résidus et conditions | 0,945 | 0,594 |
+| Raw quantities | 0.954 | 0.333 |
+| Raw and residuals | 0.973 | 0.562 |
+| Residuals only | 0.937 | 0.602 |
+| Residuals and conditions | 0.945 | 0.594 |
 
-Classe majoritaire : 0,251.
+Majority class: 0.251.
 
-Deux lectures. **Le jeu qui gagne en validation aléatoire n'est pas celui qui transfère le
-mieux** : classer des conceptions sur un tirage aléatoire aurait fait retenir la mauvaise. Et
-**ajouter les grandeurs absolues aux résidus dégrade le transfert**, parce que les valeurs
-absolues permettent de ré-identifier la machine.
+Two readings. **The set that wins in random validation is not the one that transfers
+best**: ranking designs on a random draw would have kept the wrong one. And **adding the
+absolute quantities to the residuals degrades transfer**, because the absolute values make
+it possible to re-identify the machine.
 
-> **Pour le jury.** Un écart de 0,95 à 0,60 entre deux protocoles, même modèle et mêmes
-> données, ne mesure pas le modèle. Il mesure le protocole.
+> **For the jury.** A gap from 0.95 to 0.60 between two protocols, same model and same
+> data, does not measure the model. It measures the protocol.
 
-# 9. Les résultats, et le module que chacun met en cause
+# 9. The results, and the module each one implicates
 
-## L'accord des sens de variation met en cause `simulator.py`
+## Agreement of the signs of variation implicates `simulator.py`
 
-Le recouvrement de 5,3 % interdisant les valeurs absolues, on compare des **directions**. Pour
-chaque panne et chaque grandeur, on ajuste sur les essais mesurés :
+The 5.3% overlap rules out absolute values, so **directions** are compared. For each fault
+and each quantity, the measured tests are fit with:
 
 $$x = \beta_0 + \beta_1\,L + \beta_2\,T_{source} + \beta_3\,T_{sink}$$
 
-où $L$ est le niveau de défaut. Les deux derniers termes neutralisent les conditions d'essai,
-de sorte que $\beta_1$ isole l'effet de la panne. On compare $\mathrm{signe}(\beta_1)$ au signe
-de la pente obtenue en balayant le même paramètre dans le simulateur.
+where $L$ is the fault level. The last two terms neutralise the test conditions, so that
+$\beta_1$ isolates the effect of the fault. $\mathrm{sign}(\beta_1)$ is compared with the
+sign of the slope obtained by sweeping the same parameter in the simulator.
 
-| | Accord |
+| | Agreement |
 |---|---|
-| Avant correction | **12 sur 16** |
-| Après correction des quatre défauts | **20 sur 22** |
+| Before the correction | **12 out of 16** |
+| After the four faults were fixed | **20 out of 22** |
 
-Le dénominateur augmente parce que la surcharge, jusque-là inerte, produit désormais des
-signaux exploitables.
+The denominator rises because overcharge, inert until then, now produces usable signals.
 
-**Ce résultat a directement piloté une réécriture du code.** C'est l'intérêt d'une confrontation
-externe : elle ne note pas le modèle, elle indique quelle ligne corriger.
+**This result directly drove a rewrite of the code.** That is the point of an external
+confrontation: it does not grade the model, it points at which line to fix.
 
-## Le gain des résidus valide `features.py`
+## The gain from residuals validates `features.py`
 
-Passer des grandeurs brutes aux résidus fait monter la détection de 0,333 à 0,602, pour 1,7
-point perdu en validation aléatoire. Le choix de conception du module de features est validé
-**sur des mesures réelles**, et non par argument théorique.
+Moving from raw quantities to residuals raises detection from 0.333 to 0.602, for 1.7
+points lost in random validation. The design choice of the features module is validated
+**on real measurements**, not by a theoretical argument.
 
-## La dégradation des brutes met en cause `FEATURE_COLUMNS`
+## The degradation of the raw quantities implicates `FEATURE_COLUMNS`
 
-Mélanger absolues et résidus fait retomber le transfert de 0,602 à 0,562. Or le contrat actuel
-contient précisément ce mélange. La mesure désigne une évolution à faire — que l'importance des
-variables de la partie 4 confirme par un autre chemin.
+Mixing absolutes and residuals drops transfer from 0.602 to 0.562. The current contract
+contains exactly that mix. The measurement points at a change to make — which the feature
+importance in part 4 confirms by another path.
 
-## Le résultat qui réoriente le projet
+## The result that reorients the project
 
-Une vérification ultérieure a montré que le 0,602 reposait sur une hypothèse implicite : la
-référence saine — la « température habituelle » de l'analogie — était calculée à partir
-d'essais sains **de la machine testée**.
+A later check showed that the 0.602 rested on an implicit assumption: the healthy
+reference — the "usual temperature" of the analogy — was computed from healthy tests **of
+the machine under test**.
 
-![Plafond du modèle de référence sain](figures/reference.png)
+![Ceiling of the healthy-reference model](figures/reference.png)
 
-Reconstruite à partir de la seule machine d'entraînement, c'est-à-dire face à une machine
-réellement inconnue, la performance s'effondre. Et **aucune forme de modèle de référence ne
-lève ce plafond** : ni le polynôme d'ordre 2 avec point de rosée que le NIST décrit lui-même,
-ni une régression régularisée, ni une forêt aléatoire.
+Rebuilt from the training machine alone, that is, facing a genuinely unknown machine,
+performance collapses. And **no form of reference model lifts that ceiling**: neither the
+order-2 polynomial with dew point that NIST itself describes, nor a regularised regression,
+nor a random forest.
 
-| Origine de la référence saine | Accuracy | F1 macro |
+| Origin of the healthy reference | Accuracy | F1 macro |
 |---|---|---|
-| Essais sains de la machine cible | 0,602 | 0,479 |
-| Référence transférée, plus proche voisin | **0,318** | 0,290 |
-| Polynôme d'ordre 2 avec point de rosée | 0,302 | 0,254 |
-| Forêt aléatoire avec point de rosée | 0,265 | 0,248 |
+| Healthy tests of the target machine | 0.602 | 0.479 |
+| Transferred reference, nearest neighbour | **0.318** | 0.290 |
+| Order-2 polynomial with dew point | 0.302 | 0.254 |
+| Random forest with dew point | 0.265 | 0.248 |
 
-Ce n'est pas un échec : c'est une mesure.
+This is not a failure. It is a measurement.
 
-> **Pour le jury.** L'écart entre 0,602 et 0,318 est le résultat principal de ce travail. Il ne
-> dit pas que la méthode échoue, il dit ce qu'elle exige : une calibration saine sur la machine
-> en service. Une méthode dont on connaît le prix est utilisable ; une méthode dont on ignore
-> la condition ne l'est pas.
+> **For the jury.** The gap between 0.602 and 0.318 is the main result of this work. It
+> does not say the method fails. It says what the method requires: a healthy calibration on
+> the machine in service. A method whose price is known is usable; a method whose condition
+> is unknown is not.
 >
-> Le 0,602 porte lui-même une condition supplémentaire, mesurée depuis et détaillée en
-> **section 13** : il suppose une mesure saine à la condition même du défaut. Sur une machine en
-> service, la valeur réaliste est entre 0,43 et 0,52.
+> The 0.602 itself carries a further condition, measured since and detailed in **section
+> 13**: it assumes a healthy measurement at the very condition of the fault. On a machine
+> in service, the realistic value is between 0.43 and 0.52.
 
-# 10. Le budget de calibration
+# 10. The calibration budget
 
-Si le diagnostic exige d'avoir observé la machine en bonne santé, la question industrielle
-devient : **combien de temps ?**
+If diagnosis requires having observed the machine while healthy, the industrial question
+becomes: **how long?**
 
-Protocole : validation par machine dans les deux sens ; la référence saine est construite sur
-$n$ essais sains tirés de la machine testée ; ces $n$ essais sont **retirés du jeu de test**,
-faute de quoi ils serviraient à la fois de calibration et d'évaluation ; vingt tirages par
-valeur de $n$, moyenne et intervalle.
+Protocol: validation by machine in both directions; the healthy reference is built on $n$
+healthy tests drawn from the machine under test; those $n$ tests are **removed from the
+test set**, otherwise they would serve as both calibration and evaluation; twenty draws per
+value of $n$, mean and interval.
 
-Les deux bornes servent de contrôle : $n = 0$ doit retomber sur 0,318 et $n = \text{tous}$ sur
-0,602. Les deux ont été retrouvées exactement.
+The two bounds are the control: $n = 0$ must fall back to 0.318 and $n = \text{all}$ to
+0.602. Both were recovered exactly.
 
-![Budget de calibration](figures/calibration.png)
+![Calibration budget](figures/calibration.png)
 
-| $n$ essais sains | Accuracy | F1 macro |
+| $n$ healthy tests | Accuracy | F1 macro |
 |---|---|---|
-| 0 — référence transférée | 0,318 | 0,290 |
-| 10 | 0,377 | 0,324 |
-| 50 | 0,456 | 0,380 |
-| tous | 0,602 | 0,479 |
+| 0 — transferred reference | 0.318 | 0.290 |
+| 10 | 0.377 | 0.324 |
+| 50 | 0.456 | 0.380 |
+| all | 0.602 | 0.479 |
 
-**Cinquante essais sains ne récupèrent qu'environ 49 % de l'écart.** Atteindre 90 % demande
-pratiquement l'ensemble. À faible $n$, l'intervalle est très large : un tirage malheureux fait
-pire que pas de calibration du tout. Répartir les essais sur le domaine de fonctionnement
-plutôt que les tirer au hasard aide surtout dans cette zone — les losanges de la figure.
+**Fifty healthy tests recover only about 49% of the gap.** Reaching 90% takes essentially
+the whole set. At small $n$, the interval is very wide: an unlucky draw does worse than no
+calibration at all. Spreading the tests across the operating domain rather than drawing
+them at random helps most in that region — the diamonds on the figure.
 
-La lecture terrain est directe : **une poignée de mesures de mise en service ne constitue pas
-une calibration.** C'est la couverture du domaine qui compte — une contrainte de déploiement,
-non une limite de l'algorithme.
+The field reading is direct: **a handful of commissioning measurements is not a
+calibration.** Coverage of the domain is what matters — a deployment constraint, not a
+limit of the algorithm.
 
-# 11. Quelles pannes sont réellement détectées
+# 11. Which faults are actually detected
 
-Une moyenne de 0,602 pour un F1 macro de 0,479 : douze points d'écart, donc des classes très
-inégalement diagnostiquées. Le détail change entièrement ce que le système permet d'affirmer.
+A mean of 0.602 for a macro F1 of 0.479: twelve points of gap, so classes diagnosed very
+unevenly. The detail entirely changes what the system can claim.
 
-## Par classe, référence calibrée
+## By class, calibrated reference
 
-| Panne | Précision | Rappel | F1 | n |
+| Fault | Precision | Recall | F1 | n |
 |---|---|---|---|---|
-| **Sous-charge** | 0,748 | 0,961 | **0,832** | 1228 |
-| Sans défaut | 0,722 | 0,837 | 0,741 | 1352 |
-| **Surcharge** | 0,735 | 0,775 | **0,674** | 942 |
-| Obstruction condenseur | 0,611 | 0,220 | 0,299 | 497 |
-| Débit intérieur | 0,269 | 0,313 | 0,288 | 774 |
-| **Ligne liquide** | 0,206 | 0,068 | **0,040** | 593 |
+| **Undercharge** | 0.748 | 0.961 | **0.832** | 1228 |
+| No fault | 0.722 | 0.837 | 0.741 | 1352 |
+| **Overcharge** | 0.735 | 0.775 | **0.674** | 942 |
+| Condenser blockage | 0.611 | 0.220 | 0.299 | 497 |
+| Indoor airflow | 0.269 | 0.313 | 0.288 | 774 |
+| **Liquid line** | 0.206 | 0.068 | **0.040** | 593 |
 
-**Les défauts de charge portent tout le résultat.** La sous-charge est cohérente dans les deux
-sens de transfert — 0,91 et 0,76 — donc ce n'est pas l'artefact d'une machine particulière.
+**Charge faults carry the whole result.** Undercharge is consistent in both transfer
+directions — 0.91 and 0.76 — so it is not the artefact of one particular machine.
 
-**La restriction de ligne liquide n'est jamais détectée** : huit vrais positifs sur 492 essais
-dans un sens. C'est aussi, et ce n'est pas un hasard, la seule panne du jeu mesuré que le
-simulateur ne modélise pas.
+**Liquid-line restriction is never detected**: eight true positives out of 492 tests in
+one direction. It is also, and this is not a coincidence, the only fault in the measured
+set that the simulator does not model.
 
-## Avec quoi les échecs se confondent
+## What the failures are confused with
 
-![Matrices de confusion, les deux sens de transfert séparés](nist_perclass_confusion.png)
+![Confusion matrices, the two transfer directions kept separate](nist_perclass_confusion.png)
 
-Les deux machines n'ont pas le même mélange de pannes — 856 sous-charges contre 114 surcharges
-sur l'une, 372 contre 828 sur l'autre — de sorte que les matrices ne peuvent pas être
-additionnées.
+The two machines do not have the same mix of faults — 856 undercharges against 114
+overcharges on one, 372 against 828 on the other — so the matrices cannot be added.
 
-La confusion dominante est physique, pas algorithmique : **le défaut de débit d'air et la
-restriction de ligne liquide s'échangent massivement**. Les deux affament l'évaporateur, donc
-abaissent la pression d'aspiration et la capacité. Sur les grandeurs mesurées, ils se
-ressemblent — aucun algorithme ne séparera ce que les capteurs ne distinguent pas.
+The dominant confusion is physical, not algorithmic: **the airflow fault and the
+liquid-line restriction swap places heavily**. Both starve the evaporator, so both lower
+suction pressure and capacity. On the measured quantities they look alike — no algorithm
+will separate what the sensors do not distinguish.
 
-## La calibration n'est pas un gain uniforme
+## Calibration is not a uniform gain
 
-![Effet de la calibration, panne par panne](nist_perclass_calibration.png)
+![Effect of calibration, fault by fault](nist_perclass_calibration.png)
 
-| Panne | Sans calibration | Avec calibration | Écart |
+| Fault | Without calibration | With calibration | Gap |
 |---|---|---|---|
-| Sans défaut | 0,131 | 0,741 | **+0,610** |
-| Sous-charge | 0,481 | 0,832 | +0,351 |
-| Obstruction condenseur | 0,067 | 0,299 | +0,232 |
-| Ligne liquide | 0,007 | 0,040 | +0,034 |
-| Débit intérieur | 0,269 | 0,288 | +0,018 |
-| **Surcharge** | **0,786** | 0,674 | **−0,111** |
+| No fault | 0.131 | 0.741 | **+0.610** |
+| Undercharge | 0.481 | 0.832 | +0.351 |
+| Condenser blockage | 0.067 | 0.299 | +0.232 |
+| Liquid line | 0.007 | 0.040 | +0.034 |
+| Indoor airflow | 0.269 | 0.288 | +0.018 |
+| **Overcharge** | **0.786** | 0.674 | **−0.111** |
 
-Deux enseignements.
+Two lessons.
 
-**La calibration sert d'abord à reconnaître l'état sain** : +0,61 sur cette seule classe. C'est
-cohérent — sans référence correcte, le modèle juge tout anormal. Sur une machine, il ne prononce
-« sans défaut » que dans 2 % des cas.
+**Calibration first serves to recognise the healthy state**: +0.61 on that class alone.
+That is consistent — without a correct reference, the model judges everything abnormal. On
+one machine, it says "no fault" in only 2% of cases.
 
-**Et la surcharge est mieux détectée sans calibration qu'avec** : 0,786 sur une machine
-totalement inconnue, cohérent dans les deux sens de transfert. Sa signature — le
-sous-refroidissement qui s'envole — est assez marquée pour se passer de référence locale.
+**And overcharge is detected better without calibration than with it**: 0.786 on a
+completely unknown machine, consistent in both transfer directions. Its signature —
+subcooling taking off — is marked enough to do without a local reference.
 
-Le budget de calibration n'est donc pas un chiffre unique. **Il dépend de la panne cherchée, et
-pour l'une d'elles il est nul.**
+The calibration budget is therefore not a single number. **It depends on the fault being
+sought, and for one of them it is zero.**
 
-> **Pour le jury.** C'est ici que le projet devient utilisable. Non parce que les chiffres sont
-> bons, mais parce qu'ils sont assez détaillés pour dire à un praticien ce sur quoi il peut
-> compter : les défauts de charge, sur une machine jamais vue, dont l'un sans installation
-> préalable.
+> **For the jury.** This is where the project becomes usable. Not because the figures are
+> good, but because they are detailed enough to tell a practitioner what they can count
+> on: charge faults, on a machine never seen, one of them with no prior installation.
 
-# 12. L'apprentissage est-il seulement nécessaire ?
+# 12. Is learning even necessary?
 
-Le diagnostic par résidus est un domaine où la méthode de référence est une **table de règles
-sur les signes** : si le sous-refroidissement monte et la pression haute monte, c'est une
-obstruction de condenseur. Ce projet reprend les résidus de cette méthode, puis pose un modèle
-appris dessus. La question s'impose donc : **le modèle appris apporte-t-il quelque chose ?**
+Residual diagnosis is a field whose reference method is a **sign table**: if subcooling
+rises and high-side pressure rises, it is a condenser blockage. This project takes the
+residuals of that method, then puts a learned model on top. The question follows: **does
+the learned model add anything?**
 
-## La comparaison, à protocole identique
+## The comparison, at the same protocol
 
-Trois candidats, même validation par machine, mêmes essais mesurés :
+Three candidates, same validation by machine, same measured tests:
 
-| Méthode | accuracy | F1 macro |
+| Method | accuracy | F1 macro |
 |---|---|---|
-| **Gradient Boosting, référence calibrée** | **0,602** | **0,479** |
-| Arbre de décision de profondeur 3 | 0,558 | 0,422 |
-| Table de règles, référence calibrée | 0,365 | 0,243 |
-| Gradient Boosting, référence transférée | 0,318 | 0,290 |
-| Table de règles, sans aucune référence | 0,245 | 0,197 |
+| **Gradient boosting, calibrated reference** | **0.602** | **0.479** |
+| Decision tree of depth 3 | 0.558 | 0.422 |
+| Rule table, calibrated reference | 0.365 | 0.243 |
+| Gradient boosting, transferred reference | 0.318 | 0.290 |
+| Rule table, with no reference at all | 0.245 | 0.197 |
 
-*(classe majoritaire : 0,251)*
+*(majority class: 0.251)*
 
-**L'apprentissage gagne de 24 points sur la table de règles.** Six règles thermodynamiques ne
-suffisent pas, et ce n'est plus un postulat mais une mesure.
+**Learning wins by 24 points over the rule table.** Six thermodynamic rules are not
+enough, and that is no longer a postulate but a measurement.
 
-## Mais la complexité, elle, ne se justifie pas
+## But the complexity is not justified
 
-Un arbre de décision de **profondeur 3** obtient 0,558 contre 0,602 — quatre points et demi
-d'écart, pour un modèle qui tient sur une feuille et se lit comme de la thermodynamique :
+A decision tree of **depth 3** scores 0.558 against 0.602 — four and a half points of gap,
+for a model that fits on a page and reads like thermodynamics:
 
 ```
 d_subcooling <= -1.24
-  ├─ d_W_od <= 83.6   → sous-charge
-  └─ d_W_od >  83.6   → obstruction condenseur
+  ├─ d_W_od <= 83.6   → undercharge
+  └─ d_W_od >  83.6   → condenser blockage
 d_subcooling >  -1.24
-  ├─ d_P_cond <= 0.23                        → sans défaut
-  ├─ d_P_cond <= 1.43                        → débit intérieur
-  └─ d_P_cond >  1.43 ─ d_subcooling <= 4.52 → obstruction condenseur
-                     └ d_subcooling >  4.52  → surcharge
+  ├─ d_P_cond <= 0.23                        → no fault
+  ├─ d_P_cond <= 1.43                        → indoor airflow
+  └─ d_P_cond >  1.43 ─ d_subcooling <= 4.52 → condenser blockage
+                     └ d_subcooling >  4.52  → overcharge
 ```
 
-Sous-refroidissement qui chute : sous-charge. Qui monte avec la pression haute : surcharge.
-C'est exactement la physique de la section 1, retrouvée par apprentissage.
+Subcooling falling: undercharge. Rising with high-side pressure: overcharge. That is
+exactly the physics of section 1, recovered by learning.
 
-**Et cet arbre dépasse l'ensemble sur la sous-charge** — 0,905 contre 0,832, la panne la mieux
-détectée du jeu. Un ensemble de centaines d'arbres achète quatre points sur un modèle qu'un
-technicien peut vérifier ligne à ligne.
+**And this tree beats the ensemble on undercharge** — 0.905 against 0.832, the
+best-detected fault in the set. An ensemble of hundreds of trees buys four points over a
+model a technician can check line by line.
 
-## Deux résultats de détail
+## Two results of detail
 
-**Les règles gagnent à un seul endroit** : la restriction de ligne liquide, 0,136 contre 0,040.
-Trois fois mieux que le modèle appris sur la panne qu'il ne trouve jamais. Les deux restent
-mauvais en absolu, mais c'est le genre d'écart qu'une moyenne masque.
+**The rules win in one place**: liquid-line restriction, 0.136 against 0.040. Three times
+better than the learned model on the fault it never finds. Both stay poor in absolute
+terms, but that is the kind of gap a mean hides.
 
-**Et une hypothèse est tombée.** On espérait qu'une table de règles, regardant des directions et
-non des valeurs, puisse diagnostiquer **sans aucune calibration** — ce qui aurait donné un outil
-déployable sur machine inconnue sans installation préalable. Mesuré : **0,245**, soit en dessous
-de la classe majoritaire. Sans référence locale, les signes seuls ne portent pas l'information.
+**And a hypothesis fell.** The hope was that a rule table, looking at directions and not
+values, could diagnose **with no calibration at all** — which would have given a tool
+deployable on an unknown machine with no prior installation. Measured: **0.245**, below
+the majority class. Without a local reference, the signs alone do not carry the
+information.
 
-> **Pour le jury.** La question « votre modèle fait-il mieux qu'une règle écrite à la main ? »
-> a une réponse chiffrée : oui, de 24 points. La question suivante — « avez-vous besoin de
-> toute cette complexité ? » — a une réponse moins flatteuse : un arbre de profondeur 3 en
-> récupère 93 %. Pour un déploiement terrain, c'est probablement lui le bon livrable.
+> **For the jury.** The question "does your model beat a hand-written rule?" has a
+> numbered answer: yes, by 24 points. The next question — "do you need all this
+> complexity?" — has a less flattering answer: a depth-3 tree recovers 93% of it. For a
+> field deployment, that is probably the right deliverable.
 
-# 13. Ce que le 0,602 suppose vraiment
+# 13. What the 0.602 actually assumes
 
-Les sections précédentes annoncent 0,602 lorsque la référence saine est calibrée sur la machine
-cible. Un benchmark de l'estimateur de référence a mesuré ce que ce chiffre suppose — et la
-réponse limite sa portée.
+The previous sections announce 0.602 when the healthy reference is calibrated on the
+target machine. A benchmark of the reference estimator measured what that figure assumes —
+and the answer limits its scope.
 
-## La campagne d'essais est répliquée par construction
+## The test campaign is replicated by construction
 
-**28 % des essais défaillants ont un essai sain à moins de 0,1 °C**, et 72 % à moins de 0,5 °C.
-C'est logique pour une campagne contrôlée : le laboratoire teste les mêmes conditions nominales
-avec et sans défaut. Sur une machine en service, où les mesures saines enregistrées sont celles
-qui se sont présentées, ce jumeau n'existe pas.
+**28% of faulty tests have a healthy test within 0.1 °C**, and 72% within 0.5 °C. That
+is logical for a controlled campaign: the laboratory tests the same nominal conditions
+with and without the fault. On a machine in service, where the recorded healthy
+measurements are the ones that happened to occur, that twin does not exist.
 
-## Ce qui se passe quand on interdit le jumeau
+## What happens when the twin is forbidden
 
-![La référence saine n'est utile que si elle est proche](nist_x3_dmin.png)
+![The healthy reference is useful only when it is close](nist_x3_dmin.png)
 
-En interdisant les voisins situés à moins de `dmin` de la condition à diagnostiquer :
+Forbidding neighbours closer than `dmin` to the condition being diagnosed:
 
 | `dmin` | accuracy |
 |---|---|
-| 0 — protocole publié | **0,602** |
-| 0,1 °C | 0,519 |
-| 0,25 °C | 0,499 |
-| 0,5 °C | **0,482** |
-| 1,0 °C | 0,452 |
-| 2,0 °C | 0,434 |
+| 0 — published protocol | **0.602** |
+| 0.1 °C | 0.519 |
+| 0.25 °C | 0.499 |
+| 0.5 °C | **0.482** |
+| 1.0 °C | 0.452 |
+| 2.0 °C | 0.434 |
 
-**Il suffit d'exclure les voisins à 0,1 °C pour perdre huit points.** La chute est immédiate, ce
-qui signifie que le chiffre repose sur des jumeaux quasi exacts plutôt que sur une estimation.
+**Excluding neighbours at 0.1 °C is enough to lose eight points.** The drop is immediate,
+which means the figure rests on nearly exact twins rather than on an estimate.
 
-## Trois enseignements du benchmark
+## Three lessons from the benchmark
 
-**Les surfaces ajustées sont plates.** Régression linéaire, polynôme d'ordre 2, Ridge : environ
-0,46 quel que soit `dmin`. Elles n'ont jamais utilisé les jumeaux — et n'atteignent jamais
-0,602. Sur le graphique, la ligne horizontale est celle vers laquelle tous les estimateurs de
-voisinage convergent une fois les répliques exclues.
+**The fitted surfaces are flat.** Linear regression, order-2 polynomial, Ridge: about 0.46
+whatever `dmin`. They never used the twins — and they never reach 0.602. On the chart, the
+horizontal line is the one every neighbourhood estimator converges to once the replicates
+are excluded.
 
-**La médiane vaut 4,8 points.** L'implémentation du projet prend la médiane des cinq voisins ;
-la moyenne, choix par défaut de la bibliothèque, donne 0,554. Un détail d'implémentation porte
-une part réelle du résultat.
+**The median is worth 4.8 points.** The project's implementation takes the median of the
+five neighbours; the mean, the library default, gives 0.554. An implementation detail
+carries a real share of the result.
 
-**Et surtout, le gain n'est pas où on croyait.** Par classe, à `dmin = 0,5 °C` :
+**And above all, the gain is not where it was thought to be.** By class, at
+`dmin = 0.5 °C`:
 
-| Classe | F1 à `dmin=0` | F1 à `dmin=0,5` |
+| Class | F1 at `dmin=0` | F1 at `dmin=0.5` |
 |---|---|---|
-| Sans défaut | 0,735 | **0,434** |
-| Sous-charge | 0,854 | 0,841 |
+| No fault | 0.735 | **0.434** |
+| Undercharge | 0.854 | 0.841 |
 
-Les douze points d'accuracy perdus viennent presque entièrement de la reconnaissance de l'état
-**sain**. Le diagnostic des défauts de charge, lui, survit sans jumeau. L'avantage des répliques
-ne servait pas à nommer les pannes : il servait à reconnaître la machine en bonne santé.
+The twelve accuracy points lost come almost entirely from recognising the **healthy**
+state. Diagnosis of the charge faults survives without a twin. The advantage of the
+replicates was not naming the faults: it was recognising the machine when healthy.
 
-## Le verdict
+## The verdict
 
-Le 0,602 **tient comme chiffre de protocole en chambre climatique** — un essai sain existe à la
-même condition, c'est une propriété du plan d'expérience. Il **ne tient pas** comme performance
-attendue sur une machine en service, où la valeur réaliste se situe entre **0,43 et 0,52** selon
-la densité des mesures saines disponibles.
+The 0.602 **holds as a climate-chamber protocol figure** — a healthy test exists at the
+same condition, which is a property of the experimental plan. It **does not hold** as the
+performance expected on a machine in service, where the realistic value sits between
+**0.43 and 0.52** depending on the density of available healthy measurements.
 
-> **Pour le jury.** C'est la troisième fois dans ce document qu'un chiffre change de sens selon
-> un détail de protocole : le découpage aléatoire contre le découpage par machine, l'origine de
-> la référence saine, et maintenant la structure du plan d'essais. Ce n'est pas une accumulation
-> de malchance — c'est la démonstration que le protocole, et non le modèle, est ce qui porte le
-> résultat.
+> **For the jury.** This is the third time in this document that a figure changes meaning
+> according to a protocol detail: the random split against the split by machine, the
+> origin of the healthy reference, and now the structure of the test plan. This is not an
+> accumulation of bad luck — it is the demonstration that the protocol, not the model, is
+> what carries the result.
 
-# 14. Le chiffre survit-il hors des conditions apprises ?
+# 14. Does the figure survive outside the learned conditions?
 
-Le volet simulé est validé en hold-out **aléatoire** : les exemples sont mélangés, 30 % mis de
-côté. Or les conditions sont tirées uniformément dans un domaine continu et densément
-échantillonné — un point de test a donc presque toujours un voisin d'entraînement très proche.
+The simulated side is validated by a **random** hold-out: the examples are shuffled, 30%
+set aside. But the conditions are drawn uniformly in a continuous, densely sampled domain
+— a test point therefore almost always has a very close training neighbour.
 
-Le même soupçon que côté mesuré, appliqué au simulé : **le modèle reconnaît-il une panne, ou un
-point de fonctionnement ?**
+The same suspicion as on the measured side, applied to the simulated side: **does the
+model recognise a fault, or an operating point?**
 
-*(Mesures effectuées sur la configuration à six classes, avant l'ajout de la surcharge.)*
+*(Measurements made on the six-class configuration, before overcharge was added.)*
 
-## En conditions de fonctionnement : il survit
+## In operating conditions: it survives
 
-| Découpage | accuracy |
+| Split | accuracy |
 |---|---|
-| Contrôle aléatoire | 0,919 |
-| `speed_ratio > 0,85` tenu à l'écart | 0,920 |
-| `GroupKFold` sur bacs de conditions | 0,911 |
-| `T_ambient < −5 °C` tenu à l'écart | 0,893 |
-| `T_setpoint > 48 °C` tenu à l'écart | 0,889 |
+| Random control | 0.919 |
+| `speed_ratio > 0.85` held out | 0.920 |
+| `GroupKFold` on condition bins | 0.911 |
+| `T_ambient < −5 °C` held out | 0.893 |
+| `T_setpoint > 48 °C` held out | 0.889 |
 
-**Trois points de perte au pire**, sur une région entière du domaine jamais vue. C'est un
-résultat positif, et il n'était pas acquis : c'est même l'hypothèse inverse qui était attendue.
+**Three points of loss at worst**, on an entire region of the domain never seen. That is a
+positive result, and it was not a given: the opposite hypothesis was the one expected.
 
-## En sévérité : il s'effondre
+## In severity: it collapses
 
-Deux des six classes — les défauts de ventilateur — n'ont **aucun exemple** sous une sévérité de
-0,20 : le générateur ne produit jamais de ventilateur légèrement dégradé. L'analyse est donc
-restreinte aux quatre classes présentes des deux côtés.
+Two of the six classes — the fan faults — have **no example** below a severity of 0.20:
+the generator never produces a slightly degraded fan. The analysis is therefore restricted
+to the four classes present on both sides.
 
-| Tâche | Défauts naissants | Défauts marqués |
+| Task | Emerging faults | Marked faults |
 |---|---|---|
-| **Diagnostic** — nommer la panne, 4 classes | **0,428** | 0,469 |
-| **Détection** — dire qu'il y a un problème | **0,887** | 0,762 |
+| **Diagnosis** — name the fault, 4 classes | **0.428** | 0.469 |
+| **Detection** — say there is a problem | **0.887** | 0.762 |
 
-La distinction est nette et utile : **le système sait dire qu'il y a un problème sur un régime
-de sévérité jamais vu, mais pas lequel.**
+The distinction is clean and useful: **the system can say there is a problem in a severity
+regime never seen, but not which one.**
 
-Un détail retient l'attention : sur la sous-charge, entraîner sur les cas légers et tester sur
-les sévères donne 307 identifications correctes sur 307. **Apprendre une sous-charge naissante
-aide à reconnaître une sous-charge avancée** ; l'inverse est moins vrai.
+One detail is worth keeping: on undercharge, training on the mild cases and testing on the
+severe ones gives 307 correct identifications out of 307. **Learning an emerging
+undercharge helps recognise an advanced undercharge**; the reverse is less true.
 
-> **Pour le jury.** Le chiffre du volet simulé n'est pas un score de détection précoce. Il mesure
-> la séparabilité des signatures à sévérité médiane. Un exploitant qui veut attraper une panne
-> avant qu'elle ne coûte doit lire la ligne « détection », pas la ligne « diagnostic ».
+> **For the jury.** The simulated-side figure is not an early-detection score. It measures
+> separability of the signatures at median severity. An operator who wants to catch a
+> fault before it costs money should read the "detection" row, not the "diagnosis" row.
 
-# 15. Le simulateur décrit-il la réalité ?
+# 15. Does the simulator describe reality?
 
-Toute la première moitié de ce document repose sur un simulateur. Toute la seconde sur des
-essais mesurés. **Ils n'avaient jamais été confrontés** : entraîner sur l'un, tester sur l'autre.
+The whole first half of this document rests on a simulator. The whole second half on
+measured tests. **They had never been confronted**: train on one, test on the other.
 
-C'est possible parce que le recouvrement de domaine de 5,3 % évoqué plus haut est un obstacle
-de **choix d'échantillonnage**, pas de physique. En tirant les conditions simulées dans le
-domaine NIST, la comparaison devient directe.
+That is possible because the 5.3% domain overlap mentioned above is a **sampling-choice**
+obstacle, not a physics one. Drawing the simulated conditions inside the NIST domain makes
+the comparison direct.
 
-Périmètre : cinq classes qui se correspondent, et températures intérieures inférieures à 26 °C —
-au-delà, le simulateur écrête sa température d'évaporation à 20 °C et produirait des cycles
-déformés. Cela laisse 59 % des essais mesurés.
+Scope: five classes that correspond, and indoor temperatures below 26 °C — beyond that,
+the simulator clips its evaporation temperature at 20 °C and would produce distorted
+cycles. That leaves 59% of the measured tests.
 
-## Trois protocoles comparables
+## Three comparable protocols
 
 | | accuracy | F1 macro |
 |---|---|---|
-| Simulé → simulé, hold-out | **0,921** | 0,917 |
-| Mesuré → mesuré, par machine | **0,668** | 0,596 |
-| **Simulé → mesuré** | **0,454** | 0,343 |
+| Simulated → simulated, hold-out | **0.921** | 0.917 |
+| Measured → measured, by machine | **0.668** | 0.596 |
+| **Simulated → measured** | **0.454** | 0.343 |
 
-*(classe majoritaire : 0,281)*
+*(majority class: 0.281)*
 
-Le deuxième protocole est indispensable : sans lui, on ne saurait pas si un score de 0,454
-signifie que le simulateur est mauvais, ou que la tâche est simplement difficile. **Il se lit
-entre 0,281 et 0,668** — le simulateur transfère partiellement.
+The second protocol is indispensable: without it, one would not know whether a score of
+0.454 means the simulator is bad, or that the task is simply hard. **It reads between
+0.281 and 0.668** — the simulator transfers partially.
 
-## Mais la moyenne cache l'essentiel
+## But the mean hides the essential
 
-| Classe | F1, simulé → mesuré |
+| Class | F1, simulated → measured |
 |---|---|
-| Sans défaut | 0,716 |
-| Surcharge | 0,522 |
-| Sous-charge | 0,445 |
-| **Débit d'air évaporateur** | **0,031** |
-| **Encrassement condenseur** | **0,000** |
+| No fault | 0.716 |
+| Overcharge | 0.522 |
+| Undercharge | 0.445 |
+| **Evaporator airflow** | **0.031** |
+| **Condenser fouling** | **0.000** |
 
-**Le simulateur transfère sur la charge de fluide et échoue totalement sur les échangeurs.**
-Zéro sur l'encrassement du condenseur — pas « faible », zéro.
+**The simulator transfers on refrigerant charge and fails completely on the exchangers.**
+Zero on condenser fouling — not "weak", zero.
 
-Et ce résultat recoupe tout le reste. La confrontation des sens de variation (section 1) avait
-montré que le sous-refroidissement de l'encrassement et la surchauffe du défaut de ventilateur
-étaient **de signe inversé**, et ils ont été corrigés. Corriger le sens n'a manifestement pas
-suffi à rendre l'amplitude transférable.
+And this result lines up with everything else. The confrontation of the signs of variation
+(section 1) had shown that fouling subcooling and fan-fault superheat were **of reversed
+sign**, and they were corrected. Correcting the sign was clearly not enough to make the
+amplitude transferable.
 
-L'histoire est cohérente d'un bout à l'autre du projet : **la physique de la charge de fluide
-est juste, celle des échangeurs ne l'est pas.**
+The story is consistent from one end of the project to the other: **the physics of
+refrigerant charge is right, the physics of the exchangers is not.**
 
-> **Pour le jury.** C'est la seule mesure du projet qui dise ce que vaut son propre simulateur.
-> Elle est sévère et elle est précise : il sert à démontrer et à explorer, et il sert à entraîner
-> un modèle de terrain **pour les défauts de charge uniquement**. Un projet qui sait cela de son
-> outil en sait plus que la plupart.
+> **For the jury.** This is the only measurement in the project that says what its own
+> simulator is worth. It is harsh and it is precise: the simulator serves to demonstrate
+> and to explore, and it serves to train a field model **for charge faults only**. A
+> project that knows that about its tool knows more than most.
 
 # 16. Conclusion
 
-## Ce que le système fait
+## What the system does
 
-Il modélise un cycle thermodynamique complet et en dérive des signatures de panne cohérentes ;
-il en fabrique un jeu d'apprentissage ; il diagnostique sept classes ; il sert le tout par une
-API et un tableau de bord qui se clonent et tournent sans préparation.
+It models a complete thermodynamic cycle and derives consistent fault signatures from it;
+it builds a training set from them; it diagnoses seven classes; it serves the whole thing
+through an API and a dashboard that clone and run with no preparation.
 
-Et surtout, il a été **confronté à des mesures indépendantes** — ce qui a produit quatre
-corrections de physique, la fermeture de quatre fuites du pipeline, et cinq résultats
-qu'aucune simulation seule ne pouvait donner.
+And above all, it has been **confronted with independent measurements** — which produced
+four physics corrections, the closing of four pipeline leaks, and five results that no
+simulation alone could have given.
 
-## Ce qu'il sait de lui-même
+## What it knows about itself
 
-C'est la partie inhabituelle, et c'est celle qui compte.
+This is the unusual part, and it is the part that matters.
 
-| Question | Réponse mesurée |
+| Question | Measured answer |
 |---|---|
-| Que vaut le chiffre annoncé ? | 89,3 % sur données simulées, hold-out, sélection sur validation |
-| Survit-il hors des conditions apprises ? | **Oui** — au pire 0,889 |
-| Survit-il aux pannes naissantes ? | **Non** pour le diagnostic (0,43), **oui** pour la détection (0,89) |
-| Quelles pannes sont détectées sur du réel ? | Les défauts de charge ; ni les débits d'air, ni la ligne liquide |
-| Que coûte le déploiement ? | Une calibration saine sur la machine, **proche** des conditions à diagnostiquer |
-| L'apprentissage est-il justifié ? | **Oui**, +24 points sur une table de règles — mais un arbre de profondeur 3 en récupère 93 % |
-| Le simulateur décrit-il la réalité ? | **Sur la charge oui** (F1 0,45–0,52), **sur les échangeurs non** (0,00–0,03) |
+| What is the announced figure worth? | 89.3% on simulated data, hold-out, selection on validation |
+| Does it survive outside the learned conditions? | **Yes** — 0.889 at worst |
+| Does it survive emerging faults? | **No** for diagnosis (0.43), **yes** for detection (0.89) |
+| Which faults are detected on real data? | Charge faults; neither airflow faults nor the liquid line |
+| What does deployment cost? | A healthy calibration on the machine, **close** to the conditions to diagnose |
+| Is learning justified? | **Yes**, +24 points over a rule table — but a depth-3 tree recovers 93% |
+| Does the simulator describe reality? | **On charge yes** (F1 0.45–0.52), **on the exchangers no** (0.00–0.03) |
 
-## Le fil conducteur
+## The thread
 
-Six fois dans ce document, un chiffre a changé de sens selon un détail de protocole : le
-découpage aléatoire contre le découpage par machine, l'origine de la référence saine, la
-structure du plan d'essais, le régime de sévérité, la présence d'une fuite d'étiquette, le jeu
-d'entraînement lui-même.
+Six times in this document, a figure changed meaning according to a protocol detail: the
+random split against the split by machine, the origin of the healthy reference, the
+structure of the test plan, the severity regime, the presence of a label leak, the
+training set itself.
 
-Ce n'est pas une accumulation de malchance. **C'est la démonstration que le protocole, et non le
-modèle, est ce qui porte le résultat.** Le chiffre affiché est passé de 99,8 % à 89,3 % au fil
-de ces corrections, et chaque baisse a rendu le projet plus vrai.
+This is not an accumulation of bad luck. **It is the demonstration that the protocol, not
+the model, is what carries the result.** The displayed figure went from 99.8% to 89.3%
+over these corrections, and each drop made the project truer.
 
-## Ce qu'il ne fait pas
+## What it does not do
 
-- Il ne détecte pas les pannes à 99 % sur le terrain.
-- Il ne fonctionne pas sur une machine inconnue sans calibration préalable et proche.
-- Il ne diagnostique pas les pannes naissantes, seulement les signale.
-- Il ne prédit pas les pannes futures : les essais disponibles sont stationnaires, sans axe du
-  temps. Leur en inventer un produirait exactement le genre de chiffre que ce travail s'attache
-  à ne pas produire.
+- It does not detect faults at 99% in the field.
+- It does not work on an unknown machine without a prior calibration, and a close one.
+- It does not diagnose emerging faults. It only flags them.
+- It does not predict future faults: the available tests are stationary, with no time
+  axis. Inventing one would produce exactly the kind of figure this work is built not to
+  produce.
 
-## La formulation défendable
+## The defensible formulation
 
-> Les signatures de défaut sont séparables à 89,3 % en hold-out sur données simulées à sévérité
-> médiane, et ce chiffre survit à l'extrapolation en conditions de fonctionnement. Confronté à
-> des essais mesurés indépendants, le système diagnostique les défauts de charge — sur une
-> machine réelle jamais vue, la surcharge est même identifiée sans aucune calibration — et ne
-> sépare ni les défauts de débit d'air ni la restriction de ligne liquide.
+> Fault signatures are separable at 89.3% in hold-out on simulated data at median
+> severity, and that figure survives extrapolation in operating conditions. Confronted
+> with independent measured tests, the system diagnoses charge faults — on a real machine
+> never seen, overcharge is even identified with no calibration at all — and separates
+> neither airflow faults nor liquid-line restriction.
 >
-> Le simulateur, lui, transfère sur la charge de fluide et pas sur les échangeurs. Il sert à
-> démontrer et à explorer ; il ne sert pas à entraîner un modèle de terrain, sauf sur la charge.
+> The simulator, for its part, transfers on refrigerant charge and not on the exchangers.
+> It serves to demonstrate and to explore; it does not serve to train a field model,
+> except on charge.
 
-# Annexes
+# Appendices
 
-Les parties précédentes racontent le système. Celles-ci permettent de le vérifier. Toutes les
-équations sont transcrites de `src/physics/simulator.py`, sans reformulation.
+The previous parts tell the system. These make it possible to check it. Every equation is
+transcribed from `src/physics/simulator.py`, without reformulation.
 
-## A. Symboles
+## A. Symbols
 
-| Symbole | Grandeur | Unité | Nominal |
+| Symbol | Quantity | Unit | Nominal |
 |---|---|---|---|
-| $T_{source}$ | Température de la source froide | °C | 7 |
-| $T_{sink}$ | Température du puits chaud | °C | 40 |
-| $n$ | Régime compresseur rapporté au nominal | — | 0,3 à 1,0 |
-| $\varphi_{evap},\ \varphi_{cond}$ | Encrassement (0 = propre, 1 = obstrué) | — | 0 |
-| $r_{evap},\ r_{cond}$ | Débit d'air rapporté au nominal | — | 1,0 |
-| $c$ | Charge de fluide rapportée au nominal | — | 1,0 |
-| $UA$ | Coefficient global d'échange | W/K | 500 / 600 |
-| $\tau$ | Taux de compression | — | environ 3 |
-| $k$ | Rapport des chaleurs massiques du R-410A | — | — |
-| $SH,\ SC$ | Surchauffe, sous-refroidissement | K | 6,0 et 4,5 |
+| $T_{source}$ | Cold-source temperature | °C | 7 |
+| $T_{sink}$ | Hot-sink temperature | °C | 40 |
+| $n$ | Compressor speed relative to nominal | — | 0.3 to 1.0 |
+| $\varphi_{evap},\ \varphi_{cond}$ | Fouling (0 = clean, 1 = blocked) | — | 0 |
+| $r_{evap},\ r_{cond}$ | Airflow relative to nominal | — | 1.0 |
+| $c$ | Refrigerant charge relative to nominal | — | 1.0 |
+| $UA$ | Overall heat-transfer coefficient | W/K | 500 / 600 |
+| $\tau$ | Pressure ratio | — | about 3 |
+| $k$ | Specific-heat ratio of R-410A | — | — |
+| $SH,\ SC$ | Superheat, subcooling | K | 6.0 and 4.5 |
 
-Les six paramètres $\varphi$, $r$ et $c$ sont les **entrées de défaut**. À leurs valeurs
-nominales, le cycle est sain.
+The six parameters $\varphi$, $r$ and $c$ are the **fault inputs**. At their nominal
+values, the cycle is healthy.
 
-## B. Le modèle thermodynamique
+## B. The thermodynamic model
 
-### B.1 Échangeurs
+### B.1 Heat exchangers
 
-$$UA_{evap} = 500\,\bigl(1 - 0{,}50\,\varphi_{evap}\bigr)\,r_{evap}^{\,1{,}45}
+$$UA_{evap} = 500\,\bigl(1 - 0.50\,\varphi_{evap}\bigr)\,r_{evap}^{\,1.45}
 \qquad
-UA_{cond} = 600\,\bigl(1 - 0{,}50\,\varphi_{cond}\bigr)\,r_{cond}^{\,1{,}45}$$
+UA_{cond} = 600\,\bigl(1 - 0.50\,\varphi_{cond}\bigr)\,r_{cond}^{\,1.45}$$
 
 $$\Delta_{evap} = 5 + 7\left(1 - \frac{UA_{evap}}{500}\right)
 \qquad
 \Delta_{cond} = 5 + 7\left(1 - \frac{UA_{cond}}{600}\right) + 8\,(1 - r_{cond})$$
 
-$$T_{evap} = \mathrm{borne}\bigl(T_{source} - \Delta_{evap},\; -25,\; 20\bigr)
+$$T_{evap} = \mathrm{clamp}\bigl(T_{source} - \Delta_{evap},\; -25,\; 20\bigr)
 \qquad
-T_{cond} = \mathrm{borne}\bigl(T_{sink} + \Delta_{cond},\; 20,\; 65\bigr)$$
+T_{cond} = \mathrm{clamp}\bigl(T_{sink} + \Delta_{cond},\; 20,\; 65\bigr)$$
 
-Le terme symétrique $8\,(1 - r_{evap})$ côté évaporateur a été **retiré** : il faisait monter la
-température de refoulement avec la perte de débit, contre le sens mesuré.
+The symmetric term $8\,(1 - r_{evap})$ on the evaporator side was **removed**: it made
+discharge temperature rise with the loss of flow, against the measured direction.
 
-### B.2 Pressions et taux de compression
+### B.2 Pressures and pressure ratio
 
 $$P_{evap} = P_{sat}(T_{evap}) \qquad P_{cond} = P_{sat}(T_{cond})$$
 
-Les défauts de charge agissent sur ces pressions, puis les températures de saturation sont
-recalculées pour rester cohérentes :
+Charge faults act on these pressures, then the saturation temperatures are recomputed so
+they stay consistent:
 
-$$c < 1 : \quad P_{evap} \leftarrow P_{evap}\,(0{,}55 + 0{,}45\,c), \qquad T_{evap} \leftarrow T_{sat}(P_{evap})$$
+$$c < 1 : \quad P_{evap} \leftarrow P_{evap}\,(0.55 + 0.45\,c), \qquad T_{evap} \leftarrow T_{sat}(P_{evap})$$
 
-$$c > 1 : \quad P_{cond} \leftarrow P_{cond}\,\bigl(1 + 0{,}90\,(c-1)\bigr), \qquad T_{cond} \leftarrow T_{sat}(P_{cond})$$
+$$c > 1 : \quad P_{cond} \leftarrow P_{cond}\,\bigl(1 + 0.90\,(c-1)\bigr), \qquad T_{cond} \leftarrow T_{sat}(P_{cond})$$
 
-$$\tau = \frac{P_{cond}}{\max(P_{evap},\ 0{,}5)}$$
+$$\tau = \frac{P_{cond}}{\max(P_{evap},\ 0.5)}$$
 
-Une sous-charge affame l'évaporateur et effondre la pression basse ; une surcharge engorge le
-condenseur et élève la pression haute. Les deux élargissent $\tau$, mais **par des extrémités
-opposées du cycle** — d'où des signatures distinctes.
+An undercharge starves the evaporator and collapses the low-side pressure; an overcharge
+floods the condenser and raises the high-side pressure. Both widen $\tau$, but **from
+opposite ends of the cycle** — hence distinct signatures.
 
-### B.3 Rendements du compresseur
+### B.3 Compressor efficiencies
 
-$$\eta_{is} = 0{,}75\,f(\tau)\,g(n), \qquad
-f(\tau) = \mathrm{borne}\bigl(1 - 0{,}05(\tau-3)^2,\,0{,}4,\,1\bigr), \qquad
-g(n) = 1 - 0{,}30\,(n-0{,}7)^2$$
+$$\eta_{is} = 0.75\,f(\tau)\,g(n), \qquad
+f(\tau) = \mathrm{clamp}\bigl(1 - 0.05(\tau-3)^2,\,0.4,\,1\bigr), \qquad
+g(n) = 1 - 0.30\,(n-0.7)^2$$
 
-$$\eta_{vol} = 1 - C\left(\tau^{1/k} - 1\right), \qquad C = 0{,}05$$
+$$\eta_{vol} = 1 - C\left(\tau^{1/k} - 1\right), \qquad C = 0.05$$
 
-$C$ est le rapport de volumes morts. Le rendement isentropique est maximal autour de
-$\tau = 3$ et chute de part et d'autre.
+$C$ is the clearance-volume ratio. Isentropic efficiency is maximum around $\tau = 3$ and
+falls on either side.
 
-### B.4 Surchauffe et sous-refroidissement
+### B.4 Superheat and subcooling
 
-$$SH = 6{,}0\,\bigl(1 + 0{,}85\,\varphi_{evap}\bigr)\bigl(1 - 0{,}20\,(1 - r_{evap})\bigr)$$
+$$SH = 6.0\,\bigl(1 + 0.85\,\varphi_{evap}\bigr)\bigl(1 - 0.20\,(1 - r_{evap})\bigr)$$
 
-$$SC = 4{,}5\,\bigl(1 + 0{,}65\,\varphi_{cond}\bigr)\bigl(1 - 0{,}12\,(1 - r_{cond})\bigr)$$
+$$SC = 4.5\,\bigl(1 + 0.65\,\varphi_{cond}\bigr)\bigl(1 - 0.12\,(1 - r_{cond})\bigr)$$
 
-puis, selon la charge :
+then, depending on charge:
 
-$$c < 1 : \quad SH \leftarrow SH\,\bigl(1 + 1{,}4\,(1-c)\bigr), \qquad SC \leftarrow SC\,\max(c,\,0{,}25)$$
+$$c < 1 : \quad SH \leftarrow SH\,\bigl(1 + 1.4\,(1-c)\bigr), \qquad SC \leftarrow SC\,\max(c,\,0.25)$$
 
-$$c > 1 : \quad SH \leftarrow SH\,\max\bigl(1 - 1{,}4\,(c-1),\,0{,}25\bigr), \qquad SC \leftarrow SC\,\bigl(1 + 2{,}2\,(c-1)\bigr)$$
+$$c > 1 : \quad SH \leftarrow SH\,\max\bigl(1 - 1.4\,(c-1),\,0.25\bigr), \qquad SC \leftarrow SC\,\bigl(1 + 2.2\,(c-1)\bigr)$$
 
-$$SC \leftarrow \max(SC,\ 0{,}4)$$
+$$SC \leftarrow \max(SC,\ 0.4)$$
 
-Lecture physique de chaque terme :
+Physical reading of each term:
 
-| Terme | Effet | Pourquoi |
+| Term | Effect | Why |
 |---|---|---|
-| $+0{,}85\,\varphi_{evap}$ sur $SH$ | Encrassement évaporateur : surchauffe **monte** | La zone diphasique s'allonge |
-| $-0{,}20\,(1-r_{evap})$ sur $SH$ | Moins d'air : surchauffe **baisse** | Moins de chaleur absorbée en fin d'évaporateur |
-| $+0{,}65\,\varphi_{cond}$ sur $SC$ | Obstruction condenseur : $SC$ **monte** | Le liquide s'accumule faute d'évacuer la chaleur |
-| $-0{,}12\,(1-r_{cond})$ sur $SC$ | Ventilateur condenseur : effet faible | La panne élève surtout $T_{cond}$ |
-| $\max(c,\,0{,}25)$ sur $SC$ | Sous-charge : $SC$ **s'effondre** | Plus assez de liquide à sous-refroidir |
-| $+2{,}2\,(c-1)$ sur $SC$ | Surcharge : le plus fort effet du modèle | Le liquide excédentaire s'empile |
+| $+0.85\,\varphi_{evap}$ on $SH$ | Evaporator fouling: superheat **rises** | The two-phase zone lengthens |
+| $-0.20\,(1-r_{evap})$ on $SH$ | Less air: superheat **falls** | Less heat absorbed at the end of the evaporator |
+| $+0.65\,\varphi_{cond}$ on $SC$ | Condenser blockage: $SC$ **rises** | Liquid accumulates because heat cannot leave |
+| $-0.12\,(1-r_{cond})$ on $SC$ | Condenser fan: weak effect | The fault mainly raises $T_{cond}$ |
+| $\max(c,\,0.25)$ on $SC$ | Undercharge: $SC$ **collapses** | Not enough liquid left to subcool |
+| $+2.2\,(c-1)$ on $SC$ | Overcharge: the strongest effect in the model | The excess liquid piles up |
 
-Les termes en gras sont ceux qui ont été **corrigés après confrontation aux mesures**. Le modèle
-initial les avait en sens inverse, ou absents.
+The terms called out above are the ones **corrected after confrontation with the
+measurements**. The initial model had them reversed, or absent.
 
-### B.5 Bornes du compresseur
+### B.5 Compressor bounds
 
-$$T_{asp} = T_{evap} + SH$$
+$$T_{suc} = T_{evap} + SH$$
 
-$$T_{ref}^{\,ideal} = \bigl(T_{asp} + 273{,}15\bigr)\,\tau^{\frac{k-1}{k}} - 273{,}15$$
+$$T_{dis}^{\,ideal} = \bigl(T_{suc} + 273.15\bigr)\,\tau^{\frac{k-1}{k}} - 273.15$$
 
-$$T_{ref} = T_{asp} + \frac{T_{ref}^{\,ideal} - T_{asp}}{\eta_{is}}
+$$T_{dis} = T_{suc} + \frac{T_{dis}^{\,ideal} - T_{suc}}{\eta_{is}}
             + 10\,(1 - r_{cond}) - 25\,(1 - r_{evap})$$
 
-$$T_{ref} \leftarrow \min\bigl(T_{ref},\ 130\bigr)$$
+$$T_{dis} \leftarrow \min\bigl(T_{dis},\ 130\bigr)$$
 
-Les deux termes correctifs sont **calibrés sur les essais mesurés**, non dérivés : la perte de
-débit au condenseur réchauffe le refoulement, celle à l'évaporateur refroidit l'aspiration. Ils
-sont énoncés comme des paramètres ajustés.
+The two corrective terms are **calibrated on the measured tests**, not derived: loss of
+flow at the condenser heats the discharge, loss at the evaporator cools the suction. They
+are stated as fitted parameters.
 
-Le plafond à 130 °C est l'enveloppe constructeur. Il était déclaré sans jamais être appliqué.
+The 130 °C ceiling is the manufacturer's envelope. It was declared without ever being
+applied.
 
-### B.6 Débit, enthalpies, puissances
+### B.6 Mass flow, enthalpies, powers
 
-$$\dot m = V_{sw}\,f_{nom}\,n\,\rho_{asp}\,\eta_{vol}
+$$\dot m = V_{sw}\,f_{nom}\,n\,\rho_{suc}\,\eta_{vol}
 \times \begin{cases}
-0{,}55 + 0{,}45\,c & c < 1\\[2pt]
-1 + 0{,}25\,(c-1) & c > 1\\[2pt]
-0{,}75 + 0{,}25\,r_{evap} & r_{evap} < 1
+0.55 + 0.45\,c & c < 1\\[2pt]
+1 + 0.25\,(c-1) & c > 1\\[2pt]
+0.75 + 0.25\,r_{evap} & r_{evap} < 1
 \end{cases}$$
 
 $$h_1 = h_{vap}^{sat}(T_{evap}) + c_{p,vap}\,SH
 \qquad
-h_3 = h_{liq}^{sat}(T_{cond}) - 1{,}5\,SC
+h_3 = h_{liq}^{sat}(T_{cond}) - 1.5\,SC
 \qquad
 h_4 = h_3$$
 
-$$\Delta h_{ideal} = c_{p,vap}\bigl(T_{ref}^{\,ideal} - T_{asp}\bigr)
+$$\Delta h_{ideal} = c_{p,vap}\bigl(T_{dis}^{\,ideal} - T_{suc}\bigr)
 \qquad
-\Delta h_{reel} = \frac{\Delta h_{ideal}}{\eta_{is}}
+\Delta h_{real} = \frac{\Delta h_{ideal}}{\eta_{is}}
 \qquad
-h_2 = h_1 + \Delta h_{reel}$$
+h_2 = h_1 + \Delta h_{real}$$
 
 $$Q_{evap} = \dot m\,(h_1 - h_4)
 \qquad
 Q_{cond} = \dot m\,(h_2 - h_3)
 \qquad
-W_{comp} = 1{,}10\,\dot m\,\Delta h_{reel}
+W_{comp} = 1.10\,\dot m\,\Delta h_{real}
 \qquad
 COP = \frac{Q_{cond}}{W_{comp}}$$
 
-Le facteur 1,10 couvre les pertes mécaniques et électriques. La détente $h_4 = h_3$ est
-supposée isenthalpique, hypothèse standard pour un détendeur.
+The factor 1.10 covers mechanical and electrical losses. The expansion $h_4 = h_3$ is
+assumed isenthalpic, the standard assumption for an expansion device.
 
-### B.7 Bruit de mesure
+### B.7 Measurement noise
 
-Bruit gaussien : $\pm 0{,}5$ °C sur les températures, 2 % sur les pressions, 3 % sur les
-puissances. Il est appliqué aux capteurs, **puis** les grandeurs dérivées sont recalculées, et
-la référence saine des `d_*` est bruitée indépendamment.
+Gaussian noise: $\pm 0.5$ °C on temperatures, 2% on pressures, 3% on powers. It is
+applied to the sensors, **then** the derived quantities are recomputed, and the healthy
+reference of the `d_*` is noised independently.
 
-| Grandeur dérivée | Lignes cohérentes avec ses entrées |
+| Derived quantity | Rows consistent with its inputs |
 |---|---|
-| `pressure_ratio`, `compression_ratio` | 100 % |
-| `COP` | 100 % |
-| `delta_T_evap`, `delta_T_cond` | 100 % |
+| `pressure_ratio`, `compression_ratio` | 100% |
+| `COP` | 100% |
+| `delta_T_evap`, `delta_T_cond` | 100% |
 
-Avant cette correction, `d_COP` valait exactement zéro pour les 2000 essais sains et pour eux
-seuls. Trois autres fuites (normalisation avant la CV, CV sur le jeu complet, sélection sur le
-test) sont fermées par un `Pipeline` sklearn, une CV sur le train, et un split train / val /
-test. Gardes dans `tests/test_pipeline_integrity.py`.
+Before that correction, `d_COP` was exactly zero for the 2000 healthy tests and for them
+alone. Three other leaks (scaling before the CV, CV on the full set, selection on the
+test) are closed by a sklearn `Pipeline`, a CV on the train set, and a train / val / test
+split. Guards in `tests/test_pipeline_integrity.py`.
 
-## C. Méthodes de validation
+## C. Validation methods
 
-### C.1 Le résidu
+### C.1 The residual
 
-$$\tilde{x} = x_{observe} - \hat{x}_{sain}\bigl(T_{source},\,T_{sink},\,n\bigr)$$
+$$\tilde{x} = x_{observed} - \hat{x}_{healthy}\bigl(T_{source},\,T_{sink},\,n\bigr)$$
 
-Cinq résidus entrent dans le vecteur : `d_T_discharge`, `d_superheat`, `d_subcooling`,
-`d_COP`, `d_W_comp`. La question décisive est l'origine de $\hat{x}_{sain}$ :
+Five residuals enter the vector: `d_T_discharge`, `d_superheat`, `d_subcooling`, `d_COP`,
+`d_W_comp`. The decisive question is the origin of $\hat{x}_{healthy}$:
 
-| Origine | Ce que cela suppose | Score |
+| Origin | What it assumes | Score |
 |---|---|---|
-| Simulée | Le modèle physique est exact | non mesurable sur du réel |
-| Essais sains de la machine cible | La machine a été observée saine | 0,602 |
-| Essais sains d'une autre machine | Rien | 0,318 |
+| Simulated | The physical model is exact | not measurable on real data |
+| Healthy tests of the target machine | The machine was observed healthy | 0.602 |
+| Healthy tests of another machine | Nothing | 0.318 |
 
-### C.2 Le modèle de référence sain
+### C.2 The healthy-reference model
 
-$$\hat{x}_{sain}(T_{source}, T_{sink}) = \mathrm{med}\Bigl\{x_i \;:\; i \in \mathcal{V}_k\Bigr\},
+$$\hat{x}_{healthy}(T_{source}, T_{sink}) = \mathrm{med}\Bigl\{x_i \;:\; i \in \mathcal{V}_k\Bigr\},
 \qquad k = \min(5,\,n)$$
 
-où $\mathcal{V}_k$ désigne les $k$ essais sains les plus proches dans le plan
-$(T_{source}, T_{sink})$. Des formes plus riches n'améliorent pas le transfert : polynôme
-d'ordre 2 avec point de rosée 0,302 ; forêt aléatoire 0,265 ; contre 0,318 pour le plus proche
-voisin. **Le plafond n'est pas une limite du modèle de référence, c'est une limite du transfert
-entre machines.**
+where $\mathcal{V}_k$ denotes the $k$ healthy tests closest in the
+$(T_{source}, T_{sink})$ plane. Richer forms do not improve transfer: order-2 polynomial
+with dew point 0.302; random forest 0.265; against 0.318 for the nearest neighbour.
+**The ceiling is not a limit of the reference model. It is a limit of transfer between
+machines.**
 
-### C.3 Les deux protocoles
+### C.3 The two protocols
 
-| Protocole | Ce qu'il autorise le modèle à apprendre | Score |
+| Protocol | What it lets the model learn | Score |
 |---|---|---|
-| CV aléatoire | La panne **et** l'identité de la machine | 0,95 |
-| Leave-one-machine-out | La panne seule | 0,60 |
+| Random CV | The fault **and** the identity of the machine | 0.95 |
+| Leave-one-machine-out | The fault alone | 0.60 |
 
-### C.4 L'accord des sens de variation
+### C.4 Agreement of the signs of variation
 
 $$x = \beta_0 + \beta_1\,L + \beta_2\,T_{source} + \beta_3\,T_{sink}$$
 
-$L$ est le niveau de défaut ; $\beta_2$ et $\beta_3$ neutralisent les conditions d'essai. On
-compare $\mathrm{signe}(\beta_1)$ mesuré au signe de la pente simulée. Indicateur insensible au
-décalage de domaine, puisqu'il ne compare que des directions.
+$L$ is the fault level; $\beta_2$ and $\beta_3$ neutralise the test conditions. The
+measured $\mathrm{sign}(\beta_1)$ is compared with the sign of the simulated slope. An
+indicator insensitive to the domain shift, since it compares only directions.
 
-Score avant correction : 12 sur 16. Après : **20 sur 22**.
+Score before correction: 12 out of 16. After: **20 out of 22**.
 
-### C.5 Le budget de calibration
+### C.5 The calibration budget
 
-Leave-one-machine-out dans les deux sens ; référence construite sur $n$ essais sains de la
-machine testée, **retirés du jeu de test** ; vingt tirages par valeur de $n$.
+Leave-one-machine-out in both directions; reference built on $n$ healthy tests of the
+machine under test, **removed from the test set**; twenty draws per value of $n$.
 
-Contrôles du protocole : $n = 0 \rightarrow 0{,}318$ et $n = \text{tous} \rightarrow 0{,}602$,
-retrouvés exactement.
+Protocol controls: $n = 0 \rightarrow 0.318$ and $n = \text{all} \rightarrow 0.602$,
+recovered exactly.
 
-## D. Reproduire les chiffres
+## D. Reproducing the figures
 
-| Chiffre | Où |
+| Figure | Where |
 |---|---|
-| 89,3 % [87,6 – 90,7] simulé | `main_analysis.py`, `outputs/results.csv` (X0 / holdout-test) |
-| 0,95 / 0,602 / 0,318 | `EDA/EDA_NIST_model.ipynb`, `EDA_NIST_reference.ipynb` |
-| Accord des signes 20/22 | `EDA/EDA_NIST_model.ipynb` |
-| Budget de calibration | `EDA/EDA_NIST_calibration.ipynb` |
+| 89.3% [87.6 – 90.7] simulated | `main_analysis.py`, `outputs/results.csv` (X0 / holdout-test) |
+| 0.95 / 0.602 / 0.318 | `EDA/EDA_NIST_model.ipynb`, `EDA/EDA_NIST_reference.ipynb` |
+| Sign agreement 20/22 | `EDA/EDA_NIST_model.ipynb` |
+| Calibration budget | `EDA/EDA_NIST_calibration.ipynb` |
 
-Les classeurs NIST ne sont pas versionnés. Adresses de téléchargement et table de correspondance
-des 98 colonnes dans `docs/NIST_MAPPING.md`.
+The NIST workbooks are not versioned. Download addresses and the correspondence table for
+the 98 columns are in `docs/NIST_MAPPING.md`.
+
