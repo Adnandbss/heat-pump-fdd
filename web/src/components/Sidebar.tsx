@@ -37,10 +37,10 @@ type Props = {
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40";
 const itemBase =
-  "h-11 rounded-2xl flex items-center justify-center sm:justify-start gap-2 sm:px-3 sm:w-full text-sm transition-colors duration-150";
-const idle = `${itemBase} w-11 text-white/70 hover:text-white hover:bg-white/10 ${focusRing}`;
+  "rounded-2xl flex items-center justify-center sm:justify-start gap-2 sm:px-3 sm:w-full transition-colors duration-150";
+const idle = `${itemBase} text-white/70 hover:text-white hover:bg-white/10 ${focusRing}`;
 const on =
-  `${itemBase} w-11 sm:w-full bg-white text-slate-900 shadow-[0_8px_20px_rgba(255,255,255,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/40`;
+  `${itemBase} bg-white text-slate-900 shadow-[0_8px_20px_rgba(255,255,255,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/40`;
 
 export function Sidebar({ active }: Props) {
   return (
@@ -51,6 +51,8 @@ export function Sidebar({ active }: Props) {
       <nav className="flex flex-row sm:flex-col gap-1.5 sm:w-full" aria-label="Primary">
         {items.map((item) => {
           const Icon = item.icon;
+          const primary = item.id === "fleet";
+          const selected = active === item.id;
           return (
             <NavLink
               key={item.id}
@@ -58,12 +60,18 @@ export function Sidebar({ active }: Props) {
               end={item.end === true}
               title={item.label}
               aria-label={item.label}
-              aria-current={active === item.id ? "page" : undefined}
-              className={({ isActive }) => (isActive || active === item.id ? on : idle)}
+              aria-current={selected ? "page" : undefined}
+              className={({ isActive }) => {
+                const selectedNow = isActive || selected;
+                const size = primary
+                  ? "h-11 w-11 sm:w-full text-sm font-medium"
+                  : "h-9 w-9 sm:w-full text-xs";
+                return `${selectedNow ? on : idle} ${size} ${!primary && !selectedNow ? "opacity-60" : ""}`;
+              }}
             >
               {({ isActive }) => (
                 <>
-                  <Icon size={18} strokeWidth={isActive || active === item.id ? 2.2 : 1.7} />
+                  <Icon size={primary ? 18 : 15} strokeWidth={isActive || selected ? 2.2 : 1.7} />
                   <span className="hidden sm:inline">{item.label}</span>
                 </>
               )}
@@ -76,7 +84,7 @@ export function Sidebar({ active }: Props) {
           rel="noreferrer"
           title="API docs"
           aria-label="API docs"
-          className={idle}
+          className={`${idle} h-9 w-9 sm:w-full text-xs text-white/50`}
         >
           <BookOpen size={18} strokeWidth={1.7} />
           <span className="hidden sm:inline">API docs</span>
